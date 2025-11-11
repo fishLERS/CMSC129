@@ -10,21 +10,21 @@ export function addEquipment(equipment: Omit<EquipmentItem, "equipmentID">) {
 }
 
 //retrieve all equipment
-export async function displayAllEquipment(): Promise<EquipmentItem[]> {
-  const snapshot = await getDocs(collection(db, COLLECTION));
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
-    return {
-      equipmentID: doc.id,
-      name: data.name as string,
-      quantity: data.quantity as number,
-      category: data.category as string | undefined,
-      status: data.status as string | undefined,
-      serial: data.serial as string | undefined,
-      notes: data.notes as string | undefined,
-    };
-  });
-}
+// export async function displayAllEquipment(): Promise<EquipmentItem[]> {
+//   const snapshot = await getDocs(collection(db, COLLECTION));
+//   return snapshot.docs.map(doc => {
+//     const data = doc.data();
+//     return {
+//       equipmentID: doc.id,
+//       name: data.name as string,
+//       quantity: data.quantity as number,
+//       category: data.category as string | undefined,
+//       status: data.status as string | undefined,
+//       serial: data.serial as string | undefined,
+//       notes: data.notes as string | undefined,
+//     };
+//   });
+// }
 
 
 //edit equipments
