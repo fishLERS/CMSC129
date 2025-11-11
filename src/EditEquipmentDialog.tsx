@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog"
 import EquipmentForm from "@/EquipmentForm"
@@ -11,16 +11,23 @@ interface EditEquipmentDialogProps {
 
 export default function EditEquipmentDialog({ item, onEdit }: EditEquipmentDialogProps) {
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState(item)
+  const [form, setForm] = useState(item) 
+  
+  useEffect(() => { setForm(item)}, [item])
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const handleSave = async () => {
+const handleEdit = async () => {
   try {
-    const { equipmentID, ...updateData } = form
+    if (typeof onEdit !== "function") {
+      console.error("onEdit is not a function", onEdit)
+      return
+    }
 
+    const { equipmentID, ...updateData } = form
     updateData.quantity = Number(updateData.quantity)
 
     await onEdit(item.equipmentID, updateData)
@@ -42,7 +49,7 @@ export default function EditEquipmentDialog({ item, onEdit }: EditEquipmentDialo
         <EquipmentForm form={form} onChange={handleChange} />
         <DialogFooter>
           <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleEdit}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

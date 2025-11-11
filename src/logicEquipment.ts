@@ -2,7 +2,8 @@ import { useEffect, useState } from "react"
 import { EquipmentItem } from "@/type"
 import { addEquipment, listenerEquipment, updateEquipment, deleteEquipment} from "@/equipment.query"
 
-export function useEquipment() {
+
+export function logicEquipment() {
   const [equipmentList, setEquipmentList] = useState<EquipmentItem[]>([])
 
   useEffect(() => {

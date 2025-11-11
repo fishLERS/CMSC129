@@ -1,63 +1,79 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
-import EquipmentForm from "./EquipmentForm"
+import {Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog"
+import { EquipmentItem } from "@/type"
+import EquipmentForm from "@/EquipmentForm"
 
-interface AddEquipmentDialogProps {
-  onAdd: (equipment: {
-    name: string
-    quantity: number
-    category?: string
-    status?: string
-    serial?: string
-    notes?: string
-  }) => void
+interface AddEquipmentDialogConfig {
+  onAdd: (equipment: Omit<EquipmentItem, "equipmentID">) => Promise<void>
 }
 
-export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogProps) {
-  const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({
-    name: "",
-    quantity: 0,
-    category: "",
-    status: "",
-    serial: "",
-    notes: "",
-  })
+const initialForm: Omit<EquipmentItem, "equipmentID"> = {
+  name: "",
+  quantity: 1,
+  category: "",
+  status: "",
+  serial: "",
+  notes: "",
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) {
+    const [open, setOpen] = useState(false)
+    const [form, setForm] = useState<Omit<EquipmentItem, "equipmentID">>(initialForm)
+    
+    function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+        const { name, value } = e.target
+        
+        let newValue: string | number
+    
+        if (name === "quantity") {
+            newValue = Number(value)
+        } else {
+            newValue = value
+        }
+    
+        setForm(function (prev) {        
+            return { ...prev, [name]: newValue,}
+        })
+    }
 
-  const handleSubmit = () => {
-    if (!form.name || form.quantity <= 0) return
-    onAdd(form)
-    setForm({ name: "", quantity: 0, category: "", status: "", serial: "", notes: "" })
-    setOpen(false)
-  }
-
-  return (
+    async function handleSubmit() {
+        const isValid = form.name.trim() !== "" && form.quantity > 0
+        if (isValid) {
+            try {
+                await onAdd(form)          //save to firebase
+                setForm(initialForm)       //reset form
+                setOpen(false)             //close dialog
+                } catch (error) {
+                    console.error("Error saving equipment:", error) //todo: show error feedback
+                }
+        } else {
+            console.log("Invalid form")     //todo: show error feedback
+            return
+        }
+    }
+    
+    return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Add Equipment</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Equipment</DialogTitle>
-        </DialogHeader>
-        <EquipmentForm form={form} onChange={handleChange} />
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleSubmit}>Add</Button>
-        </DialogFooter>
-      </DialogContent>
+        <DialogTrigger asChild>
+            <Button>Add Equipment</Button>
+        </DialogTrigger>
+        <DialogContent>
+            <DialogHeader>
+            <DialogTitle>Add New Equipment</DialogTitle>
+            </DialogHeader>
+
+            <EquipmentForm form={form} onChange={handleChange} />
+
+            <DialogFooter>
+                <Button onClick={handleSubmit} disabled={!form.name.trim() || form.quantity <= 0}>
+                Add
+                </Button>
+                <Button variant="destructive" onClick={() => setOpen(false)}>
+                Cancel
+                </Button>
+            </DialogFooter>
+        </DialogContent>
     </Dialog>
   )
 }

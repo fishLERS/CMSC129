@@ -17,6 +17,7 @@ interface EquipmentTableProps {
 }
 
 export default function EquipmentTable({ equipmentList, onEdit, onDelete }: EquipmentTableProps) {
+console.log("onEdit received:", onEdit)
   return (
     <Table>
       <TableHeader>
