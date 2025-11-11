@@ -1,8 +1,14 @@
 {
   "compilerOptions": {
     "composite": true,
-    "module": "ESNext",
-    "moduleResolution": "Node",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
     "allowSyntheticDefaultImports": true
   },
   "include": ["vite.config.ts"]

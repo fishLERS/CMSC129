@@ -4,12 +4,12 @@ import { doc, collection, addDoc, getDocs, updateDoc, deleteDoc, onSnapshot } fr
 
 const COLLECTION = "equipment";
 
-// Add equipment
+//add equipment
 export function addEquipment(equipment: Omit<EquipmentItem, "equipmentID">) {
   return addDoc(collection(db, COLLECTION), equipment);
 }
 
-// Retrieve all equipment
+//retrieve all equipment
 export async function displayAllEquipment(): Promise<EquipmentItem[]> {
   const snapshot = await getDocs(collection(db, COLLECTION));
   return snapshot.docs.map(doc => {
@@ -27,7 +27,7 @@ export async function displayAllEquipment(): Promise<EquipmentItem[]> {
 }
 
 
-// Update equipment
+//edit equipments
 export function updateEquipment(
   equipmentID: string,
   info: Partial<Omit<EquipmentItem, "equipmentID">>
@@ -36,19 +36,19 @@ export function updateEquipment(
   return updateDoc(equipmentData, info);
 }
 
-// Delete equipment
+//deleting equipments
 export function deleteEquipment(equipmentID: string) {
   return deleteDoc(doc(db, COLLECTION, equipmentID));
 }
 
-// Equipment listener
+//Equipment listener
 export function listenerEquipment(callback: (items: EquipmentItem[]) => void) {
   return onSnapshot(collection(db, COLLECTION), (snapshot) => {
     const items: EquipmentItem[] = snapshot.docs.map((doc) => {
         const data = doc.data();
         return {
         equipmentID: doc.id,
-        name: data.name as string,       // make sure to cast
+        name: data.name as string,
         quantity: data.quantity as number,
         category: data.category as string | undefined,
         status: data.status as string | undefined,

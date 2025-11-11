@@ -1,0 +1,50 @@
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter} from "@/components/ui/dialog"
+import EquipmentForm from "@/EquipmentForm"
+import { EquipmentItem } from "@/type"
+
+interface EditEquipmentDialogProps {
+  item: EquipmentItem
+  onEdit: (id: string, info: Partial<Omit<EquipmentItem, "equipmentID">>) => void
+}
+
+export default function EditEquipmentDialog({ item, onEdit }: EditEquipmentDialogProps) {
+  const [open, setOpen] = useState(false)
+  const [form, setForm] = useState(item)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleSave = async () => {
+  try {
+    const { equipmentID, ...updateData } = form
+
+    updateData.quantity = Number(updateData.quantity)
+
+    await onEdit(item.equipmentID, updateData)
+    setOpen(false)
+  } catch (err) {
+    console.error("Failed to save equipment:", err)
+  }
+}
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="secondary">Edit</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Equipment</DialogTitle>
+        </DialogHeader>
+        <EquipmentForm form={form} onChange={handleChange} />
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={handleSave}>Save</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
