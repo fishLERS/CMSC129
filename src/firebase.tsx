@@ -1,8 +1,8 @@
 // Import the functions you need from the SDKs you need
 import { FirebaseApp, initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
-import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -32,14 +32,3 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 /* eslint-disable no-console */
-
-if (import.meta.env.DEV) {
-  try {
-    // use the exported instances above
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099');
-    connectFirestoreEmulator(db, '127.0.0.1', 8080);
-    connectStorageEmulator(storage, '127.0.0.1', 9199);
-  } catch {
-    // hot-reload may try to reconnect; ignore
-  }
-}
