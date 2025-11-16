@@ -32,3 +32,5 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 /* eslint-disable no-console */
+
+// Emulator connections removed — using production/back-end services by default.

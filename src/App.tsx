@@ -1,16 +1,80 @@
-import { Routes, Route } from "react-router-dom";
-import Landing from "./pages/Landing";
-import About from "./pages/About";
-import Faqs from "./pages/Faqs";
-import Contacts from "./pages/Contacts";
+// src/App.tsx
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-export default function App() {
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
+
+import ProtectedRoute from "./components/ProtectedRoute";
+import Sidebar from "./sidebar"; // change/remove if your file name is different
+
+const App: React.FC = () => {
   return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/faqs" element={<Faqs />} />
-      <Route path="/contacts" element={<Contacts />} />
-    </Routes>
+    <div className="min-h-screen flex bg-base-200">
+      {/* left sidebar for navigation (equipment, reservations, admin, etc.) */}
+      <Sidebar>{/* no children for now */}</Sidebar>
+
+      {/* main content area */}
+      <main className="flex-1 p-4">
+        <Routes>
+          {/* default route → dashboard (protected) */}
+          <Route
+            path="/"
+            element={<Navigate to="/dashboard" replace />}
+          />
+
+          {/* auth routes (public) */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* main lab reservation dashboard (protected) */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* example placeholders you can create later */}
+          {/* 
+          <Route
+            path="/equipment"
+            element={
+              <ProtectedRoute>
+                <EquipmentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reservations"
+            element={
+              <ProtectedRoute>
+                <ReservationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminHome />
+              </ProtectedRoute>
+            }
+          />
+          */}
+
+          {/* catch-all → redirect to dashboard or login */}
+          <Route
+            path="*"
+            element={<Navigate to="/dashboard" replace />}
+          />
+        </Routes>
+      </main>
+    </div>
   );
-}
+};
+
+export default App;
