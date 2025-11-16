@@ -1,29 +1,80 @@
-import { useState } from 'react';
-import { useAuth } from './hooks/useAuth';
-import { auth } from './firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import './App.css';
+// src/App.tsx
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-export default function App() {
-  const { user, loading } = useAuth();
-  const [email, setEmail] = useState('test@example.com');
-  const [pass, setPass] = useState('supersecret');
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Dashboard from "./pages/Dashboard";
 
-  if (loading) return <p>loading…</p>;
+import ProtectedRoute from "./components/ProtectedRoute";
+import Sidebar from "./sidebar"; // change/remove if your file name is different
 
+const App: React.FC = () => {
   return (
-    <div style={{ padding: 24 }}>
-      <pre>user: {user?.uid ?? 'none'}</pre>
-      {!user ? (
-        <div style={{ display: 'grid', gap: 8, maxWidth: 320 }}>
-          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="email" />
-          <input value={pass} onChange={e => setPass(e.target.value)} type="password" placeholder="password" />
-          <button onClick={() => createUserWithEmailAndPassword(auth, email, pass)}>sign up</button>
-          <button onClick={() => signInWithEmailAndPassword(auth, email, pass)}>sign in</button>
-        </div>
-      ) : (
-        <button onClick={() => signOut(auth)}>sign out</button>
-      )}
+    <div className="min-h-screen flex bg-base-200">
+      {/* left sidebar for navigation (equipment, reservations, admin, etc.) */}
+      <Sidebar>{/* no children for now */}</Sidebar>
+
+      {/* main content area */}
+      <main className="flex-1 p-4">
+        <Routes>
+          {/* default route → dashboard (protected) */}
+          <Route
+            path="/"
+            element={<Navigate to="/dashboard" replace />}
+          />
+
+          {/* auth routes (public) */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* main lab reservation dashboard (protected) */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* example placeholders you can create later */}
+          {/* 
+          <Route
+            path="/equipment"
+            element={
+              <ProtectedRoute>
+                <EquipmentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reservations"
+            element={
+              <ProtectedRoute>
+                <ReservationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminHome />
+              </ProtectedRoute>
+            }
+          />
+          */}
+
+          {/* catch-all → redirect to dashboard or login */}
+          <Route
+            path="*"
+            element={<Navigate to="/dashboard" replace />}
+          />
+        </Routes>
+      </main>
     </div>
   );
-}
+};
+
+export default App;
