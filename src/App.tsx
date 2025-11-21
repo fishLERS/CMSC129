@@ -13,7 +13,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex bg-base-200">
       {/* left sidebar for navigation (equipment, reservations, admin, etc.) */}
-      <Sidebar><div>Sidebar content here</div></Sidebar>
+      <Sidebar><div>fix error</div></Sidebar>
 
       {/* main content area */}
       <main className="flex-1 p-4">

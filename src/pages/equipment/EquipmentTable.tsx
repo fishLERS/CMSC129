@@ -18,7 +18,7 @@ export default function EquipmentTable({
         <thead>
           <tr>
             <th>Name</th>
-            <th>Inventory</th>
+            <th>Quantity</th>
             <th>Category</th>
             <th>Disposable</th>
             <th>Image</th>
@@ -30,7 +30,7 @@ export default function EquipmentTable({
             <tr key={item.equipmentID}>
               <td>{item.name}</td>
               <td>{item.totalInventory}</td>
-              <td>{item.category ?? "-"}</td>
+              <td>{item.category}</td>
               <td>
                 {item.isDisposable ? (
                   <span className="badge badge-success">Yes</span>

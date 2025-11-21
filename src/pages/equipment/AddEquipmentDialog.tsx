@@ -50,12 +50,10 @@ export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) 
 
   return (
     <>
-      {/* Trigger button */}
       <button className="btn btn-primary" onClick={() => setOpen(true)}>
         Add Equipment
       </button>
 
-      {/* DaisyUI modal */}
       {open && (
         <div className="modal modal-open">
           <div className="modal-box">

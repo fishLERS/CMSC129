@@ -2,6 +2,7 @@
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import { useAuth } from '../../hooks/useAuth';
+
 import { logicEquipment } from "./logicEquipment";
 import AddEquipmentDialog from "./AddEquipmentDialog";
 import EquipmentTable from "./EquipmentTable";

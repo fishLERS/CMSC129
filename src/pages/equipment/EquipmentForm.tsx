@@ -22,7 +22,7 @@ export default function EquipmentForm({ form, onChange }: EquipmentFormProps) {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="totalInventory" className="text-sm font-medium">Inventory</label>
+        <label htmlFor="totalInventory" className="text-sm font-medium">Quantity</label>
         <input
           id="totalInventory"
           name="totalInventory"
