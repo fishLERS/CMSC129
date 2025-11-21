@@ -6,4 +6,5 @@ export interface EquipmentItem {
   status?: string;
   serial?: string;
   notes?: string;
+  // imageLink
 }

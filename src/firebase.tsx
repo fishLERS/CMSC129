@@ -37,7 +37,7 @@ if (import.meta.env.DEV) {
   try {
     // use the exported instances above
     connectAuthEmulator(auth, 'http://127.0.0.1:9099');
-    connectFirestoreEmulator(db, "localhost", 8080);
+    connectFirestoreEmulator(db, "localhost", 8085);
     console.log("Connected to Firestore emulator")
     console.log(db)
     connectStorageEmulator(storage, '127.0.0.1', 9199);

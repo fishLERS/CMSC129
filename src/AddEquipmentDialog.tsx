@@ -66,7 +66,7 @@ export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) 
             <EquipmentForm form={form} onChange={handleChange} />
 
             <DialogFooter>
-                <Button onClick={handleSubmit} disabled={!form.name.trim() || form.quantity <= 0}>
+                <Button className = "bg-blue-500 text-white px-4 py-2 rounded" onClick={handleSubmit} disabled={!form.name.trim() || form.quantity <= 0}>
                 Add
                 </Button>
                 <Button variant="destructive" onClick={() => setOpen(false)}>

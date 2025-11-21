@@ -48,8 +48,8 @@ const handleEdit = async () => {
         </DialogHeader>
         <EquipmentForm form={form} onChange={handleChange} />
         <DialogFooter>
+          <Button className = "bg-blue-500 text-white px-4 py-2 rounded" onClick={handleEdit}>Save</Button>
           <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleEdit}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

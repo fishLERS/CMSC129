@@ -1,14 +1,7 @@
 import { Button } from "@/components/ui/button"
 import EditEquipmentDialog from "@/EditEquipmentDialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { EquipmentItem } from "./type"
+import {Table, TableBody, TableCell,TableHead, TableHeader, TableRow} from "@/components/ui/table"
+import { EquipmentItem } from "@/type"
 
 interface EquipmentTableProps {
   equipmentList: EquipmentItem[]
