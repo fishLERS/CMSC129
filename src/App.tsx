@@ -4,7 +4,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/equipment/Dashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./sidebar"; // change/remove if your file name is different
@@ -13,7 +13,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex bg-base-200">
       {/* left sidebar for navigation (equipment, reservations, admin, etc.) */}
-      <Sidebar>{/* no children for now */}</Sidebar>
+      <Sidebar><div>Sidebar content here</div></Sidebar>
 
       {/* main content area */}
       <main className="flex-1 p-4">
