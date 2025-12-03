@@ -5,6 +5,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import AdminHome from "./pages/home-admin";
+import LoginStudent from "./pages/LoginStudent";
+import LoginAdmin from "./pages/LoginAdmin";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./sidebar"; // change/remove if your file name is different
@@ -12,8 +15,6 @@ import Sidebar from "./sidebar"; // change/remove if your file name is different
 const App: React.FC = () => {
   return (
     <div className="min-h-screen flex bg-base-200">
-      {/* left sidebar for navigation (equipment, reservations, admin, etc.) */}
-      <Sidebar>{/* no children for now */}</Sidebar>
 
       {/* main content area */}
       <main className="flex-1 p-4">
@@ -26,6 +27,8 @@ const App: React.FC = () => {
 
           {/* auth routes (public) */}
           <Route path="/login" element={<Login />} />
+          <Route path="/login/student" element={<LoginStudent />} />
+          <Route path="/login/admin" element={<LoginAdmin />} />
           <Route path="/signup" element={<Signup />} />
 
           {/* main lab reservation dashboard (protected) */}
@@ -34,6 +37,16 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* admin area (protected) */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminHome />
               </ProtectedRoute>
             }
           />
