@@ -1,6 +1,6 @@
 // src/pages/Signup.tsx
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -12,6 +12,8 @@ export default function Signup() {
   const [name, setName] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedRole = searchParams.get('role') === 'admin' ? 'admin' : 'student';
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,20 +28,31 @@ export default function Signup() {
       // Update display name
       if (name) await updateProfile(cred.user, { displayName: name });
 
-      // Save user info in Firestore with role = student
+      // Save user info in Firestore with the requested role (note: admin privileges
+      // must still be granted server-side via custom claims; creating a Firestore
+      // user with role:'admin' does NOT automatically grant admin auth claims)
       await setDoc(doc(db, 'users', cred.user.uid), {
         uid: cred.user.uid,
         displayName: name || '',
         email: email,
-        role: 'student', // automatically assign student role
+        role: requestedRole,
+        requestedAdmin: requestedRole === 'admin' ? true : false,
         createdAt: new Date(),
       });
 
       // Store role in localStorage for quick access if needed
-      localStorage.setItem('userRole', 'student');
+      localStorage.setItem('userRole', requestedRole);
 
-      // Redirect student to request page
-      nav('/requestpage', { replace: true });
+      if (requestedRole === 'admin') {
+        // Inform the user that admin accounts require approval/granting of custom claims
+        // This must be performed by a project administrator using the server-side
+        // script (scripts/set-claim.js) or the Firebase Console.
+        alert('Admin account created. An administrator must approve and grant admin privileges before you can access admin pages.');
+        nav('/login', { replace: true });
+      } else {
+        // Redirect student to request page
+        nav('/requestpage', { replace: true });
+      }
     } catch (e: any) {
       setErr(e.message ?? 'Signup failed');
     }

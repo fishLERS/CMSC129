@@ -77,10 +77,14 @@ export default function Login() {
 
         <button className="w-full p-2 rounded bg-black text-white">Sign In</button>
 
-        {/* Only show signup for students */}
-        {roleType === 'student' && (
+        {/* Show signup for students and an admin signup request link for admins */}
+        {roleType === 'student' ? (
           <p className="text-sm mt-2">
             No account? <Link className="underline" to="/signup">Sign Up</Link>
+          </p>
+        ) : (
+          <p className="text-sm mt-2">
+            Need an admin account? <Link className="underline" to="/signup?role=admin">Create admin account</Link>
           </p>
         )}
       </form>

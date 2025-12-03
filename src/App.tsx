@@ -38,17 +38,17 @@ const App: React.FC = () => {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute requireAdmin>
                 <Dashboard />
               </ProtectedRoute>
             }
           />
 
-          {/* Student request page → student-only */}
+          {/* Student request page → authenticated students */}
           <Route
             path="/requestpage"
             element={
-              <ProtectedRoute requiredRole="student">
+              <ProtectedRoute>
                 <RequestPage />
               </ProtectedRoute>
             }
@@ -58,7 +58,7 @@ const App: React.FC = () => {
           <Route
             path="/admindashboard"
             element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute requireAdmin>
                 <AdminDashboard />
               </ProtectedRoute>
             }

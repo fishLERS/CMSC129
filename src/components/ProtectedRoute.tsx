@@ -1,41 +1,41 @@
-import React, { ReactNode, useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
-interface ProtectedRouteProps {
-  children: ReactNode;
-  requiredRole?: "admin" | "student"; // optional role
-}
+type Props = { children: JSX.Element; requireAdmin?: boolean };
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<string | null>(null);
+export default function ProtectedRoute({ children, requireAdmin }: Props) {
+  const { user, loading } = useAuth();
+  const loc = useLocation();
+  const [checking, setChecking] = React.useState(!!requireAdmin);
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        setRole(userDoc.data()?.role || null);
+  React.useEffect(() => {
+    let mounted = true;
+    async function check() {
+      if (!requireAdmin) {
+        setChecking(false);
+        return;
       }
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
+      if (!user) {
+        setChecking(false);
+        return;
+      }
+      try {
+        const idTokenResult = await user.getIdTokenResult();
+        if (mounted) setIsAdmin(!!idTokenResult.claims.admin);
+      } catch (e) {
+        if (mounted) setIsAdmin(false);
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    }
+    check();
+    return () => { mounted = false; };
+  }, [requireAdmin, user]);
 
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
-
-  if (!user) return <Navigate to="/login" replace />;
-
-  if (requiredRole && role !== requiredRole) {
-    // redirect based on actual role
-    return <Navigate to={role === "admin" ? "/admindashboard" : "/requestpage"} replace />;
-  }
-
-  return <>{children}</>;
-};
-
-export default ProtectedRoute;
+  if (loading || checking) return <div style={{ padding: 24 }}>loading…</div>;
+  if (!user) return <Navigate to="/login" replace state={{ from: loc }} />;
+  if (requireAdmin && !isAdmin) return <Navigate to="/dashboard" replace />;
+  return children;
+}
