@@ -1,53 +1,71 @@
-// src/App.tsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/equipment/Dashboard";
-import RequestPage from "./pages/RequestPage";
+import RequestPage from "./pages/requestform/RequestPage";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
-import Navbar from "./components/NavBar"; // ⬅️ new
+import Navbar from "./components/NavBar";
 
 const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-base-200">
-      {/* Top navigation bar */}
       <Navbar />
 
-      {/* main content area */}
       <main className="flex-1 p-4">
         <Routes>
-          {/* default route → dashboard (protected) */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          {/* Default route → redirect based on role in localStorage */}
+          <Route
+            path="/"
+            element={
+              (() => {
+                const role = localStorage.getItem("userRole");
+                if (role === "admin") return <Navigate to="/dashboard" replace />;
+                if (role === "student") return <Navigate to="/requestpage" replace />;
+                return <Navigate to="/login" replace />;
+              })()
+            }
+          />
 
-          {/* auth routes (public) */}
+          {/* Auth routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* inventory / dashboard */}
+          {/* Equipment dashboard → admin-only */}
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="admin">
                 <Dashboard />
               </ProtectedRoute>
             }
           />
 
-          {/* request page */}
+          {/* Student request page → student-only */}
           <Route
             path="/requestpage"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="student">
                 <RequestPage />
               </ProtectedRoute>
             }
           />
 
-          {/* catch-all → redirect to dashboard */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Admin requests dashboard → admin-only */}
+          <Route
+            path="/admindashboard"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Catch-all → redirect to default */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>

@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -16,29 +17,48 @@ export default function Signup() {
     e.preventDefault();
     try {
       setErr(null);
-      if (pass !== pass2) throw new Error('passwords do not match');
+
+      if (pass !== pass2) throw new Error('Passwords do not match');
+
+      // Create Firebase Auth user
       const cred = await createUserWithEmailAndPassword(auth, email, pass);
+
+      // Update display name
       if (name) await updateProfile(cred.user, { displayName: name });
-      nav('/', { replace: true });
+
+      // Save user info in Firestore with role = student
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        uid: cred.user.uid,
+        displayName: name || '',
+        email: email,
+        role: 'student', // automatically assign student role
+        createdAt: new Date(),
+      });
+
+      // Store role in localStorage for quick access if needed
+      localStorage.setItem('userRole', 'student');
+
+      // Redirect student to request page
+      nav('/requestpage', { replace: true });
     } catch (e: any) {
-      setErr(e.message ?? 'signup failed');
+      setErr(e.message ?? 'Signup failed');
     }
   }
 
   return (
     <div className="min-h-dvh grid place-items-center p-6">
       <form onSubmit={onSubmit} className="w-full max-w-sm space-y-3">
-        <h1 className="text-2xl font-semibold">sign up</h1>
+        <h1 className="text-2xl font-semibold">Sign Up</h1>
         {err && <p className="text-red-600 text-sm">{err}</p>}
         <input
           className="w-full p-2 border rounded"
-          placeholder="full name (optional)"
+          placeholder="Full Name (optional)"
           value={name}
           onChange={e => setName(e.target.value)}
         />
         <input
           className="w-full p-2 border rounded"
-          placeholder="email"
+          placeholder="Email"
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
@@ -46,7 +66,7 @@ export default function Signup() {
         />
         <input
           className="w-full p-2 border rounded"
-          placeholder="password"
+          placeholder="Password"
           type="password"
           value={pass}
           onChange={e => setPass(e.target.value)}
@@ -54,15 +74,15 @@ export default function Signup() {
         />
         <input
           className="w-full p-2 border rounded"
-          placeholder="confirm password"
+          placeholder="Confirm Password"
           type="password"
           value={pass2}
           onChange={e => setPass2(e.target.value)}
           required
         />
-        <button className="w-full p-2 rounded bg-black text-white">create account</button>
+        <button className="w-full p-2 rounded bg-black text-white">Create Account</button>
         <p className="text-sm">
-          have an account? <Link className="underline" to="/login">log in</Link>
+          Have an account? <Link className="underline" to="/login">Log In</Link>
         </p>
       </form>
     </div>
