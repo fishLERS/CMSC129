@@ -13,6 +13,7 @@ import AdminAccountabilities from "./pages/admin/AdminAccountabilities";
 import ProfileStudent from "./pages/profile-student";
 import ProfileAdmin from "./pages/admin/profile-admin";
 import AdminUsers from "./pages/admin/AdminUsers";
+import Analytics from "./pages/admin/Analytics";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -134,6 +135,16 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute requireAdmin>
                 <AdminUsers />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Analytics page */}
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute requireAdmin>
+                <Analytics />
               </ProtectedRoute>
             }
           />
