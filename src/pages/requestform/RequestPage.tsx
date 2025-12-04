@@ -1,8 +1,10 @@
 import React from "react";
+import Sidebar from '../../sidebar'
+import './RequestPage.css'
 import { logicEquipment } from "../equipment/logicEquipment";
 
-import { db } from "../../firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { db, auth } from "../../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 // REMOVE NUMBER INPUT ARROWS (Chrome, Edge, Safari)
 const removeStepper = `
@@ -50,10 +52,18 @@ export const RequestForm: React.FC = () => {
     }
 
     try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        alert('You must be signed in to submit a request');
+        return;
+      }
+
       await addDoc(collection(db, "requests"), {
         ...formData,
         items: itemsArray,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
+        createdBy: currentUser.uid,
+        status: 'ongoing',
       });
 
       alert("Request submitted!");
@@ -64,7 +74,9 @@ export const RequestForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-100">
+  <div className="request-page min-h-screen">
+      <Sidebar />
+      <div className="flex-1" style={{ marginLeft: 'var(--sidebar-width)' }}>
 
       {/* Inject CSS to remove number arrows */}
       <style>{removeStepper}</style>
@@ -294,6 +306,7 @@ export const RequestForm: React.FC = () => {
             </div>
           </form>
         </section>
+      </div>
       </div>
     </div>
   );

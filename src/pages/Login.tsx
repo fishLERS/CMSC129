@@ -27,8 +27,8 @@ export default function Login() {
 
       localStorage.setItem('userRole', role);
 
-      if (role === 'admin') nav('/dashboard', { replace: true });
-      else nav('/requestpage', { replace: true });
+  if (role === 'admin') nav('/admindashboard', { replace: true });
+  else nav('/student', { replace: true });
     } catch (e: any) {
       setErr(e.message ?? 'Login failed');
     }

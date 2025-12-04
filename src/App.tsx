@@ -5,16 +5,16 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/equipment/Dashboard";
 import RequestPage from "./pages/requestform/RequestPage";
+import TrackingPage from "./pages/tracking/TrackingPage";
+import Accountabilities from "./pages/accountabilities/Accountabilities";
+import HomeStudent from "./pages/home-student";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
 import ProtectedRoute from "./components/ProtectedRoute";
-import Navbar from "./components/NavBar";
 
 const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-base-200">
-      <Navbar />
-
       <main className="flex-1 p-4">
         <Routes>
           {/* Default route → redirect based on role in localStorage */}
@@ -23,8 +23,8 @@ const App: React.FC = () => {
             element={
               (() => {
                 const role = localStorage.getItem("userRole");
-                if (role === "admin") return <Navigate to="/dashboard" replace />;
-                if (role === "student") return <Navigate to="/requestpage" replace />;
+                if (role === "admin") return <Navigate to="/admindashboard" replace />;
+                if (role === "student") return <Navigate to="/student" replace />;
                 return <Navigate to="/login" replace />;
               })()
             }
@@ -34,7 +34,7 @@ const App: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* Equipment dashboard → admin-only */}
+          {/* Admin equipment dashboard → admin-only */}
           <Route
             path="/dashboard"
             element={
@@ -44,12 +44,42 @@ const App: React.FC = () => {
             }
           />
 
-          {/* Student request page → authenticated students */}
+          {/* Student homepage (separate) → authenticated students only; admins are forbidden */}
+          <Route
+            path="/student"
+            element={
+              <ProtectedRoute forbidAdmin>
+                <HomeStudent />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* keep old requestpage route as alias for student homepage */}
           <Route
             path="/requestpage"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute forbidAdmin>
                 <RequestPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Tracking page for students */}
+          <Route
+            path="/tracking"
+            element={
+              <ProtectedRoute forbidAdmin>
+                <TrackingPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Accountabilities (student) */}
+          <Route
+            path="/accountabilities"
+            element={
+              <ProtectedRoute forbidAdmin>
+                <Accountabilities />
               </ProtectedRoute>
             }
           />

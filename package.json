@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "set-claim": "node ./scripts/set-claim.cjs"
   },
   "dependencies": {
     "firebase": "^12.5.0",

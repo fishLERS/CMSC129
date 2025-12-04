@@ -50,8 +50,8 @@ export default function Signup() {
         alert('Admin account created. An administrator must approve and grant admin privileges before you can access admin pages.');
         nav('/login', { replace: true });
       } else {
-        // Redirect student to request page
-        nav('/requestpage', { replace: true });
+        // Redirect student to student homepage
+        nav('/student', { replace: true });
       }
     } catch (e: any) {
       setErr(e.message ?? 'Signup failed');

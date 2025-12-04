@@ -1,0 +1,62 @@
+/* Sidebar-specific theme so it matches the dark page even when other files are reverted */
+.themed-sidebar {
+  --surface: #0f171b;
+  --muted: rgba(255,255,255,0.78);
+  --muted-2: rgba(255,255,255,0.55);
+  --border: rgba(255,255,255,0.06);
+  --accent: #60a5fa;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.themed-sidebar nav {
+  background: transparent;
+  color: var(--muted);
+  border-right: 1px solid var(--border);
+}
+
+.themed-sidebar nav .p-4 img {
+  filter: saturate(0.85) brightness(0.9);
+}
+
+.themed-sidebar nav ul li {
+  color: var(--muted);
+}
+
+.themed-sidebar nav ul li:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+.themed-sidebar nav .border-t {
+  border-top: 1px solid rgba(255,255,255,0.03);
+}
+
+.themed-sidebar nav .w-10, .themed-sidebar nav img.w-10 {
+  background: rgba(255,255,255,0.03);
+}
+
+/* Collapsed tooltip */
+.themed-sidebar li > div[role="tooltip"],
+.themed-sidebar li > div[aria-hidden] {
+  background: rgba(15,23,27,0.95);
+  color: var(--muted);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Request Form pop-out when sidebar is collapsed — match dashboard primary button */
+.themed-sidebar:not(.expanded) .request-item > svg {
+  transform: scale(1.35) translateX(6px);
+  transition: transform 160ms cubic-bezier(.2,.9,.2,1), box-shadow 160ms, background 160ms;
+  /* tint shadow slightly purple so the icon pop feels purple */
+  box-shadow: 0 6px 20px rgba(88,64,156,0.22), 0 1px 0 rgba(255,255,255,0.02) inset;
+  padding: 6px;
+  border-radius: 8px;
+  /* keep the pill background subtle (blue gradient) but set icon color to purple */
+  background: linear-gradient(180deg, rgba(96,165,250,0.08), rgba(96,165,250,0.04));
+  border: 1px solid rgba(96,165,250,0.12);
+  color: #a78bfa; /* purple-400 */
+}
+
+.themed-sidebar .request-item > svg {
+  transition: transform 160ms cubic-bezier(.2,.9,.2,1), box-shadow 160ms, background 160ms;
+}
