@@ -10,6 +10,7 @@ import Accountabilities from "./pages/accountabilities/Accountabilities";
 import HomeStudent from "./pages/home-student";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAccountabilities from "./pages/admin/AdminAccountabilities";
+import ProfileStudent from "./pages/profile-student";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -81,6 +82,16 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute forbidAdmin>
                 <Accountabilities />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Student profile */}
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute forbidAdmin>
+                <ProfileStudent />
               </ProtectedRoute>
             }
           />

@@ -96,7 +96,11 @@ export default function Sidebar({ children }: { children?: ReactNode }) {
           </button>
         </div>
 
-        <div className="border-t flex p-3 items-center">
+        <button
+          onClick={() => navigate('/profile')}
+          className={`border-t flex p-3 items-center w-full text-left bg-transparent border-0 ${expanded ? '' : ''} hover:bg-slate-800 rounded-md cursor-pointer transition-colors`}
+          title="View profile"
+        >
           <img
             src={
               user?.photoURL
@@ -120,7 +124,7 @@ export default function Sidebar({ children }: { children?: ReactNode }) {
             </div>
             <MoreVertical size={20} />
           </div>
-        </div>
+        </button>
       </nav>
     </aside>
   )
