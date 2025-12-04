@@ -10,6 +10,8 @@ export default function TrackingPage(){
   const { user } = useAuth()
   const [rows, setRows] = React.useState<Array<any>>([])
   const [lastDoc, setLastDoc] = React.useState<any | null>(null)
+  const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
+  const [showRemarksText, setShowRemarksText] = React.useState('')
 
   React.useEffect(()=>{
     if(!user) return
@@ -24,7 +26,8 @@ export default function TrackingPage(){
         const requestId = doc.id
         const purpose = data.purpose || ''
         const status = data.status || ''
-        const remarks = data.remarks || data.purpose || ''
+  // prefer admin-provided declinedRemarks, then generic remarks, then purpose as fallback
+  const remarks = data.declinedRemarks || data.remarks || ''
         // compute human-friendly duration string from start/end fields if available
         let duration = ''
         try {
@@ -145,13 +148,30 @@ export default function TrackingPage(){
                       </td>
                       <td>{r.requestId}</td>
                       <td>{r.status}</td>
-                      <td>{r.remarks}</td>
+                      <td>
+                        {r.remarks ? (
+                          <button className="btn btn-xs btn-primary" onClick={() => { setShowRemarksText(r.remarks); setShowRemarksOpen(true); }}>Show</button>
+                        ) : (
+                          <span className="text-sm text-base-content/60">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </section>
+          {showRemarksOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="bg-base-100 p-4 rounded shadow max-w-lg w-full mx-4">
+                <h3 className="text-lg font-semibold">Remarks</h3>
+                <div className="whitespace-pre-wrap my-3 text-sm">{showRemarksText}</div>
+                <div className="flex justify-end">
+                  <button className="btn" onClick={() => { setShowRemarksOpen(false); setShowRemarksText(''); }}>Close</button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

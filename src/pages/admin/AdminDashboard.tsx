@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { collection, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { logicEquipment } from "../equipment/logicEquipment";
 
 interface RequestItem {
@@ -26,7 +26,11 @@ interface Request {
 const AdminDashboard: React.FC = () => {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<'all'|'pending'|'approved'|'declined'|'cancelled'>('all');
   const { equipmentList } = logicEquipment();
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineId, setDeclineId] = useState<string | null>(null);
+  const [declineRemarks, setDeclineRemarks] = useState('');
 
   const fetchRequests = async () => {
     try {
@@ -79,20 +83,59 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  async function confirmDecline() {
+    if (!declineId) return;
+    try {
+      await updateDoc(doc(db, 'requests', declineId), {
+        status: 'Declined',
+        declinedAt: serverTimestamp(),
+        declinedRemarks: declineRemarks || null,
+      });
+      setRequests(prev => prev.map(r => r.id === declineId ? { ...r, status: 'Declined', declinedRemarks: declineRemarks } : r));
+    } catch (e) {
+      console.error('Failed to decline request', e);
+      alert('Failed to decline request; see console');
+    } finally {
+      setDeclineOpen(false);
+      setDeclineId(null);
+      setDeclineRemarks('');
+    }
+  }
+
   if (loading) return <p className="text-center mt-10">Loading requests...</p>;
+
+  const visibleRequests = requests.filter((req) => {
+    if (tab === 'all') return true;
+    const s = (req.status || '').toString().toLowerCase();
+    if (tab === 'pending') return s === 'pending' || s === 'ongoing' || s === '';
+    if (tab === 'approved') return s === 'approved' || s === 'approved';
+    if (tab === 'declined') return s === 'declined' || s === 'rejected';
+    if (tab === 'cancelled') return s === 'cancelled';
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-base-100 p-6">
       <h1 className="text-3xl font-bold mb-6">All Requests</h1>
 
-      {requests.length === 0 ? (
+      <div className="mb-4">
+        <div className="tabs tabs-boxed">
+          <a className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
+          <a className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
+          <a className={`tab ${tab === 'approved' ? 'tab-active' : ''}`} onClick={() => setTab('approved')}>Approved</a>
+          <a className={`tab ${tab === 'declined' ? 'tab-active' : ''}`} onClick={() => setTab('declined')}>Declined</a>
+          <a className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
+        </div>
+      </div>
+
+      {visibleRequests.length === 0 ? (
         <p>No requests found.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="table table-zebra w-full">
             <thead>
               <tr>
-                  <th>Requester</th>
+                <th>Requester</th>
                 <th>Adviser / Leader</th>
                 <th>Purpose</th>
                 <th>Date of Usage</th>
@@ -105,9 +148,9 @@ const AdminDashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {requests.map((req) => (
+              {visibleRequests.map((req) => (
                 <tr key={req.id}>
-                    <td>{req.createdByName || req.createdBy || req.id}</td>
+                  <td>{req.createdByName || req.createdBy || req.id}</td>
                   <td>{req.adviser}</td>
                   <td>{req.purpose}</td>
                   <td>
@@ -134,37 +177,65 @@ const AdminDashboard: React.FC = () => {
                   <td>
                     <span
                       className={`badge ${
-                        req.status === "Approved"
-                          ? "badge-success"
-                          : req.status === "Declined"
-                          ? "badge-error"
-                          : "badge-warning"
+                        (req.status || '').toString().toLowerCase() === 'approved'
+                          ? 'badge-success'
+                          : (req.status || '').toString().toLowerCase() === 'declined' || (req.status || '').toString().toLowerCase() === 'rejected'
+                          ? 'badge-error'
+                          : (req.status || '').toString().toLowerCase() === 'cancelled'
+                          ? 'badge-info'
+                          : 'badge-warning'
                       }`}
                     >
-                      {req.status || "Pending"}
+                      {req.status || 'Pending'}
                     </span>
                   </td>
-                  <td className="flex gap-2">
-                    <button
-                      className="btn btn-xs btn-success"
-                      disabled={req.status === "Approved"}
-                      onClick={() => updateStatus(req.id, "Approved")}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="btn btn-xs btn-error"
-                      disabled={req.status === "Declined"}
-                      onClick={() => updateStatus(req.id, "Declined")}
-                    >
-                      Decline
-                    </button>
+                  <td className="flex gap-2 justify-center items-center align-middle">
+                    {((req.status || '').toString().toLowerCase() !== 'cancelled' && (req.status || '').toString().toLowerCase() !== 'approved') ? (
+                      <>
+                        <button
+                          className="btn btn-xs btn-success"
+                          disabled={(req.status || '').toString().toLowerCase() === 'approved'}
+                          onClick={() => updateStatus(req.id, 'Approved')}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="btn btn-xs btn-error"
+                          disabled={(req.status || '').toString().toLowerCase() === 'declined' || (req.status || '').toString().toLowerCase() === 'rejected'}
+                          onClick={() => { setDeclineId(req.id); setDeclineRemarks(''); setDeclineOpen(true); }}
+                        >
+                          Decline
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-sm text-base-content/60">—</span>
+                    )}
                   </td>
                   <td>{req.createdAt?.toDate?.().toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {/* Decline remarks modal */}
+      {declineOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-base-100 p-4 rounded shadow max-w-lg w-full mx-4">
+            <h3 className="text-lg font-semibold">Decline Request</h3>
+            <p className="text-sm text-base-content/70 mb-2">Provide remarks explaining why this request is declined (optional):</p>
+            <textarea
+              className="textarea textarea-bordered w-full mb-3"
+              rows={5}
+              value={declineRemarks}
+              onChange={(e) => setDeclineRemarks(e.target.value)}
+              placeholder="Enter remarks..."
+            />
+            <div className="flex justify-end gap-2">
+              <button className="btn" onClick={() => { setDeclineOpen(false); setDeclineId(null); setDeclineRemarks(''); }}>Cancel</button>
+              <button className="btn btn-error" onClick={confirmDecline}>Confirm Decline</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

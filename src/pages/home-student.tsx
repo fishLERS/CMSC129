@@ -73,11 +73,31 @@ export default function HomeStudent() {
     return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
   }, [user]);
 
-  const filtered = requests.filter(r => {
+  let filtered = requests.filter(r => {
     if (tab === 'all') return true;
     const s = (r.status || 'ongoing').toString().toLowerCase();
-    return (tab === 'ongoing' && s === 'ongoing') || (tab === 'completed' && s === 'completed') || (tab === 'rejected' && s === 'rejected') || (tab === 'cancelled' && s === 'cancelled');
+    // treat returned requests as completed for the student view
+    const isCompletedLike = s === 'completed' || s === 'returned';
+    // treat admin-declined statuses as rejected for student view (admin may write 'Declined')
+    const isRejectedLike = s === 'rejected' || s === 'declined';
+    return (tab === 'ongoing' && s === 'ongoing') || (tab === 'completed' && isCompletedLike) || (tab === 'rejected' && isRejectedLike) || (tab === 'cancelled' && s === 'cancelled');
   });
+
+  // When showing "All", place ongoing requests first while keeping the recent-first order inside groups
+  if (tab === 'all') {
+    filtered = filtered.slice().sort((a,b) => {
+      const sa = (a.status || 'ongoing').toString().toLowerCase();
+      const sb = (b.status || 'ongoing').toString().toLowerCase();
+      const aIsOngoing = sa === 'ongoing';
+      const bIsOngoing = sb === 'ongoing';
+      if (aIsOngoing && !bIsOngoing) return -1;
+      if (!aIsOngoing && bIsOngoing) return 1;
+      // fallback to existing sortKey ordering (most recent first)
+      const ka = a.sortKey || '';
+      const kb = b.sortKey || '';
+      return kb.localeCompare(ka);
+    });
+  }
 
   const [busyId, setBusyId] = React.useState<string | null>(null)
 
