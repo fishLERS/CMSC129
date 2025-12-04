@@ -36,6 +36,8 @@ const AdminDashboard: React.FC = () => {
   const [declineOpen, setDeclineOpen] = useState(false);
   const [declineId, setDeclineId] = useState<string | null>(null);
   const [declineRemarks, setDeclineRemarks] = useState('');
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewRequest, setViewRequest] = useState<Request | null>(null);
 
   const fetchRequests = async () => {
     try {
@@ -193,45 +195,20 @@ const AdminDashboard: React.FC = () => {
             <thead>
               <tr>
                 <th>Requester</th>
-                <th>Adviser / Leader</th>
                 <th>Purpose</th>
                 <th>Date of Usage</th>
-                <th>Time</th>
-                <th>Items</th>
-                <th>Total Qty</th>
-                <th>Requested At</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>View</th>
               </tr>
             </thead>
-        <tbody>
+            <tbody>
               {visible.map((req) => (
                 <tr key={req.id}>
                   <td>{req.createdByName || req.createdBy || req.id}</td>
-                  <td>{req.adviser}</td>
-                  <td>{req.purpose}</td>
+                  <td className="max-w-xs truncate">{req.purpose}</td>
                   <td>
                     {req.startDate} → {req.endDate}
                   </td>
-                  <td>
-                    {req.start} → {req.end}
-                  </td>
-                  <td>
-                    <ul className="list-disc list-inside">
-                      {req.items.map((item) => {
-                        const equipment = equipmentList.find(
-                          (e) => e.equipmentID === item.equipmentID
-                        );
-                        return (
-                          <li key={item.equipmentID}>
-                            {equipment?.name || item.equipmentID} — {item.qty} pcs
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </td>
-                  <td>{req.items.reduce((acc, i) => acc + i.qty, 0)}</td>
-                  <td>{req.createdAt?.toDate?.().toLocaleString()}</td>
                   <td>
                     <span
                       className={`badge ${
@@ -247,32 +224,107 @@ const AdminDashboard: React.FC = () => {
                       {req.status || 'Pending'}
                     </span>
                   </td>
-                  <td className="flex gap-2 justify-center items-center align-middle">
-                    {((req.status || '').toString().toLowerCase() !== 'cancelled' && (req.status || '').toString().toLowerCase() !== 'approved' && (req.status || '').toString().toLowerCase() !== 'returned') ? (
-                      <>
-                        <button
-                          className="btn btn-xs btn-success"
-                          disabled={(req.status || '').toString().toLowerCase() === 'approved'}
-                          onClick={() => updateStatus(req.id, 'Approved')}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="btn btn-xs btn-error"
-                          disabled={(req.status || '').toString().toLowerCase() === 'declined' || (req.status || '').toString().toLowerCase() === 'rejected'}
-                          onClick={() => { setDeclineId(req.id); setDeclineRemarks(''); setDeclineOpen(true); }}
-                        >
-                          Decline
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-sm text-base-content/60">—</span>
-                    )}
+                  <td>
+                    <button className="btn btn-xs btn-primary" onClick={() => { setViewRequest(req); setViewOpen(true); }}>Show</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {viewOpen && viewRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4">
+            <h3 className="text-lg font-semibold">Request Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-3 text-sm">
+              <div>
+                <div className="text-xs text-base-content/60">Requester</div>
+                <div className="font-medium">{viewRequest.createdByName || viewRequest.createdBy || viewRequest.id}</div>
+              </div>
+              <div>
+                <div className="text-xs text-base-content/60">Requested At</div>
+                <div className="font-medium">{(function formatTs(ts: any){ try { if (!ts) return ''; if (typeof ts.toDate === 'function') return ts.toDate().toLocaleString(); if (typeof ts === 'string') return new Date(ts).toLocaleString(); if (ts instanceof Date) return ts.toLocaleString(); return String(ts) } catch { return '' } })(viewRequest.createdAt)}</div>
+              </div>
+
+              <div>
+                <div className="text-xs text-base-content/60">Adviser / Leader</div>
+                <div className="font-medium">{viewRequest.adviser}</div>
+              </div>
+              <div>
+                <div className="text-xs text-base-content/60">Status</div>
+                <div className="font-medium">{viewRequest.status || 'Pending'}</div>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="text-xs text-base-content/60">Purpose</div>
+                <div className="font-medium">{viewRequest.purpose}</div>
+              </div>
+
+              <div>
+                <div className="text-xs text-base-content/60">Date of Usage</div>
+                <div className="font-medium">{viewRequest.startDate} → {viewRequest.endDate}</div>
+              </div>
+              <div>
+                <div className="text-xs text-base-content/60">Time</div>
+                <div className="font-medium">{viewRequest.start} → {viewRequest.end}</div>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="text-xs text-base-content/60">Items</div>
+                <ul className="list-disc list-inside mt-1">
+                  {viewRequest.items?.map((item) => {
+                    const equipment = equipmentList.find(e => e.equipmentID === item.equipmentID)
+                    return (
+                      <li key={item.equipmentID} className="text-sm">{equipment?.name || item.equipmentID} — {item.qty} pcs</li>
+                    )
+                  })}
+                </ul>
+                <div className="text-xs text-base-content/60 mt-2">Total Qty: <span className="font-medium">{(viewRequest.items || []).reduce((acc, i) => acc + (i.qty || 0), 0)}</span></div>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="text-xs text-base-content/60">Admin Remarks</div>
+                <div className="whitespace-pre-wrap font-medium">{viewRequest.declinedRemarks || (viewRequest as any).remarks || '—'}</div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              {/* replicate approve/decline actions inside modal */}
+              {((viewRequest.status || '').toString().toLowerCase() !== 'cancelled' && (viewRequest.status || '').toString().toLowerCase() !== 'approved' && (viewRequest.status || '').toString().toLowerCase() !== 'returned') ? (
+                <>
+                  <button
+                    className="btn btn-success"
+                    onClick={async () => {
+                      try {
+                        await updateStatus(viewRequest.id, 'Approved');
+                      } catch (e) {
+                        console.error(e);
+                      } finally {
+                        setViewOpen(false);
+                        setViewRequest(null);
+                      }
+                    }}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    className="btn btn-error"
+                    onClick={() => {
+                      // open the decline modal prefilled for this request
+                      setDeclineId(viewRequest.id);
+                      setDeclineRemarks('');
+                      setDeclineOpen(true);
+                      setViewOpen(false);
+                      setViewRequest(null);
+                    }}
+                  >
+                    Decline
+                  </button>
+                </>
+              ) : null}
+              <button className="btn" onClick={() => { setViewOpen(false); setViewRequest(null); }}>Close</button>
+            </div>
+          </div>
         </div>
       )}
       {/* Decline remarks modal */}
