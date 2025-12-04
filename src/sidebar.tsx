@@ -1,6 +1,6 @@
 import { MoreVertical, ChevronLast, ChevronFirst, Home, FilePlus, ClipboardList, MapPin, User, LogOut } from "lucide-react"
 import React, { useContext, createContext, useState, type ReactNode } from "react"
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
 import { auth } from './firebase'
 import './sidebar.css'
@@ -12,6 +12,7 @@ export default function Sidebar({ children }: { children?: ReactNode }) {
   const [expanded, setExpanded] = useState(true)
   const hasChildren = React.Children.count(children) > 0
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
 
   async function handleLogout() {
@@ -55,10 +56,30 @@ export default function Sidebar({ children }: { children?: ReactNode }) {
           <ul className="flex-1 px-3">
             {hasChildren ? children : (
               <>
-                <SidebarItem icon={<Home />} text="Dashboard" active onClick={() => navigate('/student')} />
-                <SidebarItem icon={<FilePlus />} text="Request Form" onClick={() => navigate('/requestpage')} />
-                <SidebarItem icon={<ClipboardList />} text="Accountabilities" onClick={() => navigate('/accountabilities')} />
-                <SidebarItem icon={<MapPin />} text="Tracking" onClick={() => navigate('/tracking')} />
+                <SidebarItem
+                  icon={<Home />}
+                  text="Dashboard"
+                  active={location.pathname === '/' || location.pathname.startsWith('/student')}
+                  onClick={() => navigate('/student')}
+                />
+                <SidebarItem
+                  icon={<FilePlus />}
+                  text="Request Form"
+                  active={location.pathname.startsWith('/request') || location.pathname.startsWith('/requestpage')}
+                  onClick={() => navigate('/requestpage')}
+                />
+                <SidebarItem
+                  icon={<ClipboardList />}
+                  text="Accountabilities"
+                  active={location.pathname.startsWith('/accountabilities')}
+                  onClick={() => navigate('/accountabilities')}
+                />
+                <SidebarItem
+                  icon={<MapPin />}
+                  text="Tracking"
+                  active={location.pathname.startsWith('/tracking')}
+                  onClick={() => navigate('/tracking')}
+                />
                 {/* Logout moved to footer area so it's visible above the user info */}
               </>
             )}

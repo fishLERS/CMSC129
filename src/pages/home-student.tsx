@@ -4,7 +4,7 @@ import Sidebar from '../sidebar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
-import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 function formatDate(d: Date) {
   return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -13,33 +13,106 @@ function formatDate(d: Date) {
 export default function HomeStudent() {
   const { user } = useAuth();
   const [requests, setRequests] = React.useState<any[]>([]);
-  const [tab, setTab] = React.useState<'all'|'ongoing'|'completed'|'rejected'>('all');
+  const [tab, setTab] = React.useState<'all'|'ongoing'|'completed'|'rejected'|'cancelled'>('all');
 
   React.useEffect(() => {
     if (!user) {
       setRequests([]);
       return;
     }
-  
-    const q = query(
-      collection(db, 'requests'),
-      where('createdBy', '==', user.uid),
-      orderBy('createdAt', 'desc'),
-      limit(20)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      const docs: any[] = [];
-      snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
-      setRequests(docs);
-    });
-    return () => unsub();
+
+    // process snapshot into request objects and sort by available timestamps
+    const processSnapshot = (snap: any) => {
+      const docs: any[] = []
+      snap.forEach((d: any) => {
+        const data = d.data()
+        const id = d.id
+        // compute sort key from client timestamp or server timestamp fallback
+        let sortKey = ''
+        if (data && data.createdAtClient) sortKey = data.createdAtClient
+        else if (data && data.createdAt && typeof data.createdAt.toDate === 'function') sortKey = data.createdAt.toDate().toISOString()
+        else if (data && data.createdAt) {
+          try { sortKey = new Date(data.createdAt).toISOString() } catch { sortKey = '' }
+        }
+        docs.push({ id, ...data, sortKey })
+      })
+      docs.sort((a,b) => (b.sortKey || '').localeCompare(a.sortKey || ''))
+      console.info('HomeStudent requests snapshot count:', docs.length)
+      setRequests(docs)
+    }
+
+    let unsubMain: (() => void) | null = null
+    let unsubFallback: (() => void) | null = null
+
+    try {
+      const q = query(
+        collection(db, 'requests'),
+        where('createdBy', '==', user.uid),
+        orderBy('createdAtClient', 'desc'),
+        limit(20)
+      )
+
+      unsubMain = onSnapshot(q, (snap) => {
+        processSnapshot(snap)
+      }, (err) => {
+        console.error('HomeStudent snapshot error', err)
+        // fall back to unordered query
+        try {
+          const qf = query(collection(db, 'requests'), where('createdBy', '==', user.uid), limit(20))
+          unsubFallback = onSnapshot(qf, (snap) => processSnapshot(snap), (err2) => console.error('HomeStudent fallback error', err2))
+        } catch (e) {
+          console.error('HomeStudent failed to subscribe fallback', e)
+        }
+      })
+    } catch (e) {
+      console.error('HomeStudent failed to subscribe main', e)
+      const qf = query(collection(db, 'requests'), where('createdBy', '==', user.uid), limit(20))
+      unsubFallback = onSnapshot(qf, (snap) => processSnapshot(snap), (err2) => console.error('HomeStudent fallback error', err2))
+    }
+
+    return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
   }, [user]);
 
   const filtered = requests.filter(r => {
     if (tab === 'all') return true;
-    const s = (r.status || 'ongoing').toLowerCase();
-    return (tab === 'ongoing' && s === 'ongoing') || (tab === 'completed' && s === 'completed') || (tab === 'rejected' && s === 'rejected');
+    const s = (r.status || 'ongoing').toString().toLowerCase();
+    return (tab === 'ongoing' && s === 'ongoing') || (tab === 'completed' && s === 'completed') || (tab === 'rejected' && s === 'rejected') || (tab === 'cancelled' && s === 'cancelled');
   });
+
+  const [busyId, setBusyId] = React.useState<string | null>(null)
+
+  async function handleCancel(requestId: string) {
+    if (!confirm('Cancel this request? This will mark it as cancelled.')) return
+    try {
+      setBusyId(requestId)
+      await updateDoc(docRef(db, 'requests', requestId), {
+        status: 'cancelled',
+        cancelledAt: serverTimestamp(),
+      })
+      // snapshot will update the UI automatically
+    } catch (e) {
+      console.error('Failed to cancel request', e)
+      alert('Failed to cancel request; see console')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleReturn(requestId: string) {
+    if (!confirm('Mark this request as returned? This will mark the item(s) as returned.')) return
+    try {
+      setBusyId(requestId)
+      await updateDoc(docRef(db, 'requests', requestId), {
+        status: 'returned',
+        returnedAt: serverTimestamp(),
+      })
+    } catch (e) {
+      console.error('Failed to mark request returned', e)
+      alert('Failed to mark returned; see console')
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   const nav = useNavigate();
 
@@ -70,6 +143,7 @@ export default function HomeStudent() {
                 <a className={`tab ${tab==='ongoing'?'tab-active':''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
                 <a className={`tab ${tab==='completed'?'tab-active':''}`} onClick={() => setTab('completed')}>Completed</a>
                 <a className={`tab ${tab==='rejected'?'tab-active':''}`} onClick={() => setTab('rejected')}>Rejected</a>
+                <a className={`tab ${tab==='cancelled'?'tab-active':''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
               </div>
             </div>
             <div className="card-body p-0 flex-1 min-h-0">
@@ -77,15 +151,16 @@ export default function HomeStudent() {
                 <table className="table w-full">
                   <thead>
                     <tr>
-                      <th>Purpose</th>
-                      <th>Quantity</th>
-                      <th>Status</th>
-                    </tr>
+                        <th>Purpose</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
                   </thead>
                   <tbody>
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={3} className="empty-state text-center text-base-content/60">No requests yet</td>
+                        <td colSpan={4} className="empty-state text-center text-base-content/60">No requests yet</td>
                       </tr>
                     )}
                     {filtered.map((r) => (
@@ -96,6 +171,15 @@ export default function HomeStudent() {
                         </td>
                         <td>{Array.isArray(r.items) ? r.items.reduce((s:any,i:any)=>s+(i.qty||0),0) : '-'}</td>
                         <td>{(r.status || 'ongoing')}</td>
+                        <td className="w-36">
+                          {/* action buttons: Cancel for ongoing, Return for approved */}
+                          {((r.status||'').toString().toLowerCase() === 'ongoing') && (
+                            <button className="btn btn-sm btn-error" disabled={busyId===r.id} onClick={() => handleCancel(r.id)}>Cancel</button>
+                          )}
+                          {((r.status||'').toString().toLowerCase() === 'approved') && (
+                            <button className="btn btn-sm btn-primary" disabled={busyId===r.id} onClick={() => handleReturn(r.id)}>Return</button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

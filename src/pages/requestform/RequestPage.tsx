@@ -4,7 +4,9 @@ import './RequestPage.css'
 import { logicEquipment } from "../equipment/logicEquipment";
 
 import { db, auth } from "../../firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useAuth } from '../../hooks/useAuth'
+import { collection, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { useNavigate } from 'react-router-dom'
 
 // REMOVE NUMBER INPUT ARROWS (Chrome, Edge, Safari)
 const removeStepper = `
@@ -20,6 +22,9 @@ const removeStepper = `
 
 export const RequestForm: React.FC = () => {
   const { equipmentList } = logicEquipment();
+  const { user } = useAuth()
+
+  const navigate = useNavigate()
 
   const [requestedItems, setRequestedItems] = React.useState<{ [id: string]: number }>({});
 
@@ -52,21 +57,39 @@ export const RequestForm: React.FC = () => {
     }
 
     try {
-      const currentUser = auth.currentUser;
+      // prefer authenticated user from the auth hook (keeps behaviour consistent across renders)
+      const currentUser = user || auth.currentUser
       if (!currentUser) {
         alert('You must be signed in to submit a request');
         return;
       }
 
-      await addDoc(collection(db, "requests"), {
+      const docRef = await addDoc(collection(db, "requests"), {
         ...formData,
         items: itemsArray,
+        // server timestamp for canonical ordering, plus a client timestamp fallback
         createdAt: serverTimestamp(),
+        createdAtClient: new Date().toISOString(),
         createdBy: currentUser.uid,
         status: 'ongoing',
       });
 
-      alert("Request submitted!");
+      // read back the created document to verify write and server timestamp resolution
+      try {
+        const snap = await getDoc(docRef);
+        console.info('Request created:', docRef.id, snap.exists() ? snap.data() : null);
+        // persist last created id for quick debugging / tracking view
+        try { localStorage.setItem('lastRequestId', docRef.id) } catch (e) { /* ignore */ }
+      } catch (e) {
+        console.warn('Could not read back created request immediately', e);
+      }
+
+      // clear local form state and show confirmation
+      setRequestedItems({})
+      setFormData({ startDate: "", endDate: "", start: "", end: "", adviser: "", purpose: "" })
+      alert("Request submitted!")
+      // navigate to tracking so user can see the created request
+      navigate('/tracking')
     } catch (error) {
       console.error("Error submitting request:", error);
       alert("Something went wrong.");

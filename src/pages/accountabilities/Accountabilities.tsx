@@ -11,17 +11,37 @@ export default function Accountabilities(){
 
   React.useEffect(()=>{
     if(!user) return
-    const q = query(collection(db,'accountabilities'), where('createdBy','==', user.uid), orderBy('dueDate','asc'))
-    const unsub = onSnapshot(q, snap => {
+    const processSnapshot = (snap: any) => {
+      console.info('Accountabilities snapshot count:', snap.size)
       const list: any[] = []
-      snap.forEach(d => {
+      snap.forEach((d: any) => {
         const data: any = d.data()
         const due = data.dueDate?.toDate ? data.dueDate.toDate().toLocaleDateString() : (data.dueDate ? new Date(data.dueDate).toLocaleDateString() : '')
         list.push({ id: d.id, due, details: data.details || '', status: data.status || '' })
       })
       setRows(list)
-    })
-    return ()=>unsub()
+    }
+
+    let unsubMain: (() => void) | null = null
+    let unsubFallback: (() => void) | null = null
+    try {
+      const q = query(collection(db,'accountabilities'), where('createdBy','==', user.uid), orderBy('dueDate','asc'))
+      unsubMain = onSnapshot(q, (snap) => processSnapshot(snap), (err) => {
+        console.error('Accountabilities snapshot error', err)
+        try {
+          const qf = query(collection(db,'accountabilities'), where('createdBy','==', user.uid))
+          unsubFallback = onSnapshot(qf, (snap) => processSnapshot(snap), (err2) => console.error('Accountabilities fallback error', err2))
+        } catch (e) {
+          console.error('Failed to subscribe accountabilities fallback', e)
+        }
+      })
+    } catch (e) {
+      console.error('Failed to subscribe accountabilities main', e)
+      const qf = query(collection(db,'accountabilities'), where('createdBy','==', user.uid))
+      unsubFallback = onSnapshot(qf, (snap) => processSnapshot(snap), (err2) => console.error('Accountabilities fallback error', err2))
+    }
+
+    return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
   },[user])
 
   return (
