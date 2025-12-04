@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, getDoc } from "firebase/firestore";
 import { logicEquipment } from "../equipment/logicEquipment";
 
 interface RequestItem {
@@ -19,6 +19,8 @@ interface Request {
   items: RequestItem[];
   createdAt: any;
   status?: string; // Pending / Approved / Declined
+  createdBy?: string;
+  createdByName?: string;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -33,7 +35,25 @@ const AdminDashboard: React.FC = () => {
         id: doc.id,
         ...doc.data(),
       })) as Request[];
-      setRequests(data);
+
+      // Resolve requester display names from users collection (if present)
+      const uids = Array.from(new Set(data.map((d: any) => d.createdBy).filter(Boolean)));
+      const userNameByUid: Record<string, string> = {};
+      await Promise.all(uids.map(async (uid) => {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', uid));
+          if (userDoc.exists()) {
+            const ud = userDoc.data() as any;
+            userNameByUid[uid] = ud.displayName || ud.email || uid;
+          }
+        } catch (e) {
+          console.warn('Failed to load user', uid, e);
+        }
+      }));
+
+      const enriched = data.map(d => ({ ...d, createdByName: (d as any).createdBy ? (userNameByUid[(d as any).createdBy] || (d as any).createdBy) : undefined }));
+      setRequests(enriched as Request[]);
+      // setRequests(enriched as Request[]);
     } catch (error) {
       console.error("Error fetching requests:", error);
     } finally {
@@ -72,7 +92,7 @@ const AdminDashboard: React.FC = () => {
           <table className="table table-zebra w-full">
             <thead>
               <tr>
-                <th>ID</th>
+                  <th>Requester</th>
                 <th>Adviser / Leader</th>
                 <th>Purpose</th>
                 <th>Date of Usage</th>
@@ -87,7 +107,7 @@ const AdminDashboard: React.FC = () => {
             <tbody>
               {requests.map((req) => (
                 <tr key={req.id}>
-                  <td>{req.id}</td>
+                    <td>{req.createdByName || req.createdBy || req.id}</td>
                   <td>{req.adviser}</td>
                   <td>{req.purpose}</td>
                   <td>
