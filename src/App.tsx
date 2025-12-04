@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAccountabilities from "./pages/admin/AdminAccountabilities";
 import ProfileStudent from "./pages/profile-student";
 import ProfileAdmin from "./pages/admin/profile-admin";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -123,6 +124,16 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute requireAdmin>
                 <ProfileAdmin />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin user management page */}
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminUsers />
               </ProtectedRoute>
             }
           />

@@ -1,5 +1,5 @@
 import React, { useContext, createContext, useState, type ReactNode } from "react"
-import { Box, BarChart2, ClipboardList, ChevronFirst, ChevronLast, MoreVertical, LogOut, Home } from "lucide-react"
+import { Box, BarChart2, ClipboardList, ChevronFirst, ChevronLast, MoreVertical, LogOut, Home, Users } from "lucide-react"
 import { useNavigate, useLocation } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
 import { auth } from './firebase'
@@ -70,6 +70,12 @@ export default function AdminSidebar({ children }: { children?: ReactNode }) {
                   text="Analytics"
                   active={location.pathname.startsWith('/analytics')}
                   onClick={() => navigate('/analytics')}
+                />
+                <AdminSidebarItem
+                  icon={<Users />}
+                  text="Admin"
+                  active={location.pathname.startsWith('/admin/users')}
+                  onClick={() => navigate('/admin/users')}
                 />
               </>
             )}
