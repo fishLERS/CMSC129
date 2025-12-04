@@ -50,8 +50,8 @@ export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) 
 
   return (
     <>
-      <button className="btn btn-primary" onClick={() => setOpen(true)}>
-        Add Equipment
+      <button className="btn btn-outline rounded-full px-4 py-2" onClick={() => setOpen(true)}>
+        Add New Equipment <span className="ml-2">+</span>
       </button>
 
       {open && (

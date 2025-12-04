@@ -14,7 +14,7 @@ export default function EquipmentTable({
 }: EquipmentTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="table w-full">
+      <table className="table table-zebra w-full">
         <thead>
           <tr>
             <th>Name</th>
@@ -46,13 +46,13 @@ export default function EquipmentTable({
                     className="w-12 h-12 object-cover rounded"
                   />
                 ) : (
-                  <span className="text-gray-400">No image</span>
+                  <span className="text-base-content/60">No image</span>
                 )}
               </td>
-              <td className="flex gap-2">
+              <td className="flex gap-2 justify-center items-center align-middle">
                 <EditEquipmentDialog item={item} onEdit={onEdit} />
                 <button
-                  className="btn btn-error"
+                  className="btn btn-xs btn-error"
                   onClick={() => onDelete(item.equipmentID!)}
                 >
                   Delete

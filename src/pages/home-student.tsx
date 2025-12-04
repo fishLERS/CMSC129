@@ -62,10 +62,14 @@ export default function HomeStudent() {
           return { id: d.id, purpose: d.purpose, oldStatus: prev, status: now, adminRemarks, actionAt }
         }
 
-        // historic declined/rejected (should always be visible in View All)
+        // historic declined/rejected and approved (should always be visible in View All when there are no recent changes)
         const historicDeclined = docs.filter((d:any) => {
           const s = (d.status || '').toString().toLowerCase()
           return s === 'declined' || s === 'rejected'
+        }).map((d:any) => makeEntry(d, (d.status || '').toString(), (d.status || '').toString()))
+        const historicApproved = docs.filter((d:any) => {
+          const s = (d.status || '').toString().toLowerCase()
+          return s === 'approved'
         }).map((d:any) => makeEntry(d, (d.status || '').toString(), (d.status || '').toString()))
 
         if (!storedRaw) {
@@ -75,7 +79,7 @@ export default function HomeStudent() {
           localStorage.setItem('studentSeenStatuses', JSON.stringify(initialMap))
           // show historic declined/rejected in View all but no recent notifications
           setRecentNotifications([])
-          setNotifications(historicDeclined)
+          setNotifications([...historicApproved, ...historicDeclined])
         } else {
           const stored: any = JSON.parse(storedRaw || '{}')
           const changes: any[] = []
@@ -89,7 +93,11 @@ export default function HomeStudent() {
           })
           // notifications for View All = recent changes first, then historic declined/rejected that aren't already in changes
           const byId = new Set(changes.map(c => c.id))
-          const combined = [...changes, ...historicDeclined.filter(h => !byId.has(h.id))]
+          const combined = [
+            ...changes,
+            ...historicApproved.filter(h => !byId.has(h.id)),
+            ...historicDeclined.filter(h => !byId.has(h.id)),
+          ]
           setRecentNotifications(changes)
           setNotifications(combined)
         }
@@ -142,16 +150,23 @@ export default function HomeStudent() {
     return (tab === 'ongoing' && s === 'ongoing') || (tab === 'completed' && isCompletedLike) || (tab === 'rejected' && isRejectedLike) || (tab === 'cancelled' && s === 'cancelled');
   });
 
-  // When showing "All", place ongoing requests first while keeping the recent-first order inside groups
+  // When showing "All", order groups as: approved -> ongoing/pending -> declined/rejected -> returned -> cancelled
   if (tab === 'all') {
+    const priority = (s: string) => {
+      const st = (s || '').toString().toLowerCase();
+      if (st === 'approved') return 0;
+      if (st === 'ongoing' || st === 'pending' || st === '') return 1;
+      if (st === 'declined' || st === 'rejected') return 2;
+      if (st === 'returned') return 3;
+      if (st === 'cancelled') return 4;
+      return 5;
+    }
+
     filtered = filtered.slice().sort((a,b) => {
-      const sa = (a.status || 'ongoing').toString().toLowerCase();
-      const sb = (b.status || 'ongoing').toString().toLowerCase();
-      const aIsOngoing = sa === 'ongoing';
-      const bIsOngoing = sb === 'ongoing';
-      if (aIsOngoing && !bIsOngoing) return -1;
-      if (!aIsOngoing && bIsOngoing) return 1;
-      // fallback to existing sortKey ordering (most recent first)
+      const pa = priority((a.status || 'ongoing').toString());
+      const pb = priority((b.status || 'ongoing').toString());
+      if (pa !== pb) return pa - pb;
+      // same group -> newest first by sortKey
       const ka = a.sortKey || '';
       const kb = b.sortKey || '';
       return kb.localeCompare(ka);
@@ -242,18 +257,43 @@ export default function HomeStudent() {
                   <div className="font-semibold">Notifications</div>
                 </div>
                 <div className="max-h-60 overflow-auto">
-                  {recentNotifications.length === 0 && (
-                    <div className="p-3 text-sm text-base-content/60">No new notifications</div>
+                  {recentNotifications.length === 0 ? (
+                    // when there are no recent notifications, show up to 4 historic/combined notifications in compact "Purpose | Status" form
+                    (notifications.length === 0) ? (
+                      <div className="p-3 text-sm text-base-content/60">No new notifications</div>
+                    ) : (
+                      notifications.slice(0,4).map(n => (
+                        <div
+                          key={n.id}
+                          className="p-3 border-t border-base-200 hover:bg-base-200/10 cursor-pointer"
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') } }}
+                        >
+                          <div className="font-medium">{n.purpose || 'Request update'}</div>
+                          <div className="text-xs text-base-content/60">{n.status}</div>
+                        </div>
+                      ))
+                    )
+                  ) : (
+                    recentNotifications.slice(0,4).map(n => (
+                      <div
+                        key={n.id}
+                        className="p-3 border-t border-base-200 hover:bg-base-200/10 cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') } }}
+                      >
+                        <div className="font-medium">{n.purpose || 'Request update'}</div>
+                        <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
+                        {n.adminRemarks && (
+                          <div className="text-xs mt-1 text-base-content/60">Remarks: {n.adminRemarks}</div>
+                        )}
+                      </div>
+                    ))
                   )}
-                  {recentNotifications.slice(0,4).map(n => (
-                    <div key={n.id} className="p-3 border-t border-base-200">
-                      <div className="font-medium">{n.purpose || 'Request update'}</div>
-                      <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
-                      {n.adminRemarks && (
-                        <div className="text-xs mt-1 text-base-content/60">Remarks: {n.adminRemarks}</div>
-                      )}
-                    </div>
-                  ))}
                 </div>
                 <div className="p-2 border-t border-base-200 flex items-center justify-between">
                   <button className="btn btn-link btn-sm" onClick={() => { setNotifOpen(false); setNotifAllOpen(true); }}>View all</button>

@@ -3,15 +3,16 @@ import Sidebar from '../../sidebar'
 import './TrackingPage.css'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
-import { collection, query, where, orderBy, onSnapshot, doc as docRef, getDoc } from 'firebase/firestore'
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 // import equipment logic not needed for aggregated tracking view
 
 export default function TrackingPage(){
   const { user } = useAuth()
   const [rows, setRows] = React.useState<Array<any>>([])
-  const [lastDoc, setLastDoc] = React.useState<any | null>(null)
+  
   const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
   const [showRemarksText, setShowRemarksText] = React.useState('')
+  const [highlightedId, setHighlightedId] = React.useState<string | null>(null)
 
   React.useEffect(()=>{
     if(!user) return
@@ -102,6 +103,31 @@ export default function TrackingPage(){
     return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
   },[user])
 
+  // highlight row if navigated from a notification (lastRequestId in localStorage)
+  React.useEffect(() => {
+    try {
+      const id = typeof window !== 'undefined' ? localStorage.getItem('lastRequestId') : null
+      if (!id) return
+      // wait until rows are loaded and the requested id exists
+      const found = rows.find(r => r.requestId === id)
+      if (!found) return
+      setHighlightedId(id)
+      // scroll to the element if present
+      setTimeout(() => {
+        const el = document.getElementById(`req-${id}`)
+        if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 50)
+      // clear highlight after 1s
+      const t = setTimeout(() => {
+        setHighlightedId(null)
+        try { localStorage.removeItem('lastRequestId') } catch (e) { /* ignore */ }
+      }, 1000)
+      return () => clearTimeout(t)
+    } catch (e) {
+      // ignore
+    }
+  }, [rows])
+
   return (
     <div className="tracking-page min-h-screen">
       <Sidebar />
@@ -111,21 +137,7 @@ export default function TrackingPage(){
           <h1 className="text-xl font-semibold mb-4">Tracking</h1>
 
           <section className="border border-base-300 rounded-md bg-base-100 p-4">
-            {/* debug: show last created id from localStorage */}
-            <div className="text-xs text-slate-400 mb-2">Last created: {typeof window !== 'undefined' ? localStorage.getItem('lastRequestId') : ''}</div>
-            <div className="mb-3">
-              <button className="btn btn-sm btn-ghost mr-2" onClick={async () => {
-                const id = typeof window !== 'undefined' ? localStorage.getItem('lastRequestId') : null
-                if (!id) { alert('no lastRequestId in localStorage'); return }
-                try {
-                  const dref = docRef(db, 'requests', id)
-                  const snap = await getDoc(dref)
-                  if (!snap.exists()) { alert('request not found'); setLastDoc(null); return }
-                  setLastDoc({ id: snap.id, ...snap.data() })
-                } catch (e) { console.error('Failed to fetch last request', e); alert('fetch failed; see console') }
-              }}>Load last request</button>
-              {lastDoc && <pre className="text-xs bg-slate-900 text-slate-100 p-2 rounded">{JSON.stringify(lastDoc, null, 2)}</pre>}
-            </div>
+            {/* debug UI removed: last created / load last request */}
             <div className="overflow-x-auto">
               <table className="table w-full">
                 <thead>
@@ -141,7 +153,11 @@ export default function TrackingPage(){
                     <tr><td colSpan={4} className="text-center text-base-content/60 py-6">No requests yet</td></tr>
                   )}
                   {rows.map((r, idx)=> (
-                    <tr key={r.requestId || idx}>
+                    <tr
+                      key={r.requestId || idx}
+                      id={`req-${r.requestId}`}
+                      className={highlightedId === r.requestId ? 'bg-purple-300/30 transition-colors' : ''}
+                    >
                       <td className="max-w-md">
                         <div className="font-semibold">{r.purpose}</div>
                         {r.duration && <div className="text-sm text-base-content/60 mt-1">Duration: {r.duration}</div>}

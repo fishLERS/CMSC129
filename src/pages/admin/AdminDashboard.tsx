@@ -39,6 +39,33 @@ const AdminDashboard: React.FC = () => {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<Request | null>(null);
 
+  // format a time string like "13:00" into "1:00 PM"; handle existing AM/PM
+  const formatTime = (t: any) => {
+    if (!t) return '';
+    try {
+      if (typeof t === 'string') {
+        // If already contains am/pm marker, return trimmed
+        if (/[ap]m/i.test(t)) return t.trim();
+        const m = t.match(/^(\d{1,2}):(\d{2})$/);
+        if (m) {
+          let h = parseInt(m[1], 10);
+          const min = m[2];
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          h = h % 12 || 12;
+          return `${h}:${min} ${ampm}`;
+        }
+      }
+      // fallback: try creating a Date and using locale formatting
+      const d = typeof t === 'string' || typeof t === 'number' ? new Date(t) : t;
+      if (d && typeof d.toLocaleTimeString === 'function') {
+        return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      }
+    } catch (e) {
+      // ignore and fallback to string
+    }
+    return String(t);
+  }
+
   const fetchRequests = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "requests"));
@@ -137,12 +164,12 @@ const AdminDashboard: React.FC = () => {
   let visible = visibleRequests;
   if (tab === 'all') {
     const priority = (s: string) => {
-      // desired order: ongoing/pending -> approved -> returned -> declined/rejected -> cancelled
+      // desired order for "All" tab: approved -> ongoing/pending -> declined -> rejected -> cancelled
       const st = (s || '').toString().toLowerCase();
-      if (st === 'ongoing' || st === 'pending' || st === '') return 0;
-      if (st === 'approved') return 1;
-      if (st === 'returned') return 2;
-      if (st === 'declined' || st === 'rejected') return 3;
+      if (st === 'approved') return 0;
+      if (st === 'ongoing' || st === 'pending' || st === '') return 1;
+      if (st === 'declined') return 2;
+      if (st === 'rejected') return 3;
       if (st === 'cancelled') return 4;
       return 5;
     }
@@ -237,6 +264,9 @@ const AdminDashboard: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4">
             <h3 className="text-lg font-semibold">Request Details</h3>
+            {/* show request id for easier reference */}
+            <div className="text-xs text-base-content/60 mt-2">Request ID</div>
+            <div className="font-mono font-medium text-sm break-all">{viewRequest.id}</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-3 text-sm">
               <div>
                 <div className="text-xs text-base-content/60">Requester</div>
@@ -262,12 +292,12 @@ const AdminDashboard: React.FC = () => {
               </div>
 
               <div>
-                <div className="text-xs text-base-content/60">Date of Usage</div>
-                <div className="font-medium">{viewRequest.startDate} → {viewRequest.endDate}</div>
+                <div className="text-xs text-base-content/60">Start</div>
+                <div className="font-medium">{viewRequest.startDate} {formatTime(viewRequest.start)}</div>
               </div>
               <div>
-                <div className="text-xs text-base-content/60">Time</div>
-                <div className="font-medium">{viewRequest.start} → {viewRequest.end}</div>
+                <div className="text-xs text-base-content/60">End</div>
+                <div className="font-medium">{viewRequest.endDate} {formatTime(viewRequest.end)}</div>
               </div>
 
               <div className="md:col-span-2">

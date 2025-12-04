@@ -44,7 +44,7 @@ export default function EditEquipmentDialog({ item, onEdit }: EditEquipmentDialo
 
   return (
     <>
-      <button className="btn btn-secondary" onClick={() => setOpen(true)}>
+      <button className="btn btn-xs btn-secondary" onClick={() => setOpen(true)}>
         Edit
       </button>
 
