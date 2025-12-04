@@ -14,6 +14,10 @@ export default function HomeStudent() {
   const { user } = useAuth();
   const [requests, setRequests] = React.useState<any[]>([]);
   const [tab, setTab] = React.useState<'all'|'ongoing'|'completed'|'rejected'|'cancelled'>('all');
+  const [notifOpen, setNotifOpen] = React.useState(false)
+  const [notifAllOpen, setNotifAllOpen] = React.useState(false)
+  const [notifications, setNotifications] = React.useState<Array<any>>([])
+  const [recentNotifications, setRecentNotifications] = React.useState<Array<any>>([])
 
   React.useEffect(() => {
     if (!user) {
@@ -39,6 +43,61 @@ export default function HomeStudent() {
       docs.sort((a,b) => (b.sortKey || '').localeCompare(a.sortKey || ''))
       console.info('HomeStudent requests snapshot count:', docs.length)
       setRequests(docs)
+      try {
+        // compute notifications by comparing stored seen statuses to current statuses
+        const storedRaw = localStorage.getItem('studentSeenStatuses')
+
+        // helper to extract admin info
+        const makeEntry = (d: any, prev: string | null, now: string) => {
+          let adminRemarks = d.declinedRemarks || d.remarks || null
+          let actionAt: string | null = null
+          try {
+            if (d.declinedAt && typeof d.declinedAt.toDate === 'function') actionAt = d.declinedAt.toDate().toLocaleString()
+            else if (d.approvedAt && typeof d.approvedAt.toDate === 'function') actionAt = d.approvedAt.toDate().toLocaleString()
+            else if (d.returnedAt && typeof d.returnedAt.toDate === 'function') actionAt = d.returnedAt.toDate().toLocaleString()
+            else if (d.cancelledAt && typeof d.cancelledAt.toDate === 'function') actionAt = d.cancelledAt.toDate().toLocaleString()
+          } catch (e) {
+            actionAt = null
+          }
+          return { id: d.id, purpose: d.purpose, oldStatus: prev, status: now, adminRemarks, actionAt }
+        }
+
+        // historic declined/rejected (should always be visible in View All)
+        const historicDeclined = docs.filter((d:any) => {
+          const s = (d.status || '').toString().toLowerCase()
+          return s === 'declined' || s === 'rejected'
+        }).map((d:any) => makeEntry(d, (d.status || '').toString(), (d.status || '').toString()))
+
+        if (!storedRaw) {
+          // first run: initialize seen map so existing requests don't produce recent notifications
+          const initialMap: any = {};
+          docs.forEach(d => { initialMap[d.id] = (d.status || 'ongoing').toString() })
+          localStorage.setItem('studentSeenStatuses', JSON.stringify(initialMap))
+          // show historic declined/rejected in View all but no recent notifications
+          setRecentNotifications([])
+          setNotifications(historicDeclined)
+        } else {
+          const stored: any = JSON.parse(storedRaw || '{}')
+          const changes: any[] = []
+          docs.forEach(d => {
+            const prev = stored[d.id]
+            const now = (d.status || 'ongoing').toString()
+            // consider it a recent notification only if we knew about the request before (prev exists) and the status changed
+            if (typeof prev !== 'undefined' && prev !== now) {
+              changes.push(makeEntry(d, prev, now))
+            }
+          })
+          // notifications for View All = recent changes first, then historic declined/rejected that aren't already in changes
+          const byId = new Set(changes.map(c => c.id))
+          const combined = [...changes, ...historicDeclined.filter(h => !byId.has(h.id))]
+          setRecentNotifications(changes)
+          setNotifications(combined)
+        }
+      } catch (e) {
+        console.warn('Failed to compute notifications', e)
+        setRecentNotifications([])
+        setNotifications([])
+      }
     }
 
     let unsubMain: (() => void) | null = null
@@ -134,6 +193,27 @@ export default function HomeStudent() {
     }
   }
 
+  // mark current statuses as seen (store in localStorage)
+  function markNotificationsSeen() {
+    try {
+  const seenMap: any = {};
+  (requests || []).forEach((r:any) => { seenMap[r.id] = (r.status || 'ongoing').toString() })
+      localStorage.setItem('studentSeenStatuses', JSON.stringify(seenMap))
+      setRecentNotifications([])
+    } catch (e) {
+      console.warn('Failed to mark notifications seen', e)
+    }
+  }
+
+  function toggleNotif() {
+    const next = !notifOpen
+    setNotifOpen(next)
+    if (next) {
+      // when opening, mark current statuses as seen so dot disappears
+      markNotificationsSeen()
+    }
+  }
+
   const nav = useNavigate();
 
   return (
@@ -148,8 +228,40 @@ export default function HomeStudent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button className="btn btn-ghost btn-square btn-sm">🔔</button>
+        <div className="flex items-center gap-3 relative">
+          <div className="relative">
+            <button className="btn btn-ghost btn-square btn-sm" onClick={toggleNotif} aria-haspopup="true" aria-expanded={notifOpen}>🔔</button>
+            {recentNotifications.length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-red-500 rounded-full ring-1 ring-white"></span>
+            )}
+
+            {/* dropdown with up to 4 recent notifications */}
+            {notifOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-base-100 border border-base-300 rounded shadow z-50">
+                <div className="p-2">
+                  <div className="font-semibold">Notifications</div>
+                </div>
+                <div className="max-h-60 overflow-auto">
+                  {recentNotifications.length === 0 && (
+                    <div className="p-3 text-sm text-base-content/60">No new notifications</div>
+                  )}
+                  {recentNotifications.slice(0,4).map(n => (
+                    <div key={n.id} className="p-3 border-t border-base-200">
+                      <div className="font-medium">{n.purpose || 'Request update'}</div>
+                      <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
+                      {n.adminRemarks && (
+                        <div className="text-xs mt-1 text-base-content/60">Remarks: {n.adminRemarks}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="p-2 border-t border-base-200 flex items-center justify-between">
+                  <button className="btn btn-link btn-sm" onClick={() => { setNotifOpen(false); setNotifAllOpen(true); }}>View all</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setNotifOpen(false); }}>Close</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -209,6 +321,31 @@ export default function HomeStudent() {
           </section>
         </div>
       </main>
+      {/* View all notifications modal */}
+      {notifAllOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold">All Notifications</h3>
+              <button className="btn btn-ghost btn-sm" onClick={() => setNotifAllOpen(false)}>Close</button>
+            </div>
+            <div className="divide-y divide-base-200">
+              {notifications.length === 0 && (
+                <div className="p-4 text-sm text-base-content/60">No notifications</div>
+              )}
+              {notifications.map(n => (
+                <div key={n.id} className="p-3">
+                  <div className="font-medium">{n.purpose || 'Request update'}</div>
+                  <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
+                  {n.adminRemarks && (
+                    <div className="text-sm mt-1">Remarks: <div className="text-sm text-base-content/70 whitespace-pre-wrap">{n.adminRemarks}</div></div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import TrackingPage from "./pages/tracking/TrackingPage";
 import Accountabilities from "./pages/accountabilities/Accountabilities";
 import HomeStudent from "./pages/home-student";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminAccountabilities from "./pages/admin/AdminAccountabilities";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -34,9 +35,9 @@ const App: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* Admin equipment dashboard → admin-only */}
+          {/* Admin equipment inventory (renamed from /dashboard -> /inventory) → admin-only */}
           <Route
-            path="/dashboard"
+            path="/inventory"
             element={
               <ProtectedRoute requireAdmin>
                 <Dashboard />
@@ -90,6 +91,16 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute requireAdmin>
                 <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin accountabilities page */}
+          <Route
+            path="/admin/accountabilities"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminAccountabilities />
               </ProtectedRoute>
             }
           />

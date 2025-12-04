@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AdminSidebar from "../../adminSidebar";
 import { db } from "../../firebase";
 import { collection, getDocs, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { logicEquipment } from "../equipment/logicEquipment";
@@ -21,6 +22,10 @@ interface Request {
   status?: string; // Pending / Approved / Declined
   createdBy?: string;
   createdByName?: string;
+  declinedAt?: any;
+  declinedRemarks?: string;
+  approvedAt?: any;
+  cancelledAt?: any;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -71,10 +76,22 @@ const AdminDashboard: React.FC = () => {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      await updateDoc(doc(db, "requests", id), { status: newStatus });
+      // include timestamps for certain status transitions
+      const updates: any = { status: newStatus };
+      if (newStatus.toString().toLowerCase() === 'approved') {
+        updates.approvedAt = serverTimestamp();
+      }
+      if (newStatus.toString().toLowerCase() === 'cancelled') {
+        updates.cancelledAt = serverTimestamp();
+      }
+
+      await updateDoc(doc(db, "requests", id), updates);
+
+      // Optimistically update local state. For timestamps, set a client-side Date so UI shows immediately;
+      // the serverTimestamp will be written on the server and may differ when read back.
       setRequests((prev) =>
         prev.map((req) =>
-          req.id === id ? { ...req, status: newStatus } : req
+          req.id === id ? { ...req, status: newStatus, approvedAt: updates.approvedAt ? new Date() : req.approvedAt, cancelledAt: updates.cancelledAt ? new Date() : req.cancelledAt } : req
         )
       );
     } catch (error) {
@@ -114,9 +131,49 @@ const AdminDashboard: React.FC = () => {
     return true;
   });
 
+  // when showing All, sort by status priority: ongoing -> approved -> declined -> cancelled
+  let visible = visibleRequests;
+  if (tab === 'all') {
+    const priority = (s: string) => {
+      // desired order: ongoing/pending -> approved -> returned -> declined/rejected -> cancelled
+      const st = (s || '').toString().toLowerCase();
+      if (st === 'ongoing' || st === 'pending' || st === '') return 0;
+      if (st === 'approved') return 1;
+      if (st === 'returned') return 2;
+      if (st === 'declined' || st === 'rejected') return 3;
+      if (st === 'cancelled') return 4;
+      return 5;
+    }
+    const getTimeKey = (r: any) => {
+      try {
+        if (r.approvedAt && typeof r.approvedAt.toDate === 'function') return r.approvedAt.toDate().toISOString()
+        if (r.returnedAt && typeof r.returnedAt.toDate === 'function') return r.returnedAt.toDate().toISOString()
+        if (r.declinedAt && typeof r.declinedAt.toDate === 'function') return r.declinedAt.toDate().toISOString()
+        if (r.cancelledAt && typeof r.cancelledAt.toDate === 'function') return r.cancelledAt.toDate().toISOString()
+        if (r.createdAt && typeof r.createdAt.toDate === 'function') return r.createdAt.toDate().toISOString()
+        if (r.createdAt) return new Date(r.createdAt).toISOString()
+      } catch (e) {
+        return ''
+      }
+      return ''
+    }
+
+    visible = visibleRequests.slice().sort((a,b) => {
+      const pa = priority((a.status || '').toString())
+      const pb = priority((b.status || '').toString())
+      if (pa !== pb) return pa - pb
+      const ta = getTimeKey(a) || ''
+      const tb = getTimeKey(b) || ''
+      // most recent first
+      return tb.localeCompare(ta)
+    })
+  }
+
   return (
-    <div className="min-h-screen bg-base-100 p-6">
-      <h1 className="text-3xl font-bold mb-6">All Requests</h1>
+    <>
+      <AdminSidebar />
+      <div className="min-h-screen bg-base-100 p-6" style={{ marginLeft: 'var(--sidebar-width)' }}>
+        <h1 className="text-3xl font-bold mb-6">All Requests</h1>
 
       <div className="mb-4">
         <div className="tabs tabs-boxed">
@@ -142,13 +199,13 @@ const AdminDashboard: React.FC = () => {
                 <th>Time</th>
                 <th>Items</th>
                 <th>Total Qty</th>
+                <th>Requested At</th>
                 <th>Status</th>
                 <th>Actions</th>
-                <th>Requested At</th>
               </tr>
             </thead>
-            <tbody>
-              {visibleRequests.map((req) => (
+        <tbody>
+              {visible.map((req) => (
                 <tr key={req.id}>
                   <td>{req.createdByName || req.createdBy || req.id}</td>
                   <td>{req.adviser}</td>
@@ -174,6 +231,7 @@ const AdminDashboard: React.FC = () => {
                     </ul>
                   </td>
                   <td>{req.items.reduce((acc, i) => acc + i.qty, 0)}</td>
+                  <td>{req.createdAt?.toDate?.().toLocaleString()}</td>
                   <td>
                     <span
                       className={`badge ${
@@ -190,7 +248,7 @@ const AdminDashboard: React.FC = () => {
                     </span>
                   </td>
                   <td className="flex gap-2 justify-center items-center align-middle">
-                    {((req.status || '').toString().toLowerCase() !== 'cancelled' && (req.status || '').toString().toLowerCase() !== 'approved') ? (
+                    {((req.status || '').toString().toLowerCase() !== 'cancelled' && (req.status || '').toString().toLowerCase() !== 'approved' && (req.status || '').toString().toLowerCase() !== 'returned') ? (
                       <>
                         <button
                           className="btn btn-xs btn-success"
@@ -211,7 +269,6 @@ const AdminDashboard: React.FC = () => {
                       <span className="text-sm text-base-content/60">—</span>
                     )}
                   </td>
-                  <td>{req.createdAt?.toDate?.().toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -239,6 +296,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
