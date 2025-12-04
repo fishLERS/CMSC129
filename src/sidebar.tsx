@@ -98,7 +98,7 @@ export default function Sidebar({ children }: { children?: ReactNode }) {
 
         <button
           onClick={() => navigate('/profile')}
-          className={`border-t flex p-3 items-center w-full text-left bg-transparent border-0 ${expanded ? '' : ''} hover:bg-slate-800 rounded-md cursor-pointer transition-colors`}
+          className={`border-t flex p-3 items-center w-full text-left bg-transparent border-0 hover:bg-slate-800 hover:outline-2 hover:outline-purple-500 rounded-md cursor-pointer transition-colors`}
           title="View profile"
         >
           <img

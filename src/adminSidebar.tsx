@@ -85,7 +85,10 @@ export default function AdminSidebar({ children }: { children?: ReactNode }) {
           </button>
         </div>
 
-        <div className="border-t flex p-3 items-center">
+        <button
+          onClick={() => navigate('/admin/profile')}
+          className="border-t flex p-3 items-center w-full hover:bg-slate-800 hover:outline-2 hover:outline-purple-500 transition-colors cursor-pointer"
+        >
           <img
             src={
               user?.photoURL
@@ -98,13 +101,13 @@ export default function AdminSidebar({ children }: { children?: ReactNode }) {
             className="w-10 h-10 rounded-md"
           />
           <div className={`flex justify-between items-center overflow-hidden transition-all ${expanded ? "w-52 ml-3" : "w-0"}`}>
-            <div className="leading-4">
+            <div className="leading-4 text-left">
               <h4 className="font-semibold">{user?.displayName ?? (user?.email ? user.email.split('@')[0] : 'Admin')}</h4>
               <span className="text-xs text-slate-400">{user?.email ?? ''}</span>
             </div>
             <MoreVertical size={20} />
           </div>
-        </div>
+        </button>
       </nav>
     </aside>
   )

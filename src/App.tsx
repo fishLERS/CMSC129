@@ -11,6 +11,7 @@ import HomeStudent from "./pages/home-student";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAccountabilities from "./pages/admin/AdminAccountabilities";
 import ProfileStudent from "./pages/profile-student";
+import ProfileAdmin from "./pages/admin/profile-admin";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -112,6 +113,16 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute requireAdmin>
                 <AdminAccountabilities />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin profile page */}
+          <Route
+            path="/admin/profile"
+            element={
+              <ProtectedRoute requireAdmin>
+                <ProfileAdmin />
               </ProtectedRoute>
             }
           />
