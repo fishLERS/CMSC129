@@ -119,7 +119,10 @@ export default function Sidebar({ children }: { children?: ReactNode }) {
           `}
           >
             <div className="leading-4">
-              <h4 className="font-semibold">{user?.displayName ?? (user?.email ? user.email.split('@')[0] : 'User')}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold">{user?.displayName ?? (user?.email ? user.email.split('@')[0] : 'User')}</h4>
+                <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded">Student</span>
+              </div>
               <span className="text-xs text-slate-400">{user?.email ?? ''}</span>
             </div>
             <MoreVertical size={20} />

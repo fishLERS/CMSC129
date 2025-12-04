@@ -102,7 +102,10 @@ export default function AdminSidebar({ children }: { children?: ReactNode }) {
           />
           <div className={`flex justify-between items-center overflow-hidden transition-all ${expanded ? "w-52 ml-3" : "w-0"}`}>
             <div className="leading-4 text-left">
-              <h4 className="font-semibold">{user?.displayName ?? (user?.email ? user.email.split('@')[0] : 'Admin')}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold">{user?.displayName ?? (user?.email ? user.email.split('@')[0] : 'Admin')}</h4>
+                <span className="text-xs bg-purple-600 text-white px-1.5 py-0.5 rounded">Admin</span>
+              </div>
               <span className="text-xs text-slate-400">{user?.email ?? ''}</span>
             </div>
             <MoreVertical size={20} />
