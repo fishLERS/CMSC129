@@ -1,6 +1,7 @@
 import React from 'react';
 import './home-student.css';
 import Sidebar from '../sidebar';
+import { logicEquipment } from './equipment/logicEquipment';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
@@ -8,6 +9,16 @@ import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, up
 
 function formatDate(d: Date) {
   return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function formatDateTime(v: any) {
+  try {
+    if (!v) return ''
+    let dt: Date
+    if (v.toDate && typeof v.toDate === 'function') dt = v.toDate()
+    else dt = new Date(v)
+    return dt.toLocaleString()
+  } catch (e) { return '' }
 }
 
 export default function HomeStudent() {
@@ -174,6 +185,31 @@ export default function HomeStudent() {
   }
 
   const [busyId, setBusyId] = React.useState<string | null>(null)
+  const [showModalRequest, setShowModalRequest] = React.useState<any | null>(null)
+  const { equipmentList } = logicEquipment();
+
+  // reuse admin-style time formatter so modal matches admin modal formatting
+  const formatTime = (t: any) => {
+    if (!t) return '';
+    try {
+      if (typeof t === 'string') {
+        if (/[ap]m/i.test(t)) return t.trim();
+        const m = t.match(/^(\d{1,2}):(\d{2})$/);
+        if (m) {
+          let h = parseInt(m[1], 10);
+          const min = m[2];
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          h = h % 12 || 12;
+          return `${h}:${min} ${ampm}`;
+        }
+      }
+      const d = typeof t === 'string' || typeof t === 'number' ? new Date(t) : t;
+      if (d && typeof d.toLocaleTimeString === 'function') {
+        return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      }
+    } catch (e) {}
+    return String(t);
+  }
 
   async function handleCancel(requestId: string) {
     if (!confirm('Cancel this request? This will mark it as cancelled.')) return
@@ -327,12 +363,13 @@ export default function HomeStudent() {
                         <th>Quantity</th>
                         <th>Status</th>
                         <th>Action</th>
+                        <th>View</th>
                       </tr>
                   </thead>
                   <tbody>
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="empty-state text-center text-base-content/60">No requests yet</td>
+                        <td colSpan={5} className="empty-state text-center text-base-content/60">No requests yet</td>
                       </tr>
                     )}
                     {filtered.map((r) => (
@@ -352,6 +389,9 @@ export default function HomeStudent() {
                             <button className="btn btn-sm btn-primary" disabled={busyId===r.id} onClick={() => handleReturn(r.id)}>Return</button>
                           )}
                         </td>
+                        <td className="w-24">
+                          <button className="btn btn-xs btn-primary" onClick={() => setShowModalRequest(r)}>Show</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -361,6 +401,71 @@ export default function HomeStudent() {
           </section>
         </div>
       </main>
+      {/* Show Request modal for student (admin-style layout) */}
+      {showModalRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModalRequest(null)}>
+          <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold">Request Details</h3>
+            {/* show request id for easier reference */}
+            <div className="text-xs text-base-content/60 mt-2">Request ID</div>
+            <div className="font-mono font-medium text-sm break-all">{showModalRequest.id}</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-3 text-sm">
+              <div>
+                <div className="text-xs text-base-content/60">Requester</div>
+                <div className="font-medium">{showModalRequest.createdByName || showModalRequest.createdBy || showModalRequest.id}</div>
+              </div>
+              <div>
+                <div className="text-xs text-base-content/60">Requested At</div>
+                <div className="font-medium">{(function formatTs(ts: any){ try { if (!ts) return ''; if (typeof ts.toDate === 'function') return ts.toDate().toLocaleString(); if (typeof ts === 'string') return new Date(ts).toLocaleString(); if (ts instanceof Date) return ts.toLocaleString(); return String(ts) } catch { return '' } })(showModalRequest.createdAt)}</div>
+              </div>
+
+              <div>
+                <div className="text-xs text-base-content/60">Adviser / Leader</div>
+                <div className="font-medium">{showModalRequest.adviser}</div>
+              </div>
+              <div>
+                <div className="text-xs text-base-content/60">Status</div>
+                <div className="font-medium">{showModalRequest.status || 'Pending'}</div>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="text-xs text-base-content/60">Purpose</div>
+                <div className="font-medium">{showModalRequest.purpose}</div>
+              </div>
+
+              <div>
+                <div className="text-xs text-base-content/60">Start</div>
+                <div className="font-medium">{showModalRequest.startDate} {formatTime(showModalRequest.start)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-base-content/60">End</div>
+                <div className="font-medium">{showModalRequest.endDate} {formatTime(showModalRequest.end)}</div>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="text-xs text-base-content/60">Items</div>
+                <ul className="list-disc list-inside mt-1">
+                  {showModalRequest.items?.map((item: any) => {
+                    const equipment = equipmentList.find((e:any) => e.equipmentID === item.equipmentID)
+                    return (
+                      <li key={item.equipmentID} className="text-sm">{equipment?.name || item.name || item.equipmentID} — {item.qty} pcs</li>
+                    )
+                  })}
+                </ul>
+                <div className="text-xs text-base-content/60 mt-2">Total Qty: <span className="font-medium">{(showModalRequest.items || []).reduce((acc:any, i:any) => acc + (i.qty || 0), 0)}</span></div>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="text-xs text-base-content/60">Admin Remarks</div>
+                <div className="whitespace-pre-wrap font-medium">{showModalRequest.declinedRemarks || showModalRequest.remarks || '—'}</div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button className="btn" onClick={() => setShowModalRequest(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* View all notifications modal */}
       {notifAllOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
