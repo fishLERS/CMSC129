@@ -287,61 +287,65 @@ export default function HomeStudent() {
         </div>
 
         {/* Notification dropdown */}
-        <div className="dropdown dropdown-end">
-          <label tabIndex={0} className="btn btn-ghost btn-circle" onClick={toggleNotif}>
+        <div className="relative">
+          <button className="btn btn-ghost btn-circle" onClick={toggleNotif}>
             <div className="indicator">
               <Bell className="w-5 h-5" />
               {recentNotifications.length > 0 && (
                 <span className="indicator-item badge badge-error badge-xs"></span>
               )}
             </div>
-          </label>
+          </button>
           {notifOpen && (
-            <div tabIndex={0} className="dropdown-content menu bg-base-200 rounded-box w-80 shadow-xl z-50">
-              <div className="p-3 border-b border-base-300 flex items-center justify-between">
-                <span className="font-semibold">Notifications</span>
-                <button className="btn btn-ghost btn-xs btn-circle" onClick={() => setNotifOpen(false)}>
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="max-h-64 overflow-auto">
-                {recentNotifications.length === 0 ? (
-                  notifications.length === 0 ? (
-                    <div className="p-4 text-center text-base-content/60">No new notifications</div>
+            <>
+              {/* Backdrop to close dropdown when clicking outside */}
+              <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)}></div>
+              <div className="absolute right-0 mt-2 bg-base-200 rounded-box w-80 shadow-xl z-50">
+                <div className="p-3 border-b border-base-300 flex items-center justify-between">
+                  <span className="font-semibold">Notifications</span>
+                  <button className="btn btn-ghost btn-xs btn-circle" onClick={() => setNotifOpen(false)}>
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="max-h-64 overflow-auto">
+                  {recentNotifications.length === 0 ? (
+                    notifications.length === 0 ? (
+                      <div className="p-4 text-center text-base-content/60">No new notifications</div>
+                    ) : (
+                      notifications.slice(0, 4).map(n => (
+                        <div
+                          key={n.id}
+                          className="p-3 hover:bg-base-300 cursor-pointer transition-colors"
+                          onClick={() => { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') }}
+                        >
+                          <div className="font-medium text-sm">{n.purpose || 'Request update'}</div>
+                          <div className="text-xs text-base-content/60">{n.status}</div>
+                        </div>
+                      ))
+                    )
                   ) : (
-                    notifications.slice(0, 4).map(n => (
+                    recentNotifications.slice(0, 4).map(n => (
                       <div
                         key={n.id}
                         className="p-3 hover:bg-base-300 cursor-pointer transition-colors"
                         onClick={() => { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') }}
                       >
                         <div className="font-medium text-sm">{n.purpose || 'Request update'}</div>
-                        <div className="text-xs text-base-content/60">{n.status}</div>
+                        <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
+                        {n.adminRemarks && (
+                          <div className="text-xs mt-1 text-base-content/50">Remarks: {n.adminRemarks}</div>
+                        )}
                       </div>
                     ))
-                  )
-                ) : (
-                  recentNotifications.slice(0, 4).map(n => (
-                    <div
-                      key={n.id}
-                      className="p-3 hover:bg-base-300 cursor-pointer transition-colors"
-                      onClick={() => { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') }}
-                    >
-                      <div className="font-medium text-sm">{n.purpose || 'Request update'}</div>
-                      <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
-                      {n.adminRemarks && (
-                        <div className="text-xs mt-1 text-base-content/50">Remarks: {n.adminRemarks}</div>
-                      )}
-                    </div>
-                  ))
-                )}
+                  )}
+                </div>
+                <div className="p-2 border-t border-base-300">
+                  <button className="btn btn-ghost btn-sm btn-block" onClick={() => { setNotifOpen(false); setNotifAllOpen(true); }}>
+                    View all notifications
+                  </button>
+                </div>
               </div>
-              <div className="p-2 border-t border-base-300">
-                <button className="btn btn-ghost btn-sm btn-block" onClick={() => { setNotifOpen(false); setNotifAllOpen(true); }}>
-                  View all notifications
-                </button>
-              </div>
-            </div>
+            </>
           )}
         </div>
       </div>
