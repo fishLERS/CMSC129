@@ -15,6 +15,7 @@ const AdminAccountabilities: React.FC = () => {
   const [selectedStudentName, setSelectedStudentName] = React.useState('')
   const [detailsField, setDetailsField] = React.useState('')
   const [studentNameByNumber, setStudentNameByNumber] = React.useState<Record<string,string>>({})
+  const [toast, setToast] = React.useState<{type: 'success' | 'error'; message: string} | null>(null)
 
   React.useEffect(() => {
     const processSnapshot = (snap: any) => {
@@ -311,15 +312,32 @@ const AdminAccountabilities: React.FC = () => {
                   setSelectedStudentNumber('')
                   setSelectedStudentName('')
                   setDetailsField('')
+                  setToast({ type: 'success', message: 'Accountability created' })
+                  setTimeout(() => setToast(null), 3500)
                 } catch (e) {
                   console.error('Failed to create accountability', e)
-                  alert('Failed to create accountability')
+                  setToast({ type: 'error', message: 'Failed to create accountability' })
+                  setTimeout(() => setToast(null), 3500)
                 }
               }}>Create</button>
             </div>
           </div>
           <form method="dialog" className="modal-backdrop"><button onClick={() => setAddOpen(false)}>close</button></form>
         </dialog>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed right-4 bottom-4 z-50">
+          <div className={`alert ${toast.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg`}> 
+            <div>
+              <span>{toast.message}</span>
+            </div>
+            <div className="ml-4">
+              <button className="btn btn-ghost btn-sm" onClick={() => setToast(null)}>Close</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
