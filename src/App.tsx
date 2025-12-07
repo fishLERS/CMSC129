@@ -19,6 +19,7 @@ import Analytics from "./pages/admin/Analytics";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DrawerLayout from "./components/DrawerLayout";
 import AdminDrawerLayout from "./components/AdminDrawerLayout";
+import PageWithFooter from "./components/PageWithFooter";
 
 const App: React.FC = () => {
   return (
@@ -36,7 +37,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute forbidAdmin>
             <DrawerLayout>
-              <HomeStudent />
+              <PageWithFooter>
+                <HomeStudent />
+              </PageWithFooter>
             </DrawerLayout>
           </ProtectedRoute>
         }
@@ -47,7 +50,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute forbidAdmin>
             <DrawerLayout>
-              <RequestPage />
+              <PageWithFooter>
+                <RequestPage />
+              </PageWithFooter>
             </DrawerLayout>
           </ProtectedRoute>
         }
@@ -58,7 +63,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute forbidAdmin>
             <DrawerLayout>
-              <TrackingPage />
+              <PageWithFooter>
+                <TrackingPage />
+              </PageWithFooter>
             </DrawerLayout>
           </ProtectedRoute>
         }
@@ -69,7 +76,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute forbidAdmin>
             <DrawerLayout>
-              <Accountabilities />
+              <PageWithFooter>
+                <Accountabilities />
+              </PageWithFooter>
             </DrawerLayout>
           </ProtectedRoute>
         }
@@ -80,7 +89,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute forbidAdmin>
             <DrawerLayout>
-              <ProfileStudent />
+              <PageWithFooter>
+                <ProfileStudent />
+              </PageWithFooter>
             </DrawerLayout>
           </ProtectedRoute>
         }
@@ -92,7 +103,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute requireAdmin>
             <AdminDrawerLayout>
-              <Dashboard />
+              <PageWithFooter>
+                <Dashboard />
+              </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>
         }
@@ -103,7 +116,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute requireAdmin>
             <AdminDrawerLayout>
-              <AdminDashboard />
+              <PageWithFooter>
+                <AdminDashboard />
+              </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>
         }
@@ -114,7 +129,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute requireAdmin>
             <AdminDrawerLayout>
-              <AdminAccountabilities />
+              <PageWithFooter>
+                <AdminAccountabilities />
+              </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>
         }
@@ -125,7 +142,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute requireAdmin>
             <AdminDrawerLayout>
-              <ProfileAdmin />
+              <PageWithFooter>
+                <ProfileAdmin />
+              </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>
         }
@@ -136,7 +155,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute requireAdmin>
             <AdminDrawerLayout>
-              <AdminUsers />
+              <PageWithFooter>
+                <AdminUsers />
+              </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>
         }
@@ -147,7 +168,9 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute requireAdmin>
             <AdminDrawerLayout>
-              <Analytics />
+              <PageWithFooter>
+                <Analytics />
+              </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>
         }
