@@ -1,5 +1,4 @@
 import React from 'react'
-import Sidebar from '../../sidebar'
 import './TrackingPage.css'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
@@ -130,8 +129,7 @@ export default function TrackingPage(){
 
   return (
     <div className="tracking-page min-h-screen">
-      <Sidebar />
-      <div className="flex-1" style={{ marginLeft: 'var(--sidebar-width)' }}>
+      <div className="flex-1">
 
         <main className="p-6">
           <h1 className="text-xl font-semibold mb-4">Tracking</h1>

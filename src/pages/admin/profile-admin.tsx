@@ -4,7 +4,6 @@ import { db } from '../../firebase'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import { auth } from '../../firebase'
-import AdminSidebar from '../../adminSidebar'
 
 function formatDate(ts: any) {
   try {
@@ -117,8 +116,7 @@ export default function ProfileAdmin() {
 
   return (
     <div>
-      <AdminSidebar />
-      <div style={{ marginLeft: 'var(--sidebar-width)' }} className="min-h-screen bg-transparent text-slate-200 p-4">
+      <div className="min-h-screen bg-transparent text-slate-200 p-4">
         <h1 className="text-2xl font-semibold mb-4">My Profile</h1>
         {loading ? (
           <div>Loading...</div>

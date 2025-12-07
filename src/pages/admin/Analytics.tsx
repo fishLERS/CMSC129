@@ -1,7 +1,6 @@
 import React from 'react'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../../firebase'
-import AdminSidebar from '../../adminSidebar'
 import { TrendingUp, TrendingDown, Users, Package, ClipboardList, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 
 interface RequestData {
@@ -167,8 +166,7 @@ export default function Analytics() {
   if (loading) {
     return (
       <div>
-        <AdminSidebar />
-        <div style={{ marginLeft: 'var(--sidebar-width)' }} className="min-h-screen bg-transparent text-slate-200 p-4">
+        <div className="min-h-screen bg-transparent text-slate-200 p-4">
           <h1 className="text-2xl font-semibold mb-4">Analytics</h1>
           <div className="flex items-center justify-center h-64">
             <div className="text-lg">Loading analytics data...</div>
@@ -180,8 +178,7 @@ export default function Analytics() {
 
   return (
     <div>
-      <AdminSidebar />
-      <div style={{ marginLeft: 'var(--sidebar-width)' }} className="min-h-screen bg-transparent text-slate-200 p-4">
+      <div className="min-h-screen bg-transparent text-slate-200 p-4">
         <h1 className="text-2xl font-semibold mb-6">Analytics Dashboard</h1>
 
         <div className="max-w-7xl mx-auto space-y-6">

@@ -1,5 +1,4 @@
 import React from "react";
-import Sidebar from '../../sidebar'
 import './RequestPage.css'
 import { logicEquipment } from "../equipment/logicEquipment";
 
@@ -194,8 +193,7 @@ export const RequestForm: React.FC = () => {
 
   return (
   <div className="request-page min-h-screen">
-      <Sidebar />
-      <div className="flex-1" style={{ marginLeft: 'var(--sidebar-width)' }}>
+      <div className="flex-1">
 
       {/* Inject CSS to remove number arrows */}
       <style>{removeStepper}</style>

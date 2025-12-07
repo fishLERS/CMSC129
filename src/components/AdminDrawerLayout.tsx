@@ -1,0 +1,130 @@
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
+import { useAuth } from "../hooks/useAuth";
+import { Home, Box, ClipboardList, BarChart2, Users, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+
+interface AdminDrawerLayoutProps {
+  children: React.ReactNode;
+}
+
+const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/login");
+    } catch (e) {
+      console.error("Sign out failed", e);
+    }
+  };
+
+  const menuItems = [
+    { icon: <Home size={20} />, text: "Dashboard", path: "/admindashboard", active: location.pathname.startsWith("/admindashboard") },
+    { icon: <Box size={20} />, text: "Inventory", path: "/inventory", active: location.pathname.startsWith("/inventory") },
+    { icon: <ClipboardList size={20} />, text: "Accountabilities", path: "/admin/accountabilities", active: location.pathname.startsWith("/admin/accountabilities") },
+    { icon: <BarChart2 size={20} />, text: "Analytics", path: "/analytics", active: location.pathname.startsWith("/analytics") },
+    { icon: <Users size={20} />, text: "Admin", path: "/admin/users", active: location.pathname.startsWith("/admin/users") },
+  ];
+
+  return (
+    <div className="drawer lg:drawer-open">
+      <input id="admin-drawer" type="checkbox" className="drawer-toggle" />
+      
+      {/* Main content area */}
+      <div className="drawer-content flex flex-col">
+        {/* Navbar */}
+        <nav className="navbar bg-primary text-primary-content shadow-md w-full h-14 min-h-14">
+          <label 
+            htmlFor="admin-drawer" 
+            aria-label="toggle sidebar" 
+            className="btn btn-square btn-ghost"
+          >
+            {/* Toggle icon with rotation based on drawer state */}
+            <PanelLeftOpen size={20} className="is-drawer-open:hidden" />
+            <PanelLeftClose size={20} className="is-drawer-close:hidden" />
+          </label>
+          <div className="flex-1 px-4">
+            <span className="text-xl font-bold tracking-wide">FishLERS</span>
+          </div>
+        </nav>
+        
+        {/* Page content */}
+        <main className="flex-1 p-4 bg-base-200">
+          {children}
+        </main>
+      </div>
+
+      {/* Sidebar drawer */}
+      <div className="drawer-side max-lg:top-14 lg:h-full is-drawer-close:overflow-visible z-20">
+        <label htmlFor="admin-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
+        <div className="flex min-h-full flex-col bg-base-200 border-r border-base-300 is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200">
+          {/* Menu items */}
+          <ul className="menu w-full flex-1 gap-1 p-2">
+            {menuItems.map((item, index) => (
+              <li key={index}>
+                <button
+                  className={`flex items-center gap-3 is-drawer-close:tooltip is-drawer-close:tooltip-right ${item.active ? "active" : ""}`}
+                  data-tip={item.text}
+                  onClick={() => navigate(item.path)}
+                >
+                  <span className="shrink-0">{item.icon}</span>
+                  <span className="is-drawer-close:hidden whitespace-nowrap">{item.text}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {/* Logout button */}
+          <div className="p-2">
+            <button
+              onClick={handleLogout}
+              className="btn btn-ghost w-full justify-start gap-3 is-drawer-close:tooltip is-drawer-close:tooltip-right is-drawer-close:btn-square is-drawer-close:justify-center"
+              data-tip="Logout"
+            >
+              <LogOut size={20} />
+              <span className="is-drawer-close:hidden">Logout</span>
+            </button>
+          </div>
+
+          {/* User profile section */}
+          <button
+            onClick={() => navigate("/admin/profile")}
+            className="border-t border-base-300 flex items-center gap-3 p-3 hover:bg-base-300 transition-colors cursor-pointer is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
+            data-tip={user?.displayName ?? user?.email?.split("@")[0] ?? "Profile"}
+          >
+            <div className="avatar">
+              <div className="w-10 rounded-lg">
+                <img
+                  src={
+                    user?.photoURL
+                      ? user.photoURL
+                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          user?.displayName || user?.email?.split("@")[0] || "Admin"
+                        )}&background=c7d2fe&color=3730a3&bold=true`
+                  }
+                  alt={user?.displayName ?? user?.email ?? "Admin"}
+                />
+              </div>
+            </div>
+            <div className="is-drawer-close:hidden flex-1 text-left min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="font-semibold truncate">
+                  {user?.displayName ?? (user?.email ? user.email.split("@")[0] : "Admin")}
+                </h4>
+                <span className="badge badge-secondary badge-sm shrink-0">Admin</span>
+              </div>
+              <span className="text-xs text-base-content/60 truncate block">{user?.email ?? ""}</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDrawerLayout;

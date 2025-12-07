@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import AdminSidebar from "../../adminSidebar";
 import { db } from "../../firebase";
 import { collection, getDocs, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { logicEquipment } from "../equipment/logicEquipment";
@@ -200,8 +199,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <>
-      <AdminSidebar />
-      <div className="min-h-screen bg-base-100 p-6" style={{ marginLeft: 'var(--sidebar-width)' }}>
+      <div className="min-h-screen bg-base-100 p-6">
         <h1 className="text-3xl font-bold mb-6">All Requests</h1>
 
       <div className="mb-4">

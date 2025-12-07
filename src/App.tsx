@@ -16,144 +16,155 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import Analytics from "./pages/admin/Analytics";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import DrawerLayout from "./components/DrawerLayout";
+import AdminDrawerLayout from "./components/AdminDrawerLayout";
 
 const App: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-base-200">
-      <main className="flex-1 p-4">
-        <Routes>
-          {/* Default route → redirect based on role in localStorage */}
-          <Route
-            path="/"
-            element={
-              (() => {
-                const role = localStorage.getItem("userRole");
-                if (role === "admin") return <Navigate to="/admindashboard" replace />;
-                if (role === "student") return <Navigate to="/student" replace />;
-                return <Navigate to="/login" replace />;
-              })()
-            }
-          />
+    <Routes>
+      {/* Default route → redirect based on role in localStorage */}
+      <Route
+        path="/"
+        element={
+          (() => {
+            const role = localStorage.getItem("userRole");
+            if (role === "admin") return <Navigate to="/admindashboard" replace />;
+            if (role === "student") return <Navigate to="/student" replace />;
+            return <Navigate to="/login" replace />;
+          })()
+        }
+      />
 
-          {/* Auth routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+      {/* Auth routes - no layout */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
 
-          {/* Admin equipment inventory (renamed from /dashboard -> /inventory) → admin-only */}
-          <Route
-            path="/inventory"
-            element={
-              <ProtectedRoute requireAdmin>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+      {/* Student routes with DrawerLayout */}
+      <Route
+        path="/student"
+        element={
+          <ProtectedRoute forbidAdmin>
+            <DrawerLayout>
+              <HomeStudent />
+            </DrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Student homepage (separate) → authenticated students only; admins are forbidden */}
-          <Route
-            path="/student"
-            element={
-              <ProtectedRoute forbidAdmin>
-                <HomeStudent />
-              </ProtectedRoute>
-            }
-          />
+      <Route
+        path="/requestpage"
+        element={
+          <ProtectedRoute forbidAdmin>
+            <DrawerLayout>
+              <RequestPage />
+            </DrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* keep old requestpage route as alias for student homepage */}
-          <Route
-            path="/requestpage"
-            element={
-              <ProtectedRoute forbidAdmin>
-                <RequestPage />
-              </ProtectedRoute>
-            }
-          />
+      <Route
+        path="/tracking"
+        element={
+          <ProtectedRoute forbidAdmin>
+            <DrawerLayout>
+              <TrackingPage />
+            </DrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Tracking page for students */}
-          <Route
-            path="/tracking"
-            element={
-              <ProtectedRoute forbidAdmin>
-                <TrackingPage />
-              </ProtectedRoute>
-            }
-          />
+      <Route
+        path="/accountabilities"
+        element={
+          <ProtectedRoute forbidAdmin>
+            <DrawerLayout>
+              <Accountabilities />
+            </DrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Accountabilities (student) */}
-          <Route
-            path="/accountabilities"
-            element={
-              <ProtectedRoute forbidAdmin>
-                <Accountabilities />
-              </ProtectedRoute>
-            }
-          />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute forbidAdmin>
+            <DrawerLayout>
+              <ProfileStudent />
+            </DrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Student profile */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute forbidAdmin>
-                <ProfileStudent />
-              </ProtectedRoute>
-            }
-          />
+      {/* Admin routes with AdminDrawerLayout */}
+      <Route
+        path="/inventory"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AdminDrawerLayout>
+              <Dashboard />
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Admin requests dashboard → admin-only */}
-          <Route
-            path="/admindashboard"
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
+      <Route
+        path="/admindashboard"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AdminDrawerLayout>
+              <AdminDashboard />
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Admin accountabilities page */}
-          <Route
-            path="/admin/accountabilities"
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminAccountabilities />
-              </ProtectedRoute>
-            }
-          />
+      <Route
+        path="/admin/accountabilities"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AdminDrawerLayout>
+              <AdminAccountabilities />
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Admin profile page */}
-          <Route
-            path="/admin/profile"
-            element={
-              <ProtectedRoute requireAdmin>
-                <ProfileAdmin />
-              </ProtectedRoute>
-            }
-          />
+      <Route
+        path="/admin/profile"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AdminDrawerLayout>
+              <ProfileAdmin />
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Admin user management page */}
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminUsers />
-              </ProtectedRoute>
-            }
-          />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AdminDrawerLayout>
+              <AdminUsers />
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Analytics page */}
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute requireAdmin>
-                <Analytics />
-              </ProtectedRoute>
-            }
-          />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AdminDrawerLayout>
+              <Analytics />
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
 
-          {/* Catch-all → redirect to default */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-    </div>
+      {/* Catch-all → redirect to default */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 };
 

@@ -1,11 +1,9 @@
 import React from 'react'
-import AdminSidebar from '../../adminSidebar'
 
 const AdminAccountabilities: React.FC = () => {
   return (
     <>
-      <AdminSidebar />
-      <div style={{ marginLeft: 'var(--sidebar-width)' }} className="min-h-screen bg-base-100 p-6">
+      <div className="min-h-screen bg-base-100 p-6">
         <div className="card">
           <div className="card-body space-y-6">
             <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b pb-4">

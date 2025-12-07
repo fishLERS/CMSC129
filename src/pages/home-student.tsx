@@ -1,6 +1,5 @@
 import React from 'react';
 import './home-student.css';
-import Sidebar from '../sidebar';
 import { logicEquipment } from './equipment/logicEquipment';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -269,8 +268,7 @@ export default function HomeStudent() {
 
   return (
     <div className="home-student min-h-screen bg-slate-900 text-slate-200">
-      <Sidebar />
-  <div className="flex-1" style={{ marginLeft: 'var(--sidebar-width)' }}>
+  <div className="flex-1">
   <header className="hs-topbar w-full bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div>

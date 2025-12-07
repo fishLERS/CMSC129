@@ -1,7 +1,6 @@
 import React from 'react'
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
-import AdminSidebar from '../../adminSidebar'
 
 interface UserData {
   uid: string
@@ -105,8 +104,7 @@ export default function AdminUsers() {
 
   return (
     <div>
-      <AdminSidebar />
-      <div style={{ marginLeft: 'var(--sidebar-width)' }} className="min-h-screen bg-transparent text-slate-200 p-4">
+      <div className="min-h-screen bg-transparent text-slate-200 p-4">
         <h1 className="text-2xl font-semibold mb-4">Admin Management</h1>
 
         <div className="max-w-6xl mx-auto">

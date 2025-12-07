@@ -1,5 +1,4 @@
 import React from 'react'
-import Sidebar from '../../sidebar'
 import './Accountabilities.css'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
@@ -46,8 +45,7 @@ export default function Accountabilities(){
 
   return (
     <div className="accountabilities-page min-h-screen">
-      <Sidebar />
-      <div className="flex-1" style={{ marginLeft: 'var(--sidebar-width)' }}>
+      <div className="flex-1">
         <main className="p-6">
           <h1 className="text-2xl font-semibold mb-4">Accountabilities</h1>
 
