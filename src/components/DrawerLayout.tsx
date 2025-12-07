@@ -59,15 +59,15 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
       </div>
 
       {/* Sidebar drawer */}
-      <div className="drawer-side max-lg:top-14 lg:h-full is-drawer-close:overflow-visible z-20">
+      <div className="drawer-side max-lg:top-14 lg:h-full is-drawer-close:overflow-visible z-20 overflow-hidden">
         <label htmlFor="student-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
-        <div className="flex min-h-full flex-col bg-base-200 border-r border-base-300 is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200">
+        <div className="flex h-full flex-col bg-base-200 border-r border-base-300 is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-hidden">
           {/* Menu items */}
-          <ul className="menu w-full flex-1 gap-1 p-2">
+          <ul className="menu w-full flex-1 gap-1 p-2 overflow-hidden is-drawer-close:items-center">
             {menuItems.map((item, index) => (
-              <li key={index}>
+              <li key={index} className="is-drawer-close:w-auto">
                 <button
-                  className={`flex items-center gap-3 is-drawer-close:tooltip is-drawer-close:tooltip-right ${item.active ? "active" : ""}`}
+                  className={`flex items-center gap-3 is-drawer-close:tooltip is-drawer-close:tooltip-right is-drawer-close:justify-center is-drawer-close:px-3 ${item.active ? "active" : ""}`}
                   data-tip={item.text}
                   onClick={() => navigate(item.path)}
                 >
@@ -79,10 +79,10 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
           </ul>
 
           {/* Logout button */}
-          <div className="p-2">
+          <div className="p-2 is-drawer-close:flex is-drawer-close:justify-center">
             <button
               onClick={handleLogout}
-              className="btn btn-ghost w-full justify-start gap-3 is-drawer-close:tooltip is-drawer-close:tooltip-right is-drawer-close:btn-square is-drawer-close:justify-center"
+              className="btn btn-ghost w-full justify-start gap-3 is-drawer-close:tooltip is-drawer-close:tooltip-right is-drawer-close:btn-square is-drawer-close:justify-center is-drawer-close:w-auto"
               data-tip="Logout"
             >
               <LogOut size={20} />
