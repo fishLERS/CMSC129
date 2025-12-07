@@ -185,16 +185,6 @@ export default function ProfileStudent() {
                         </div>
 
                         <div>
-                          <label className="text-xs text-base-content/60">Email</label>
-                          <input
-                            className={`mt-2 w-full rounded-md border-0 p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
-                            value={profile?.email || user.email}
-                            readOnly
-                            tabIndex={-1}
-                          />
-                        </div>
-
-                        <div>
                           <label className="text-xs text-base-content/60">Role</label>
                           <input
                             className={`mt-2 w-full rounded-md border-0 p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}

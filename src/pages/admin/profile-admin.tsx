@@ -24,6 +24,7 @@ export default function ProfileAdmin() {
   const [profile, setProfile] = React.useState<any>(null)
   const [editing, setEditing] = React.useState(false)
   const [displayName, setDisplayName] = React.useState('')
+  const [staffId, setStaffId] = React.useState('')
   // password change state
   const [currentPassword, setCurrentPassword] = React.useState('')
   const [newPassword, setNewPassword] = React.useState('')
@@ -43,6 +44,7 @@ export default function ProfileAdmin() {
         if (!cancelled) {
           setProfile(data)
           setDisplayName(user.displayName || data?.displayName || '')
+          setStaffId(data?.staffId || '')
         }
       } catch (e) {
         console.error('Failed to load profile', e)
@@ -63,9 +65,9 @@ export default function ProfileAdmin() {
       }
       // update firestore users doc
       const ref = doc(db, 'users', user.uid)
-      const updates: any = { displayName }
+      const updates: any = { displayName, staffId }
       await updateDoc(ref, updates)
-      setProfile((p: any) => ({ ...(p || {}), displayName }))
+      setProfile((p: any) => ({ ...(p || {}), displayName, staffId }))
     } catch (e) {
       console.error('Failed to save profile', e)
       alert('Failed to save profile; see console')
@@ -143,7 +145,7 @@ export default function ProfileAdmin() {
                           <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit</button>
                         ) : (
                           <div className="flex gap-2">
-                            <button className="btn" onClick={() => { setEditing(false); setDisplayName(profile?.displayName || user.displayName || '') }}>Cancel</button>
+                            <button className="btn" onClick={() => { setEditing(false); setDisplayName(profile?.displayName || user.displayName || ''); setStaffId(profile?.staffId || '') }}>Cancel</button>
                             <button className="btn btn-primary" onClick={save}>Save</button>
                           </div>
                         )}
@@ -163,12 +165,15 @@ export default function ProfileAdmin() {
                         </div>
 
                         <div>
-                          <label className="text-xs text-base-content/60">Email</label>
+                          <label className="text-xs text-base-content/60">Staff ID</label>
                           <input
-                            className={`mt-2 w-full rounded-md border-0 p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
-                            value={profile?.email || user.email}
-                            readOnly
-                            tabIndex={-1}
+                            id="staffId"
+                            className={`mt-2 w-full rounded-md bg-base-200 border-0 p-3 text-sm ${editing ? 'focus:ring-primary' : 'focus:ring-0 focus:outline-none'}`}
+                            placeholder="Your Staff ID"
+                            value={editing ? staffId : (profile?.staffId || '')}
+                            onChange={(e) => setStaffId(e.target.value)}
+                            readOnly={!editing}
+                            tabIndex={editing ? 0 : -1}
                           />
                         </div>
 
