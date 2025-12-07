@@ -109,7 +109,9 @@ export default function Login() {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/60 hover:text-base-content"
+              tabIndex={-1}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 text-base-content/60 hover:text-base-content cursor-pointer"
+              onMouseDown={e => e.preventDefault()}
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? (
