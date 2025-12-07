@@ -48,7 +48,7 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
   const drawerOpen = isLargeScreen || isOpen;
 
   return (
-    <div className="drawer lg:drawer-open">
+    <div className="drawer lg:drawer-open h-screen">
       <input 
         id="admin-drawer" 
         type="checkbox" 
@@ -58,9 +58,9 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
       />
       
       {/* Main content area */}
-      <div className="drawer-content flex flex-col">
-        {/* Navbar */}
-        <nav className="navbar bg-primary text-primary-content shadow-md w-full h-14 min-h-14">
+      <div className="drawer-content flex flex-col h-screen">
+        {/* Navbar - sticky */}
+        <nav className="navbar bg-primary text-primary-content shadow-md w-full h-14 min-h-14 sticky top-0 z-30">
           <label 
             htmlFor="admin-drawer" 
             aria-label="toggle sidebar" 
@@ -73,14 +73,14 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
           </div>
         </nav>
         
-        {/* Page content */}
-        <main className="flex-1 p-4 bg-base-200">
+        {/* Page content - scrollable */}
+        <main className="flex-1 p-4 bg-base-200 overflow-y-auto">
           {children}
         </main>
       </div>
 
-      {/* Sidebar drawer */}
-      <div className="drawer-side max-lg:top-14 lg:h-full z-20 overflow-visible">
+      {/* Sidebar drawer - fixed */}
+      <div className="drawer-side max-lg:top-14 lg:h-screen z-40 overflow-visible fixed lg:sticky lg:top-0">
         <label htmlFor="admin-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
         <div className="flex h-full flex-col bg-base-200 border-r border-base-300 is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-visible">
           {/* Menu items */}
