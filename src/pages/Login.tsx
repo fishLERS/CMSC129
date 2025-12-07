@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { ArrowLeft } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -112,6 +113,15 @@ export default function Login() {
           </svg>
         </div>
       </div>
+
+      {/* Back to Landing Page button */}
+      <Link 
+        to="/" 
+        className="absolute top-6 left-6 z-20 btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-base-content"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Home
+      </Link>
 
       <form onSubmit={onSubmit} className="w-full max-w-sm relative z-10">
         <fieldset className="fieldset bg-base-100/90 backdrop-blur-sm border-cyan-800/20 rounded-box border p-6 shadow-xl shadow-cyan-900/10">

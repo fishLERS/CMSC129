@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
+import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/equipment/Dashboard";
@@ -22,18 +23,8 @@ import AdminDrawerLayout from "./components/AdminDrawerLayout";
 const App: React.FC = () => {
   return (
     <Routes>
-      {/* Default route → redirect based on role in localStorage */}
-      <Route
-        path="/"
-        element={
-          (() => {
-            const role = localStorage.getItem("userRole");
-            if (role === "admin") return <Navigate to="/admindashboard" replace />;
-            if (role === "student") return <Navigate to="/student" replace />;
-            return <Navigate to="/login" replace />;
-          })()
-        }
-      />
+      {/* Landing page - default route */}
+      <Route path="/" element={<LandingPage />} />
 
       {/* Auth routes - no layout */}
       <Route path="/login" element={<Login />} />
