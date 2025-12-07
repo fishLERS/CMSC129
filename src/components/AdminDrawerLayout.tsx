@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../hooks/useAuth";
-import { Home, Box, ClipboardList, BarChart2, Users, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Home, Box, ClipboardList, BarChart2, Users, LogOut, PanelLeftClose, PanelLeftOpen, Fish } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 interface AdminDrawerLayoutProps {
@@ -70,7 +70,21 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
             {drawerOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
           </label>
           <div className="flex-1 px-4">
-            <span className="text-xl font-bold tracking-wide">FishLERS</span>
+            <button
+              type="button"
+              onClick={() => navigate("/admindashboard")}
+              className="btn btn-ghost normal-case px-3 py-1 text-left text-primary-content hover:bg-primary-content/10 focus-visible:outline-none focus-visible:ring-0"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col leading-tight">
+                  <span className="text-lg font-bold">FishLERS</span>
+                  <span className="text-[10px] tracking-wide opacity-80">UPV CFOS IA-MSH</span>
+                </div>
+                <span className="p-1 rounded-full bg-primary-content/20">
+                  <Fish className="w-5 h-5 text-primary-content" />
+                </span>
+              </div>
+            </button>
           </div>
           <div className="navbar-end">
             <ThemeToggle className="text-primary-content" />

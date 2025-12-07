@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth, db } from "../firebase";
@@ -13,9 +13,27 @@ export default function Login() {
   const [err, setErr] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [roleType, setRoleType] = useState<"student" | "admin">("student");
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const nav = useNavigate();
 
   const currentYear = new Date().getFullYear();
+  useEffect(() => {
+    if (err) {
+      setToast({ type: "error", message: err });
+    }
+  }, [err]);
+
+  useEffect(() => {
+    if (successMsg) {
+      setToast({ type: "success", message: successMsg });
+    }
+  }, [successMsg]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   async function handleForgotPassword() {
     if (!email) {
@@ -58,6 +76,16 @@ export default function Login() {
 
   return (
     <div className="min-h-dvh flex flex-col bg-gradient-to-b from-base-200 via-base-200 to-primary/30 relative overflow-hidden">
+      {toast && (
+        <div className="toast toast-top toast-end z-50 mt-24 mr-4">
+          <div className={`alert ${toast.type === "success" ? "alert-success" : "alert-error"} shadow-lg`}>
+            <span>{toast.message}</span>
+            <button className="btn btn-ghost btn-xs" onClick={() => setToast(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10 px-4">
         <div className="navbar-start">
           <Link to="/" className="btn btn-ghost text-xl gap-2 h-auto py-2">

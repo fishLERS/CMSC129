@@ -1,5 +1,5 @@
 // src/pages/Signup.tsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db } from '../firebase';
@@ -17,9 +17,22 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedRole = searchParams.get('role') === 'admin' ? 'admin' : 'student';
+
+  useEffect(() => {
+    if (err) {
+      setToast({ type: 'error', message: err });
+    }
+  }, [err]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,14 +67,21 @@ export default function Signup() {
       localStorage.setItem('userRole', requestedRole);
 
       if (requestedRole === 'admin') {
-        // Inform the user that admin accounts require approval/granting of custom claims
-        // This must be performed by a project administrator using the server-side
-        // script (scripts/set-claim.js) or the Firebase Console.
-        alert('Admin account created. An administrator must approve and grant admin privileges before you can access admin pages.');
-        nav('/login', { replace: true });
+        setToast({
+          type: 'success',
+          message: 'Admin account created. Awaiting approval before you can log in.',
+        });
+        setTimeout(() => {
+          nav('/login', { replace: true });
+        }, 1200);
       } else {
-        // Redirect student to student homepage
-        nav('/student', { replace: true });
+        setToast({
+          type: 'success',
+          message: 'Student account created! Redirecting to your dashboard...',
+        });
+        setTimeout(() => {
+          nav('/student', { replace: true });
+        }, 1200);
       }
     } catch (e: any) {
       setErr(e.message ?? 'Signup failed');
@@ -72,6 +92,16 @@ export default function Signup() {
 
   return (
   <div className="min-h-dvh flex flex-col bg-gradient-to-b from-base-200 via-base-200 to-primary/30 relative overflow-hidden">
+      {toast && (
+        <div className="toast toast-top toast-end z-50 mt-24 mr-4">
+          <div className={`alert ${toast.type === 'success' ? 'alert-success' : 'alert-error'} shadow-lg`}>
+            <span>{toast.message}</span>
+            <button className="btn btn-ghost btn-xs" onClick={() => setToast(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10 px-4">
         <div className="navbar-start">
           <Link to="/" className="btn btn-ghost text-xl gap-2 h-auto py-2">
