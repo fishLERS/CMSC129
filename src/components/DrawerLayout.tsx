@@ -81,7 +81,7 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
       {/* Sidebar drawer - fixed */}
       <div className="drawer-side max-lg:top-14 lg:h-screen z-40 overflow-visible fixed lg:sticky lg:top-0">
         <label htmlFor="student-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
-        <div className="flex h-full flex-col bg-base-200 border-r border-base-300 is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-visible">
+        <div className="flex h-full flex-col bg-base-100 border-r border-base-300 shadow-lg is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-visible">
           {/* Menu items */}
           <ul className="menu w-full flex-1 gap-1 p-2 overflow-visible is-drawer-close:items-center">
             {menuItems.map((item, index) => (
