@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
@@ -13,6 +13,20 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Check if on large screen (drawer always open)
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsLargeScreen(window.innerWidth >= 1024);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleToggle = () => {
+    setIsOpen(!isOpen);
+  };
 
   const handleLogout = async () => {
     try {
@@ -31,9 +45,17 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
     { icon: <Users size={20} />, text: "Admin", path: "/admin/users", active: location.pathname.startsWith("/admin/users") },
   ];
 
+  const drawerOpen = isLargeScreen || isOpen;
+
   return (
     <div className="drawer lg:drawer-open">
-      <input id="admin-drawer" type="checkbox" className="drawer-toggle" />
+      <input 
+        id="admin-drawer" 
+        type="checkbox" 
+        className="drawer-toggle" 
+        checked={isOpen}
+        onChange={handleToggle}
+      />
       
       {/* Main content area */}
       <div className="drawer-content flex flex-col">
@@ -44,9 +66,7 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
             aria-label="toggle sidebar" 
             className="btn btn-square btn-ghost"
           >
-            {/* Toggle icon with rotation based on drawer state */}
-            <PanelLeftOpen size={20} className="is-drawer-open:hidden" />
-            <PanelLeftClose size={20} className="is-drawer-close:hidden" />
+            {drawerOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
           </label>
           <div className="flex-1 px-4">
             <span className="text-xl font-bold tracking-wide">FishLERS</span>
@@ -60,11 +80,11 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
       </div>
 
       {/* Sidebar drawer */}
-      <div className="drawer-side max-lg:top-14 lg:h-full is-drawer-close:overflow-visible z-20 overflow-hidden">
+      <div className="drawer-side max-lg:top-14 lg:h-full z-20 overflow-visible">
         <label htmlFor="admin-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
-        <div className="flex h-full flex-col bg-base-200 border-r border-base-300 is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-hidden">
+        <div className="flex h-full flex-col bg-base-200 border-r border-base-300 is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-visible">
           {/* Menu items */}
-          <ul className="menu w-full flex-1 gap-1 p-2 overflow-hidden is-drawer-close:items-center">
+          <ul className="menu w-full flex-1 gap-1 p-2 overflow-visible is-drawer-close:items-center">
             {menuItems.map((item, index) => (
               <li key={index} className="is-drawer-close:w-auto">
                 <button
