@@ -1,10 +1,10 @@
 import React from 'react';
-import './home-student.css';
 import { logicEquipment } from './equipment/logicEquipment';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { Bell, X, Eye, XCircle, RotateCcw } from 'lucide-react';
 
 function formatDate(d: Date) {
   return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -266,230 +266,309 @@ export default function HomeStudent() {
 
   const nav = useNavigate();
 
+  // Status badge helper
+  const getStatusBadge = (status: string) => {
+    const s = (status || 'ongoing').toLowerCase();
+    if (s === 'approved') return <span className="badge badge-success">Approved</span>;
+    if (s === 'ongoing' || s === 'pending') return <span className="badge badge-warning">Ongoing</span>;
+    if (s === 'declined' || s === 'rejected') return <span className="badge badge-error">Rejected</span>;
+    if (s === 'returned' || s === 'completed') return <span className="badge badge-info">Completed</span>;
+    if (s === 'cancelled') return <span className="badge badge-neutral">Cancelled</span>;
+    return <span className="badge">{status}</span>;
+  };
+
   return (
-    <div className="home-student min-h-screen bg-slate-900 text-slate-200">
-  <div className="flex-1">
-  <header className="hs-topbar w-full bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div>
-            <p className="text-sm text-base-content/70">Welcome, {user?.displayName ?? user?.email?.split('@')[0] ?? 'Student'}! Today is {formatDate(new Date())}</p>
-            <h1 className="text-2xl font-semibold mt-1">Student Home</h1>
-          </div>
+    <div className="p-6 space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Student Dashboard</h1>
+          <p className="text-base-content/70">Welcome, {user?.displayName ?? user?.email?.split('@')[0] ?? 'Student'}! Today is {formatDate(new Date())}</p>
         </div>
 
-        <div className="flex items-center gap-3 relative">
-          <div className="relative">
-            <button className="btn btn-ghost btn-square btn-sm" onClick={toggleNotif} aria-haspopup="true" aria-expanded={notifOpen}>🔔</button>
-            {recentNotifications.length > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-red-500 rounded-full ring-1 ring-white"></span>
-            )}
-
-            {/* dropdown with up to 4 recent notifications */}
-            {notifOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-base-100 border border-base-300 rounded shadow z-50">
-                <div className="p-2">
-                  <div className="font-semibold">Notifications</div>
-                </div>
-                <div className="max-h-60 overflow-auto">
-                  {recentNotifications.length === 0 ? (
-                    // when there are no recent notifications, show up to 4 historic/combined notifications in compact "Purpose | Status" form
-                    (notifications.length === 0) ? (
-                      <div className="p-3 text-sm text-base-content/60">No new notifications</div>
-                    ) : (
-                      notifications.slice(0,4).map(n => (
-                        <div
-                          key={n.id}
-                          className="p-3 border-t border-base-200 hover:bg-base-200/10 cursor-pointer"
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') }}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') } }}
-                        >
-                          <div className="font-medium">{n.purpose || 'Request update'}</div>
-                          <div className="text-xs text-base-content/60">{n.status}</div>
-                        </div>
-                      ))
-                    )
+        {/* Notification dropdown */}
+        <div className="dropdown dropdown-end">
+          <label tabIndex={0} className="btn btn-ghost btn-circle" onClick={toggleNotif}>
+            <div className="indicator">
+              <Bell className="w-5 h-5" />
+              {recentNotifications.length > 0 && (
+                <span className="indicator-item badge badge-error badge-xs"></span>
+              )}
+            </div>
+          </label>
+          {notifOpen && (
+            <div tabIndex={0} className="dropdown-content menu bg-base-200 rounded-box w-80 shadow-xl z-50">
+              <div className="p-3 border-b border-base-300 flex items-center justify-between">
+                <span className="font-semibold">Notifications</span>
+                <button className="btn btn-ghost btn-xs btn-circle" onClick={() => setNotifOpen(false)}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="max-h-64 overflow-auto">
+                {recentNotifications.length === 0 ? (
+                  notifications.length === 0 ? (
+                    <div className="p-4 text-center text-base-content/60">No new notifications</div>
                   ) : (
-                    recentNotifications.slice(0,4).map(n => (
+                    notifications.slice(0, 4).map(n => (
                       <div
                         key={n.id}
-                        className="p-3 border-t border-base-200 hover:bg-base-200/10 cursor-pointer"
-                        role="button"
-                        tabIndex={0}
+                        className="p-3 hover:bg-base-300 cursor-pointer transition-colors"
                         onClick={() => { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') } }}
                       >
-                        <div className="font-medium">{n.purpose || 'Request update'}</div>
-                        <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
-                        {n.adminRemarks && (
-                          <div className="text-xs mt-1 text-base-content/60">Remarks: {n.adminRemarks}</div>
-                        )}
+                        <div className="font-medium text-sm">{n.purpose || 'Request update'}</div>
+                        <div className="text-xs text-base-content/60">{n.status}</div>
                       </div>
                     ))
-                  )}
-                </div>
-                <div className="p-2 border-t border-base-200 flex items-center justify-between">
-                  <button className="btn btn-link btn-sm" onClick={() => { setNotifOpen(false); setNotifAllOpen(true); }}>View all</button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setNotifOpen(false); }}>Close</button>
-                </div>
+                  )
+                ) : (
+                  recentNotifications.slice(0, 4).map(n => (
+                    <div
+                      key={n.id}
+                      className="p-3 hover:bg-base-300 cursor-pointer transition-colors"
+                      onClick={() => { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') }}
+                    >
+                      <div className="font-medium text-sm">{n.purpose || 'Request update'}</div>
+                      <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
+                      {n.adminRemarks && (
+                        <div className="text-xs mt-1 text-base-content/50">Remarks: {n.adminRemarks}</div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
-            )}
+              <div className="p-2 border-t border-base-300">
+                <button className="btn btn-ghost btn-sm btn-block" onClick={() => { setNotifOpen(false); setNotifAllOpen(true); }}>
+                  View all notifications
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+        <div className="stat">
+          <div className="stat-title">Total Requests</div>
+          <div className="stat-value">{requests.length}</div>
+          <div className="stat-desc">All time</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Ongoing</div>
+          <div className="stat-value text-warning">{requests.filter(r => (r.status || 'ongoing').toLowerCase() === 'ongoing').length}</div>
+          <div className="stat-desc">Pending approval</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Approved</div>
+          <div className="stat-value text-success">{requests.filter(r => r.status?.toLowerCase() === 'approved').length}</div>
+          <div className="stat-desc">Ready for use</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Completed</div>
+          <div className="stat-value text-info">{requests.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length}</div>
+          <div className="stat-desc">Items returned</div>
+        </div>
+      </div>
+
+      {/* Requests Table Card */}
+      <div className="card bg-base-200 shadow-xl">
+        <div className="card-body p-0">
+          {/* Tabs Header */}
+          <div className="p-4 border-b border-base-300">
+            <div role="tablist" className="tabs tabs-boxed bg-base-300">
+              <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
+              <a role="tab" className={`tab ${tab === 'ongoing' ? 'tab-active' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
+              <a role="tab" className={`tab ${tab === 'completed' ? 'tab-active' : ''}`} onClick={() => setTab('completed')}>Completed</a>
+              <a role="tab" className={`tab ${tab === 'rejected' ? 'tab-active' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
+              <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Purpose</th>
+                  <th>Quantity</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                  <th>View</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8 text-base-content/60">
+                      No requests found
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((r) => (
+                    <tr key={r.id} className="hover">
+                      <td>
+                        <div className="font-medium">{r.purpose || 'Item Request'}</div>
+                        <div className="text-xs text-base-content/60">
+                          {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : (r.createdAt ? new Date(r.createdAt).toLocaleString() : '')}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="badge badge-ghost">
+                          {Array.isArray(r.items) ? r.items.reduce((s: any, i: any) => s + (i.qty || 0), 0) : '-'}
+                        </span>
+                      </td>
+                      <td>{getStatusBadge(r.status)}</td>
+                      <td>
+                        {((r.status || '').toString().toLowerCase() === 'ongoing') && (
+                          <button 
+                            className="btn btn-error btn-sm gap-1" 
+                            disabled={busyId === r.id} 
+                            onClick={() => handleCancel(r.id)}
+                          >
+                            {busyId === r.id ? <span className="loading loading-spinner loading-xs"></span> : <XCircle className="w-4 h-4" />}
+                            Cancel
+                          </button>
+                        )}
+                        {((r.status || '').toString().toLowerCase() === 'approved') && (
+                          <button 
+                            className="btn btn-primary btn-sm gap-1" 
+                            disabled={busyId === r.id} 
+                            onClick={() => handleReturn(r.id)}
+                          >
+                            {busyId === r.id ? <span className="loading loading-spinner loading-xs"></span> : <RotateCcw className="w-4 h-4" />}
+                            Return
+                          </button>
+                        )}
+                      </td>
+                      <td>
+                        <button className="btn btn-ghost btn-sm btn-circle" onClick={() => setShowModalRequest(r)}>
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="p-0">
-        <div className="w-full">
-          <section className="card requests-card border border-base-300 rounded-md bg-base-100 flex flex-col">
-            <div className="p-3 border-b border-base-300 flex items-center justify-between">
-              <h2 className="font-medium">Requests</h2>
-              <div className="tabs tabs-boxed">
-                <a className={`tab ${tab==='all'?'tab-active':''}`} onClick={() => setTab('all')}>All</a>
-                <a className={`tab ${tab==='ongoing'?'tab-active':''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
-                <a className={`tab ${tab==='completed'?'tab-active':''}`} onClick={() => setTab('completed')}>Completed</a>
-                <a className={`tab ${tab==='rejected'?'tab-active':''}`} onClick={() => setTab('rejected')}>Rejected</a>
-                <a className={`tab ${tab==='cancelled'?'tab-active':''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
-              </div>
-            </div>
-            <div className="card-body p-0 flex-1 min-h-0">
-              <div className="overflow-x-auto w-full table-scroll">
-                <table className="table w-full">
-                  <thead>
-                    <tr>
-                        <th>Purpose</th>
-                        <th>Quantity</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                        <th>View</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="empty-state text-center text-base-content/60">No requests yet</td>
-                      </tr>
-                    )}
-                    {filtered.map((r) => (
-                      <tr key={r.id} className="align-top">
-                        <td>
-                          <div className="font-semibold">{r.purpose || 'Item Request'}</div>
-                          <div className="text-xs text-base-content/60">Date Requested: {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : (r.createdAt ? new Date(r.createdAt).toLocaleString() : '')}</div>
-                        </td>
-                        <td>{Array.isArray(r.items) ? r.items.reduce((s:any,i:any)=>s+(i.qty||0),0) : '-'}</td>
-                        <td>{(r.status || 'ongoing')}</td>
-                        <td className="w-36">
-                          {/* action buttons: Cancel for ongoing, Return for approved */}
-                          {((r.status||'').toString().toLowerCase() === 'ongoing') && (
-                            <button className="btn btn-sm btn-error" disabled={busyId===r.id} onClick={() => handleCancel(r.id)}>Cancel</button>
-                          )}
-                          {((r.status||'').toString().toLowerCase() === 'approved') && (
-                            <button className="btn btn-sm btn-primary" disabled={busyId===r.id} onClick={() => handleReturn(r.id)}>Return</button>
-                          )}
-                        </td>
-                        <td className="w-24">
-                          <button className="btn btn-xs btn-primary" onClick={() => setShowModalRequest(r)}>Show</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-        </div>
-      </main>
-      {/* Show Request modal for student (admin-style layout) */}
+      {/* Request Details Modal */}
       {showModalRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModalRequest(null)}>
-          <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold">Request Details</h3>
-            {/* show request id for easier reference */}
-            <div className="text-xs text-base-content/60 mt-2">Request ID</div>
-            <div className="font-mono font-medium text-sm break-all">{showModalRequest.id}</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-3 text-sm">
-              <div>
-                <div className="text-xs text-base-content/60">Requester</div>
-                <div className="font-medium">{showModalRequest.createdByName || showModalRequest.createdBy || showModalRequest.id}</div>
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-2xl">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => setShowModalRequest(null)}>
+              <X className="w-4 h-4" />
+            </button>
+            <h3 className="font-bold text-lg mb-4">Request Details</h3>
+            
+            <div className="text-xs text-base-content/60">Request ID</div>
+            <div className="font-mono text-sm mb-4 bg-base-300 p-2 rounded break-all">{showModalRequest.id}</div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Requester</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{showModalRequest.createdByName || showModalRequest.createdBy || '-'}</div>
               </div>
-              <div>
-                <div className="text-xs text-base-content/60">Requested At</div>
-                <div className="font-medium">{(function formatTs(ts: any){ try { if (!ts) return ''; if (typeof ts.toDate === 'function') return ts.toDate().toLocaleString(); if (typeof ts === 'string') return new Date(ts).toLocaleString(); if (ts instanceof Date) return ts.toLocaleString(); return String(ts) } catch { return '' } })(showModalRequest.createdAt)}</div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Requested At</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{formatDateTime(showModalRequest.createdAt)}</div>
               </div>
-
-              <div>
-                <div className="text-xs text-base-content/60">Adviser / Leader</div>
-                <div className="font-medium">{showModalRequest.adviser}</div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Adviser / Leader</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{showModalRequest.adviser || '-'}</div>
               </div>
-              <div>
-                <div className="text-xs text-base-content/60">Status</div>
-                <div className="font-medium">{showModalRequest.status || 'Pending'}</div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Status</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{getStatusBadge(showModalRequest.status)}</div>
               </div>
-
-              <div className="md:col-span-2">
-                <div className="text-xs text-base-content/60">Purpose</div>
-                <div className="font-medium">{showModalRequest.purpose}</div>
+              <div className="form-control md:col-span-2">
+                <label className="label"><span className="label-text text-xs">Purpose</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{showModalRequest.purpose || '-'}</div>
               </div>
-
-              <div>
-                <div className="text-xs text-base-content/60">Start</div>
-                <div className="font-medium">{showModalRequest.startDate} {formatTime(showModalRequest.start)}</div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Start</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{showModalRequest.startDate} {formatTime(showModalRequest.start)}</div>
               </div>
-              <div>
-                <div className="text-xs text-base-content/60">End</div>
-                <div className="font-medium">{showModalRequest.endDate} {formatTime(showModalRequest.end)}</div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">End</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{showModalRequest.endDate} {formatTime(showModalRequest.end)}</div>
               </div>
-
-              <div className="md:col-span-2">
-                <div className="text-xs text-base-content/60">Items</div>
-                <ul className="list-disc list-inside mt-1">
-                  {showModalRequest.items?.map((item: any) => {
-                    const equipment = equipmentList.find((e:any) => e.equipmentID === item.equipmentID)
-                    return (
-                      <li key={item.equipmentID} className="text-sm">{equipment?.name || item.name || item.equipmentID} — {item.qty} pcs</li>
-                    )
-                  })}
-                </ul>
-                <div className="text-xs text-base-content/60 mt-2">Total Qty: <span className="font-medium">{(showModalRequest.items || []).reduce((acc:any, i:any) => acc + (i.qty || 0), 0)}</span></div>
+              <div className="form-control md:col-span-2">
+                <label className="label"><span className="label-text text-xs">Items</span></label>
+                <div className="bg-base-300 p-2 rounded">
+                  <ul className="space-y-1">
+                    {showModalRequest.items?.map((item: any) => {
+                      const equipment = equipmentList.find((e: any) => e.equipmentID === item.equipmentID);
+                      return (
+                        <li key={item.equipmentID} className="flex justify-between text-sm">
+                          <span>{equipment?.name || item.name || item.equipmentID}</span>
+                          <span className="badge badge-sm">{item.qty} pcs</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <div className="divider my-2"></div>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>Total</span>
+                    <span>{(showModalRequest.items || []).reduce((acc: any, i: any) => acc + (i.qty || 0), 0)} pcs</span>
+                  </div>
+                </div>
               </div>
-
-              <div className="md:col-span-2">
-                <div className="text-xs text-base-content/60">Admin Remarks</div>
-                <div className="whitespace-pre-wrap font-medium">{showModalRequest.declinedRemarks || showModalRequest.remarks || '—'}</div>
+              <div className="form-control md:col-span-2">
+                <label className="label"><span className="label-text text-xs">Admin Remarks</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm whitespace-pre-wrap">{showModalRequest.declinedRemarks || showModalRequest.remarks || '—'}</div>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
+            
+            <div className="modal-action">
               <button className="btn" onClick={() => setShowModalRequest(null)}>Close</button>
             </div>
           </div>
-        </div>
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => setShowModalRequest(null)}>close</button>
+          </form>
+        </dialog>
       )}
-      {/* View all notifications modal */}
+
+      {/* View All Notifications Modal */}
       {notifAllOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold">All Notifications</h3>
-              <button className="btn btn-ghost btn-sm" onClick={() => setNotifAllOpen(false)}>Close</button>
-            </div>
-            <div className="divide-y divide-base-200">
-              {notifications.length === 0 && (
-                <div className="p-4 text-sm text-base-content/60">No notifications</div>
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-2xl">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => setNotifAllOpen(false)}>
+              <X className="w-4 h-4" />
+            </button>
+            <h3 className="font-bold text-lg mb-4">All Notifications</h3>
+            
+            <div className="divide-y divide-base-300 max-h-96 overflow-auto">
+              {notifications.length === 0 ? (
+                <div className="py-8 text-center text-base-content/60">No notifications</div>
+              ) : (
+                notifications.map(n => (
+                  <div key={n.id} className="py-3">
+                    <div className="font-medium">{n.purpose || 'Request update'}</div>
+                    <div className="text-sm text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
+                    {n.adminRemarks && (
+                      <div className="text-sm mt-1 p-2 bg-base-300 rounded">
+                        <span className="text-xs text-base-content/60">Remarks:</span>
+                        <p className="whitespace-pre-wrap">{n.adminRemarks}</p>
+                      </div>
+                    )}
+                  </div>
+                ))
               )}
-              {notifications.map(n => (
-                <div key={n.id} className="p-3">
-                  <div className="font-medium">{n.purpose || 'Request update'}</div>
-                  <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
-                  {n.adminRemarks && (
-                    <div className="text-sm mt-1">Remarks: <div className="text-sm text-base-content/70 whitespace-pre-wrap">{n.adminRemarks}</div></div>
-                  )}
-                </div>
-              ))}
+            </div>
+            
+            <div className="modal-action">
+              <button className="btn" onClick={() => setNotifAllOpen(false)}>Close</button>
             </div>
           </div>
-        </div>
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => setNotifAllOpen(false)}>close</button>
+          </form>
+        </dialog>
       )}
-      </div>
     </div>
   );
 }
