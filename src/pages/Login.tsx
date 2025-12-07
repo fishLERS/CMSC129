@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/aut
 import { auth, db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { ArrowLeft } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -60,55 +61,60 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-dvh grid place-items-center p-6 bg-gradient-to-b from-base-200 via-base-200 to-cyan-950/30 relative overflow-hidden">
+    <div className="min-h-dvh grid place-items-center p-6 bg-gradient-to-b from-base-200 via-base-200 to-primary/30 relative overflow-hidden">
+      {/* Theme Toggle - Top Right */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+      
       {/* Ocean/Fisheries themed background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Water wave gradients */}
-        <div className="absolute -top-20 -left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -right-20 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -top-20 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -right-20 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-secondary/10 rounded-full blur-3xl"></div>
         
         {/* Bubble elements */}
-        <div className="absolute top-[15%] left-[10%] w-4 h-4 bg-cyan-400/20 rounded-full animate-pulse"></div>
-        <div className="absolute top-[25%] left-[20%] w-2 h-2 bg-cyan-300/30 rounded-full"></div>
-        <div className="absolute top-[40%] left-[8%] w-3 h-3 bg-blue-400/20 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
-        <div className="absolute top-[60%] left-[15%] w-2 h-2 bg-teal-400/25 rounded-full"></div>
-        <div className="absolute top-[75%] left-[12%] w-5 h-5 bg-cyan-500/15 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-[15%] left-[10%] w-4 h-4 bg-primary/20 rounded-full animate-pulse"></div>
+        <div className="absolute top-[25%] left-[20%] w-2 h-2 bg-primary/30 rounded-full"></div>
+        <div className="absolute top-[40%] left-[8%] w-3 h-3 bg-primary/20 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+        <div className="absolute top-[60%] left-[15%] w-2 h-2 bg-secondary/25 rounded-full"></div>
+        <div className="absolute top-[75%] left-[12%] w-5 h-5 bg-primary/15 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
         
-        <div className="absolute top-[20%] right-[15%] w-3 h-3 bg-blue-400/20 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
-        <div className="absolute top-[35%] right-[10%] w-2 h-2 bg-cyan-400/25 rounded-full"></div>
-        <div className="absolute top-[50%] right-[20%] w-4 h-4 bg-teal-400/15 rounded-full animate-pulse" style={{animationDelay: '0.7s'}}></div>
-        <div className="absolute top-[70%] right-[8%] w-2 h-2 bg-blue-300/30 rounded-full"></div>
-        <div className="absolute top-[85%] right-[18%] w-3 h-3 bg-cyan-400/20 rounded-full animate-pulse" style={{animationDelay: '1.2s'}}></div>
+        <div className="absolute top-[20%] right-[15%] w-3 h-3 bg-primary/20 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+        <div className="absolute top-[35%] right-[10%] w-2 h-2 bg-primary/25 rounded-full"></div>
+        <div className="absolute top-[50%] right-[20%] w-4 h-4 bg-secondary/15 rounded-full animate-pulse" style={{animationDelay: '0.7s'}}></div>
+        <div className="absolute top-[70%] right-[8%] w-2 h-2 bg-primary/30 rounded-full"></div>
+        <div className="absolute top-[85%] right-[18%] w-3 h-3 bg-primary/20 rounded-full animate-pulse" style={{animationDelay: '1.2s'}}></div>
 
         {/* Fish silhouettes */}
-        <svg className="absolute top-[20%] left-[5%] w-12 h-8 text-cyan-500/10 rotate-12" viewBox="0 0 24 16" fill="currentColor">
+        <svg className="absolute top-[20%] left-[5%] w-12 h-8 text-primary/10 rotate-12" viewBox="0 0 24 16" fill="currentColor">
           <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
         </svg>
-        <svg className="absolute top-[45%] right-[7%] w-16 h-10 text-blue-500/8 -rotate-6" viewBox="0 0 24 16" fill="currentColor">
+        <svg className="absolute top-[45%] right-[7%] w-16 h-10 text-primary/8 -rotate-6" viewBox="0 0 24 16" fill="currentColor">
           <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
         </svg>
-        <svg className="absolute bottom-[25%] left-[8%] w-10 h-6 text-teal-500/10 rotate-[-20deg]" viewBox="0 0 24 16" fill="currentColor">
+        <svg className="absolute bottom-[25%] left-[8%] w-10 h-6 text-secondary/10 rotate-[-20deg]" viewBox="0 0 24 16" fill="currentColor">
           <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
         </svg>
-        <svg className="absolute bottom-[40%] right-[12%] w-8 h-5 text-cyan-600/8 rotate-6" viewBox="0 0 24 16" fill="currentColor">
+        <svg className="absolute bottom-[40%] right-[12%] w-8 h-5 text-primary/8 rotate-6" viewBox="0 0 24 16" fill="currentColor">
           <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
         </svg>
 
         {/* Wave patterns - layered at bottom */}
         <div className="absolute bottom-0 left-0 w-full h-48 overflow-hidden">
           {/* Back wave - slowest */}
-          <svg className="absolute bottom-0 left-0 w-[200%] h-full text-cyan-500/40 animate-[wave_20s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-full text-primary/40 animate-[wave_20s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
             <path fill="currentColor" d="M0,40 C240,100 480,0 720,50 C960,100 1200,10 1440,40 C1680,100 1920,0 2160,50 C2400,100 2640,10 2880,40 L2880,120 L0,120 Z"></path>
           </svg>
           
           {/* Middle wave - medium speed */}
-          <svg className="absolute bottom-0 left-0 w-[200%] h-36 text-cyan-600/50 animate-[wave_15s_ease-in-out_infinite_reverse]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-36 text-primary/50 animate-[wave_15s_ease-in-out_infinite_reverse]" viewBox="0 0 2880 120" preserveAspectRatio="none">
             <path fill="currentColor" d="M0,60 C360,10 720,90 1080,30 C1440,60 1800,10 2160,90 C2520,30 2700,50 2880,60 L2880,120 L0,120 Z"></path>
           </svg>
           
           {/* Front wave - fastest */}
-          <svg className="absolute bottom-0 left-0 w-[200%] h-28 text-cyan-700/60 animate-[wave_10s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-28 text-primary/60 animate-[wave_10s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
             <path fill="currentColor" d="M0,70 C180,30 360,90 540,50 C720,10 900,70 1080,40 C1260,10 1440,70 1620,30 C1800,90 1980,50 2160,10 C2340,70 2520,40 2700,10 C2800,50 2850,70 2880,70 L2880,120 L0,120 Z"></path>
           </svg>
         </div>
@@ -124,7 +130,7 @@ export default function Login() {
       </Link>
 
       <form onSubmit={onSubmit} className="w-full max-w-sm relative z-10">
-        <fieldset className="fieldset bg-base-100/90 backdrop-blur-sm border-cyan-800/20 rounded-box border p-6 shadow-xl shadow-cyan-900/10">
+  <fieldset className="fieldset bg-base-100/90 backdrop-blur-sm border-primary/20 rounded-box border p-6 shadow-xl shadow-primary/10">
           <legend className="fieldset-legend text-xl font-semibold px-2 flex items-center gap-2">
             🐟 FishLERS Login
           </legend>

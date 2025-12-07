@@ -4,6 +4,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../hooks/useAuth";
 import { Home, Box, ClipboardList, BarChart2, Users, LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 interface AdminDrawerLayoutProps {
   children: React.ReactNode;
@@ -70,6 +71,9 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
           </label>
           <div className="flex-1 px-4">
             <span className="text-xl font-bold tracking-wide">FishLERS</span>
+          </div>
+          <div className="navbar-end">
+            <ThemeToggle className="text-primary-content" />
           </div>
         </nav>
         

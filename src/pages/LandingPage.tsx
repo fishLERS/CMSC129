@@ -1,59 +1,60 @@
 import { Link } from 'react-router-dom';
 import { Fish, ClipboardList, Package, BarChart3, Users, Shield } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-base-200 via-base-200 to-cyan-950/30 relative overflow-hidden">
+  <div className="min-h-dvh bg-gradient-to-b from-base-200 via-base-200 to-primary/30 relative overflow-hidden">
       {/* Ocean/Fisheries themed background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Water wave gradients */}
-        <div className="absolute -top-20 -left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -right-20 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 -left-40 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/4 right-[10%] w-64 h-64 bg-teal-400/10 rounded-full blur-3xl"></div>
+    <div className="absolute -top-20 -left-20 w-96 h-96 bg-primary/10 rounded-full blur-3xl"></div>
+    <div className="absolute -bottom-40 -right-20 w-[500px] h-[500px] bg-primary/15 rounded-full blur-3xl"></div>
+    <div className="absolute top-1/2 -left-40 w-80 h-80 bg-secondary/10 rounded-full blur-3xl"></div>
+    <div className="absolute top-1/4 right-[10%] w-64 h-64 bg-secondary/10 rounded-full blur-3xl"></div>
         
         {/* Bubble elements */}
-        <div className="absolute top-[15%] left-[10%] w-4 h-4 bg-cyan-400/20 rounded-full animate-pulse"></div>
-        <div className="absolute top-[25%] left-[20%] w-2 h-2 bg-cyan-300/30 rounded-full"></div>
-        <div className="absolute top-[40%] left-[8%] w-3 h-3 bg-blue-400/20 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
-        <div className="absolute top-[60%] left-[15%] w-2 h-2 bg-teal-400/25 rounded-full"></div>
-        <div className="absolute top-[75%] left-[12%] w-5 h-5 bg-cyan-500/15 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
+    <div className="absolute top-[15%] left-[10%] w-4 h-4 bg-primary/20 rounded-full animate-pulse"></div>
+    <div className="absolute top-[25%] left-[20%] w-2 h-2 bg-primary/30 rounded-full"></div>
+    <div className="absolute top-[40%] left-[8%] w-3 h-3 bg-primary/20 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
+    <div className="absolute top-[60%] left-[15%] w-2 h-2 bg-secondary/25 rounded-full"></div>
+    <div className="absolute top-[75%] left-[12%] w-5 h-5 bg-primary/15 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
         
-        <div className="absolute top-[20%] right-[15%] w-3 h-3 bg-blue-400/20 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
-        <div className="absolute top-[35%] right-[10%] w-2 h-2 bg-cyan-400/25 rounded-full"></div>
-        <div className="absolute top-[50%] right-[20%] w-4 h-4 bg-teal-400/15 rounded-full animate-pulse" style={{animationDelay: '0.7s'}}></div>
-        <div className="absolute top-[70%] right-[8%] w-2 h-2 bg-blue-300/30 rounded-full"></div>
+    <div className="absolute top-[20%] right-[15%] w-3 h-3 bg-primary/20 rounded-full animate-pulse" style={{animationDelay: '0.3s'}}></div>
+    <div className="absolute top-[35%] right-[10%] w-2 h-2 bg-primary/25 rounded-full"></div>
+    <div className="absolute top-[50%] right-[20%] w-4 h-4 bg-secondary/15 rounded-full animate-pulse" style={{animationDelay: '0.7s'}}></div>
+    <div className="absolute top-[70%] right-[8%] w-2 h-2 bg-primary/30 rounded-full"></div>
 
         {/* Fish silhouettes */}
-        <svg className="absolute top-[15%] left-[5%] w-16 h-10 text-cyan-500/10 rotate-12" viewBox="0 0 24 16" fill="currentColor">
+    <svg className="absolute top-[15%] left-[5%] w-16 h-10 text-primary/10 rotate-12" viewBox="0 0 24 16" fill="currentColor">
           <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
         </svg>
-        <svg className="absolute top-[30%] right-[5%] w-20 h-12 text-blue-500/8 -rotate-6" viewBox="0 0 24 16" fill="currentColor">
+  <svg className="absolute top-[30%] right-[5%] w-20 h-12 text-primary/8 -rotate-6" viewBox="0 0 24 16" fill="currentColor">
           <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
         </svg>
-        <svg className="absolute top-[55%] left-[3%] w-14 h-8 text-teal-500/10 rotate-[-15deg]" viewBox="0 0 24 16" fill="currentColor">
+  <svg className="absolute top-[55%] left-[3%] w-14 h-8 text-secondary/10 rotate-[-15deg]" viewBox="0 0 24 16" fill="currentColor">
           <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
         </svg>
-        <svg className="absolute top-[70%] right-[8%] w-12 h-7 text-cyan-600/8 rotate-6" viewBox="0 0 24 16" fill="currentColor">
+  <svg className="absolute top-[70%] right-[8%] w-12 h-7 text-primary/8 rotate-6" viewBox="0 0 24 16" fill="currentColor">
           <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
         </svg>
 
         {/* Wave patterns - layered at bottom */}
         <div className="absolute bottom-0 left-0 w-full h-48 overflow-hidden">
-          <svg className="absolute bottom-0 left-0 w-[200%] h-full text-cyan-500/40 animate-[wave_20s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-full text-primary/40 animate-[wave_20s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
             <path fill="currentColor" d="M0,40 C240,100 480,0 720,50 C960,100 1200,10 1440,40 C1680,100 1920,0 2160,50 C2400,100 2640,10 2880,40 L2880,120 L0,120 Z"></path>
           </svg>
-          <svg className="absolute bottom-0 left-0 w-[200%] h-36 text-cyan-600/50 animate-[wave_15s_ease-in-out_infinite_reverse]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-36 text-primary/50 animate-[wave_15s_ease-in-out_infinite_reverse]" viewBox="0 0 2880 120" preserveAspectRatio="none">
             <path fill="currentColor" d="M0,60 C360,10 720,90 1080,30 C1440,60 1800,10 2160,90 C2520,30 2700,50 2880,60 L2880,120 L0,120 Z"></path>
           </svg>
-          <svg className="absolute bottom-0 left-0 w-[200%] h-28 text-cyan-700/60 animate-[wave_10s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-28 text-primary/60 animate-[wave_10s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
             <path fill="currentColor" d="M0,70 C180,30 360,90 540,50 C720,10 900,70 1080,40 C1260,10 1440,70 1620,30 C1800,90 1980,50 2160,10 C2340,70 2520,40 2700,10 C2800,50 2850,70 2880,70 L2880,120 L0,120 Z"></path>
           </svg>
         </div>
       </div>
 
       {/* Navbar */}
-      <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-cyan-800/10">
+  <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10">
         <div className="navbar-start">
           <Link to="/" className="btn btn-ghost text-xl gap-2 h-auto py-2">
             <Fish className="w-6 h-6 text-primary" />
@@ -64,6 +65,7 @@ export default function LandingPage() {
           </Link>
         </div>
         <div className="navbar-end gap-2">
+          <ThemeToggle />
           <Link to="/login" className="btn btn-ghost btn-sm sm:btn-md">Log In</Link>
           <Link to="/signup" className="btn btn-primary btn-sm sm:btn-md">Sign Up</Link>
         </div>
@@ -129,7 +131,7 @@ export default function LandingPage() {
             </div>
 
             {/* Feature Card 2 */}
-            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-cyan-800/10 hover:shadow-lg transition-shadow">
+            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-primary/10 hover:shadow-lg transition-shadow">
               <div className="card-body p-4">
                 <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center mb-2">
                   <Package className="w-5 h-5 text-secondary" />
@@ -199,7 +201,7 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="py-12 px-6 relative z-10">
         <div className="max-w-2xl mx-auto">
-          <div className="card bg-cyan-800/80 backdrop-blur-sm text-white shadow-lg border border-cyan-700/30">
+          <div className="card bg-primary/80 backdrop-blur-sm text-primary-content shadow-lg border border-primary/30">
             <div className="card-body text-center py-8">
               <h2 className="text-2xl font-bold mb-2">Ready to Get Started?</h2>
               <p className="mb-6 opacity-80 text-sm max-w-md mx-auto">
@@ -209,7 +211,7 @@ export default function LandingPage() {
                 <Link to="/signup" className="btn btn-primary btn-sm">
                   Create Account
                 </Link>
-                <Link to="/signup?role=admin" className="btn btn-outline btn-sm border-white/50 text-white hover:bg-white hover:text-cyan-800">
+                <Link to="/signup?role=admin" className="btn btn-outline btn-sm border-primary/50 text-primary-content hover:bg-primary-content hover:text-primary">
                   Register as Admin
                 </Link>
               </div>
@@ -222,26 +224,26 @@ export default function LandingPage() {
       <footer className="relative z-10 mt-auto">
         {/* Footer waves */}
         <div className="h-24 relative overflow-hidden">
-          <svg className="absolute bottom-0 left-0 w-[200%] h-full text-cyan-600/50 animate-[wave_18s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-full text-primary/50 animate-[wave_18s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
             <path fill="currentColor" d="M0,50 C240,90 480,20 720,60 C960,100 1200,30 1440,50 C1680,90 1920,20 2160,60 C2400,100 2640,30 2880,50 L2880,120 L0,120 Z"></path>
           </svg>
-          <svg className="absolute bottom-0 left-0 w-[200%] h-20 text-cyan-700/60 animate-[wave_12s_ease-in-out_infinite_reverse]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-20 text-primary/60 animate-[wave_12s_ease-in-out_infinite_reverse]" viewBox="0 0 2880 120" preserveAspectRatio="none">
             <path fill="currentColor" d="M0,70 C360,30 720,90 1080,50 C1440,70 1800,30 2160,90 C2520,50 2700,60 2880,70 L2880,120 L0,120 Z"></path>
           </svg>
-          <svg className="absolute bottom-0 left-0 w-[200%] h-16 text-cyan-800/70 animate-[wave_8s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-16 text-primary/70 animate-[wave_8s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
             <path fill="currentColor" d="M0,80 C180,50 360,100 540,70 C720,40 900,90 1080,60 C1260,30 1440,80 1620,50 C1800,100 1980,70 2160,40 C2340,90 2520,60 2700,30 C2800,70 2850,90 2880,80 L2880,120 L0,120 Z"></path>
           </svg>
         </div>
-        <div className="bg-cyan-800/90 backdrop-blur-md text-white py-4 px-4">
+        <div className="bg-primary/90 backdrop-blur-md text-primary-content py-4 px-4">
           <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs">
             <div className="flex items-center gap-2">
               <Fish className="w-4 h-4" />
               <span className="font-semibold">FishLERS</span>
             </div>
-            <span className="text-white/30 hidden sm:inline">|</span>
-            <span className="text-white/70">UPV CFOS IA-MSH</span>
-            <span className="text-white/30 hidden sm:inline">|</span>
-            <span className="text-white/50">© {new Date().getFullYear()} Laboratory Equipment Reservation System</span>
+            <span className="text-primary-content/30 hidden sm:inline">|</span>
+            <span className="text-primary-content/70">UPV CFOS IA-MSH</span>
+            <span className="text-primary-content/30 hidden sm:inline">|</span>
+            <span className="text-primary-content/50">© {new Date().getFullYear()} Laboratory Equipment Reservation System</span>
           </div>
         </div>
       </footer>
