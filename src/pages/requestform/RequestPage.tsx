@@ -8,6 +8,20 @@ import { useAuth } from '../../hooks/useAuth'
 import { collection, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useNavigate } from 'react-router-dom'
 
+// Import Cally calendar components
+import 'cally';
+
+// Declare custom elements for TypeScript
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'calendar-date': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { value?: string }, HTMLElement>;
+      'calendar-range': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { value?: string }, HTMLElement>;
+      'calendar-month': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    }
+  }
+}
+
 // REMOVE NUMBER INPUT ARROWS (Chrome, Edge, Safari)
 const removeStepper = `
   input[type=number]::-webkit-inner-spin-button,
@@ -27,6 +41,19 @@ export const RequestForm: React.FC = () => {
   const navigate = useNavigate()
 
   const [requestedItems, setRequestedItems] = React.useState<{ [id: string]: number }>({});
+  const [showDateCalendar, setShowDateCalendar] = React.useState(false);
+  const dateCalendarRef = React.useRef<HTMLDivElement>(null);
+
+  // Close calendar when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dateCalendarRef.current && !dateCalendarRef.current.contains(event.target as Node)) {
+        setShowDateCalendar(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [formData, setFormData] = React.useState({
     startDate: "",
@@ -44,8 +71,52 @@ export const RequestForm: React.FC = () => {
     });
   };
 
+  // Handle range change from calendar-range component
+  const handleRangeChange = (e: Event) => {
+    const target = e.target as HTMLElement & { value: string };
+    const value = target.value; // Format: "YYYY-MM-DD/YYYY-MM-DD" or "YYYY-MM-DD" if only start selected
+    console.log('Calendar range value:', value);
+    
+    if (value.includes('/')) {
+      // Both dates selected
+      const [start, end] = value.split('/');
+      console.log('Selected range:', { startDate: start, endDate: end });
+      setFormData(prev => ({ ...prev, startDate: start, endDate: end }));
+      // Close calendar after range is complete
+      setShowDateCalendar(false);
+    } else if (value) {
+      // Only start date selected so far
+      setFormData(prev => ({ ...prev, startDate: value, endDate: '' }));
+    }
+  };
+
+  // Format date for display (YYYY-MM-DD to readable format)
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Get the range value for the calendar
+  const getCalendarRangeValue = () => {
+    if (formData.startDate && formData.endDate) {
+      return `${formData.startDate}/${formData.endDate}`;
+    }
+    return formData.startDate || '';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate date fields
+    if (!formData.startDate) {
+      alert("Please select a start date.");
+      return;
+    }
+    if (!formData.endDate) {
+      alert("Please select a return date.");
+      return;
+    }
 
     const itemsArray = Object.entries(requestedItems)
       .filter(([_, qty]) => qty > 0)
@@ -73,6 +144,8 @@ export const RequestForm: React.FC = () => {
         createdBy: currentUser.uid,
         status: 'ongoing',
       });
+      
+      console.log('Submitted to Firebase with dates:', { startDate: formData.startDate, endDate: formData.endDate });
 
       // read back the created document to verify write and server timestamp resolution
       try {
@@ -213,32 +286,63 @@ export const RequestForm: React.FC = () => {
                     <span className="label-text font-medium">Date of Usage</span>
                   </label>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="label">
-                        <span className="label-text text-xs">Start Date</span>
-                      </label>
-                      <input
-                        type="date"
-                        name="startDate"
-                        className="input input-bordered input-sm w-full"
-                        onChange={handleInput}
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="label">
-                        <span className="label-text text-xs">Return Date</span>
-                      </label>
-                      <input
-                        type="date"
-                        name="endDate"
-                        className="input input-bordered input-sm w-full"
-                        onChange={handleInput}
-                        required
-                      />
-                    </div>
+                  {/* Merged Date Range Picker */}
+                  <div className="relative" ref={dateCalendarRef}>
+                    <input
+                      type="hidden"
+                      name="startDate"
+                      value={formData.startDate}
+                      required
+                    />
+                    <input
+                      type="hidden"
+                      name="endDate"
+                      value={formData.endDate}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="input input-bordered input-sm w-full text-left flex items-center justify-between"
+                      onClick={() => setShowDateCalendar(!showDateCalendar)}
+                    >
+                      <span className={formData.startDate && formData.endDate ? '' : 'text-base-content/50'}>
+                        {formData.startDate && formData.endDate
+                          ? `${formatDateDisplay(formData.startDate)} — ${formatDateDisplay(formData.endDate)}`
+                          : formData.startDate
+                          ? `${formatDateDisplay(formData.startDate)} — Select end date`
+                          : 'Select date range'}
+                      </span>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                    {showDateCalendar && (
+                      <div className="absolute z-50 mt-1 bg-base-100 border border-base-300 rounded-lg shadow-lg p-3">
+                        {/* Range Calendar with highlighting */}
+                        <div className="text-xs font-medium mb-2 text-center">
+                          {formData.startDate && !formData.endDate ? 'Now select return date' : 'Select date range'}
+                        </div>
+                        <calendar-range
+                          value={getCalendarRangeValue()}
+                          ref={(el: HTMLElement | null) => {
+                            if (el) {
+                              el.removeEventListener('change', handleRangeChange);
+                              el.addEventListener('change', handleRangeChange);
+                            }
+                          }}
+                        >
+                          <calendar-month></calendar-month>
+                        </calendar-range>
+                        {/* Selected range display */}
+                        <div className="mt-3 pt-3 border-t border-base-300 text-xs text-center text-base-content/70">
+                          {formData.startDate && formData.endDate
+                            ? `Selected: ${formatDateDisplay(formData.startDate)} — ${formatDateDisplay(formData.endDate)}`
+                            : formData.startDate
+                            ? `Start: ${formatDateDisplay(formData.startDate)} — click end date`
+                            : 'Click to select start date'}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
