@@ -241,7 +241,7 @@ export default function ProfileStudent() {
                     </label>
                     <input
                       type="text"
-                      className="input input-bordered w-full input-disabled"
+                      className={`input input-bordered w-full input-disabled ${editing ? 'bg-base-300 opacity-60' : ''}`}
                       placeholder="20XX-XXXXX"
                       value={profile?.studentNumber || studentNumber || ''}
                       readOnly
@@ -257,7 +257,7 @@ export default function ProfileStudent() {
                     </label>
                     <input
                       type="text"
-                      className="input input-bordered w-full input-disabled"
+                      className={`input input-bordered w-full input-disabled ${editing ? 'bg-base-300 opacity-60' : ''}`}
                       value={profile?.role || 'student'}
                       readOnly
                     />
@@ -272,7 +272,7 @@ export default function ProfileStudent() {
                     </label>
                     <input
                       type="text"
-                      className="input input-bordered w-full input-disabled font-mono text-xs"
+                      className={`input input-bordered w-full input-disabled font-mono text-xs ${editing ? 'bg-base-300 opacity-60' : ''}`}
                       value={profile?.uid || user.uid}
                       readOnly
                     />
