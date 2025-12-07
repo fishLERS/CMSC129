@@ -118,8 +118,8 @@ export default function Signup() {
 
       <form onSubmit={onSubmit} className="w-full max-w-sm relative z-10">
         <fieldset className="fieldset bg-base-100/90 backdrop-blur-sm border-cyan-800/20 rounded-box border p-6 shadow-xl shadow-cyan-900/10">
-          <legend className="fieldset-legend text-xl font-semibold px-2">
-            Sign Up {requestedRole === 'admin' ? '(Admin)' : '(Student)'}
+          <legend className="fieldset-legend text-xl font-semibold px-2 flex items-center gap-2">
+            🐟 FishLERS Sign Up {requestedRole === 'admin' ? '(Admin)' : '(Student)'}
           </legend>
 
           {err && <p className="text-error text-sm mb-3">{err}</p>}
