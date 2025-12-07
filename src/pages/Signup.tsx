@@ -10,6 +10,8 @@ export default function Signup() {
   const [pass, setPass] = useState('');
   const [pass2, setPass2] = useState('');
   const [name, setName] = useState('');
+  const [studentNumber, setStudentNumber] = useState('');
+  const [staffId, setStaffId] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -23,6 +25,8 @@ export default function Signup() {
       setErr(null);
 
       if (!name.trim()) throw new Error('Full name is required');
+      if (requestedRole === 'student' && !studentNumber.trim()) throw new Error('Student number is required');
+      if (requestedRole === 'admin' && !staffId.trim()) throw new Error('Staff ID is required');
       if (pass !== pass2) throw new Error('Passwords do not match');
 
       // Create Firebase Auth user
@@ -39,6 +43,7 @@ export default function Signup() {
         displayName: name || '',
         email: email,
         role: requestedRole,
+        ...(requestedRole === 'student' ? { studentNumber: studentNumber.trim() } : { staffId: staffId.trim() }),
         requestedAdmin: requestedRole === 'admin' ? true : false,
         createdAt: new Date(),
       });
@@ -133,6 +138,34 @@ export default function Signup() {
             onChange={e => setName(e.target.value)}
             required
           />
+
+          {/* Student Number field - only for students */}
+          {requestedRole === 'student' && (
+            <>
+              <label className="fieldset-label mt-3">Student Number</label>
+              <input
+                className="input w-full"
+                placeholder="e.g., 2021-12345"
+                value={studentNumber}
+                onChange={e => setStudentNumber(e.target.value)}
+                required
+              />
+            </>
+          )}
+
+          {/* Staff ID field - only for admins */}
+          {requestedRole === 'admin' && (
+            <>
+              <label className="fieldset-label mt-3">Staff ID</label>
+              <input
+                className="input w-full"
+                placeholder="e.g., STAFF-001"
+                value={staffId}
+                onChange={e => setStaffId(e.target.value)}
+                required
+              />
+            </>
+          )}
 
           {/* Email field */}
           <label className="fieldset-label mt-3">Email</label>
