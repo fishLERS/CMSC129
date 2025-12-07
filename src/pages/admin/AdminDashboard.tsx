@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { logicEquipment } from "../equipment/logicEquipment";
+import { Eye } from "lucide-react";
 
 interface RequestItem {
   equipmentID: string;
@@ -147,7 +148,7 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
-  if (loading) return <p className="text-center mt-10">Loading requests...</p>;
+  if (loading) return <div className="flex justify-center items-center h-96"><span className="loading loading-spinner loading-lg text-primary"></span></div>;
 
   const visibleRequests = requests.filter((req) => {
     if (tab === 'all') return true;
@@ -198,66 +199,109 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-base-100 p-6">
-        <h1 className="text-3xl font-bold mb-6">All Requests</h1>
-
-      <div className="mb-4">
-        <div className="tabs tabs-boxed">
-          <a className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
-          <a className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
-          <a className={`tab ${tab === 'approved' ? 'tab-active' : ''}`} onClick={() => setTab('approved')}>Approved</a>
-          <a className={`tab ${tab === 'declined' ? 'tab-active' : ''}`} onClick={() => setTab('declined')}>Declined</a>
-          <a className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
+    <div className="p-6 space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <p className="text-base-content/70">Manage and review equipment requests.</p>
         </div>
       </div>
 
-      {visibleRequests.length === 0 ? (
-        <p>No requests found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
-            <thead>
-              <tr>
-                <th>Requester</th>
-                <th>Purpose</th>
-                <th>Date of Usage</th>
-                <th>Status</th>
-                <th>View</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((req) => (
-                <tr key={req.id}>
-                  <td>{req.createdByName || req.createdBy || req.id}</td>
-                  <td className="max-w-xs truncate">{req.purpose}</td>
-                  <td>
-                    {req.startDate} → {req.endDate}
-                  </td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        (req.status || '').toString().toLowerCase() === 'approved'
-                          ? 'badge-success'
-                          : (req.status || '').toString().toLowerCase() === 'declined' || (req.status || '').toString().toLowerCase() === 'rejected'
-                          ? 'badge-error'
-                          : (req.status || '').toString().toLowerCase() === 'cancelled'
-                          ? 'badge-info'
-                          : 'badge-warning'
-                      }`}
-                    >
-                      {req.status || 'Pending'}
-                    </span>
-                  </td>
-                  <td>
-                    <button className="btn btn-xs btn-primary" onClick={() => { setViewRequest(req); setViewOpen(true); }}>Show</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Stats Cards */}
+      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+        <div className="stat">
+          <div className="stat-title">Total Requests</div>
+          <div className="stat-value">{requests.length}</div>
+          <div className="stat-desc">All time</div>
         </div>
-      )}
+        <div className="stat">
+          <div className="stat-title">Pending</div>
+          <div className="stat-value text-warning">{requests.filter(r => (r.status || '').toLowerCase() === 'pending').length}</div>
+          <div className="stat-desc">Awaiting approval</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Approved</div>
+          <div className="stat-value text-success">{requests.filter(r => (r.status || '').toLowerCase() === 'approved').length}</div>
+          <div className="stat-desc">Ready for use</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Declined</div>
+          <div className="stat-value text-error">{requests.filter(r => ['declined','rejected'].includes((r.status || '').toLowerCase())).length}</div>
+          <div className="stat-desc">Requests declined</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Cancelled</div>
+          <div className="stat-value text-info">{requests.filter(r => (r.status || '').toLowerCase() === 'cancelled').length}</div>
+          <div className="stat-desc">Requests cancelled</div>
+        </div>
+      </div>
+
+      {/* Requests Table Card */}
+      <div className="card bg-base-200 shadow-xl">
+        <div className="card-body p-0">
+          {/* Tabs Header */}
+          <div className="p-4 border-b border-base-300">
+            <div role="tablist" className="tabs tabs-boxed bg-base-300">
+              <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
+              <a role="tab" className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
+              <a role="tab" className={`tab ${tab === 'approved' ? 'tab-active' : ''}`} onClick={() => setTab('approved')}>Approved</a>
+              <a role="tab" className={`tab ${tab === 'declined' ? 'tab-active' : ''}`} onClick={() => setTab('declined')}>Declined</a>
+              <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Requester</th>
+                  <th>Purpose</th>
+                  <th>Date of Usage</th>
+                  <th>Status</th>
+                  <th>View</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-8 text-base-content/60">
+                      No requests found
+                    </td>
+                  </tr>
+                ) : (
+                  visible.map((req) => (
+                    <tr key={req.id} className="hover">
+                      <td>{req.createdByName || req.createdBy || req.id}</td>
+                      <td className="max-w-xs truncate">{req.purpose}</td>
+                      <td>{req.startDate} → {req.endDate}</td>
+                      <td>
+                        <span className={`badge ${
+                          (req.status || '').toString().toLowerCase() === 'approved'
+                            ? 'badge-success'
+                            : (req.status || '').toString().toLowerCase() === 'declined' || (req.status || '').toString().toLowerCase() === 'rejected'
+                            ? 'badge-error'
+                            : (req.status || '').toString().toLowerCase() === 'cancelled'
+                            ? 'badge-info'
+                            : 'badge-warning'
+                        }`}>
+                          {req.status || 'Pending'}
+                        </span>
+                      </td>
+                      <td>
+                        <button className="btn btn-ghost btn-sm btn-circle" onClick={() => { setViewRequest(req); setViewOpen(true); }}>
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
       {viewOpen && viewRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4">
@@ -375,8 +419,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
-    </>
+  </div>
   );
 };
 
