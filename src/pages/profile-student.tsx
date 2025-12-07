@@ -290,7 +290,7 @@ export default function ProfileStudent() {
                 </h3>
                 <div className="flex items-center gap-4 p-4 bg-base-300 rounded-lg mt-2">
                   <div className="avatar placeholder">
-                    <div className="bg-primary text-primary-content rounded-full w-10">
+                    <div className="bg-primary text-primary-content rounded-full w-10 h-10 flex items-center justify-center">
                       <Mail className="w-5 h-5" />
                     </div>
                   </div>
