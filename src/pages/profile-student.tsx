@@ -177,7 +177,7 @@ export default function ProfileStudent() {
                           <input
                             className={`mt-2 w-full rounded-md border-0 p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
                             placeholder="20XX-XXXXX"
-                            value={profile?.studentNumber || ''}
+                            value={profile?.studentNumber || studentNumber || ''}
                             readOnly
                             tabIndex={-1}
                           />
