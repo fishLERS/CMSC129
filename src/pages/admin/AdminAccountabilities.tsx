@@ -1,6 +1,6 @@
 import React from 'react'
 import { db } from '../../firebase'
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
 import { FileWarning, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react'
 
 const AdminAccountabilities: React.FC = () => {
@@ -8,6 +8,13 @@ const AdminAccountabilities: React.FC = () => {
   const [tab, setTab] = React.useState<'all'|'pending'|'resolved'|'overdue'>('all')
   const [busyId, setBusyId] = React.useState<string | null>(null)
   const [showModal, setShowModal] = React.useState<any | null>(null)
+  const [addOpen, setAddOpen] = React.useState(false)
+  const [dateIncurred, setDateIncurred] = React.useState('')
+  const [dateDue, setDateDue] = React.useState('')
+  const [selectedStudentNumber, setSelectedStudentNumber] = React.useState('')
+  const [selectedStudentName, setSelectedStudentName] = React.useState('')
+  const [detailsField, setDetailsField] = React.useState('')
+  const [studentNameByNumber, setStudentNameByNumber] = React.useState<Record<string,string>>({})
 
   React.useEffect(() => {
     const processSnapshot = (snap: any) => {
@@ -33,6 +40,25 @@ const AdminAccountabilities: React.FC = () => {
     return () => { if (unsub) unsub(); }
   }, [])
 
+  // load all users for name mapping
+  React.useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const snaps = await getDocs(collection(db, 'users'))
+        const map: Record<string,string> = {}
+        snaps.forEach(s => {
+          const d: any = s.data()
+          if (d?.studentNumber) map[d.studentNumber] = d.displayName || d.email || s.id
+        })
+        if (!cancelled) setStudentNameByNumber(map)
+      } catch (e) {
+        console.warn('Failed to load users for names', e)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   // Filter rows
   let filtered = rows.filter(r => {
     if (tab === 'all') return true
@@ -46,6 +72,9 @@ const AdminAccountabilities: React.FC = () => {
   const pendingCount = rows.filter(r => (r.status || '').toLowerCase() === 'pending').length
   const resolvedCount = rows.filter(r => ['resolved','completed'].includes((r.status || '').toLowerCase())).length
   const overdueCount = rows.filter(r => (r.status || '').toLowerCase() === 'overdue').length
+
+  // unique overdue students (studentNumber) derived from rows
+  const overdueStudents = Array.from(new Set(rows.filter(r => (r.status || '').toLowerCase() === 'overdue').map(r => r.studentNumber || '').filter(Boolean)))
 
   const getStatusBadge = (status: string) => {
     const s = (status || 'pending').toLowerCase()
@@ -64,7 +93,7 @@ const AdminAccountabilities: React.FC = () => {
           <p className="text-base-content/70">View and manage all student accountabilities</p>
         </div>
         <div className="flex gap-2">
-          <button className="btn btn-primary btn-sm gap-2">
+          <button className="btn btn-primary btn-sm gap-2" onClick={() => setAddOpen(true)}>
             <Plus className="w-4 h-4" />
             Add New Accountability
           </button>
@@ -227,6 +256,70 @@ const AdminAccountabilities: React.FC = () => {
             <div className="text-xs">There are {pendingCount} pending accountabilities that need to be resolved.</div>
           </div>
         </div>
+      )}
+      {/* Add Modal */}
+      {addOpen && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-lg">
+            <h3 className="font-bold text-lg mb-2">Create Accountability</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className="label"><span className="label-text">Date Incurred</span></label>
+                <input type="date" className="input input-bordered w-full" value={dateIncurred} onChange={(e) => setDateIncurred(e.target.value)} />
+              </div>
+              <div>
+                <label className="label"><span className="label-text">Date Due</span></label>
+                <input type="date" className="input input-bordered w-full" value={dateDue} onChange={(e) => setDateDue(e.target.value)} />
+              </div>
+              <div>
+                <label className="label"><span className="label-text">Full Name (overdue list)</span></label>
+                <select className="select select-bordered w-full" value={selectedStudentNumber} onChange={(e) => { const sn = e.target.value; setSelectedStudentNumber(sn); setSelectedStudentName(studentNameByNumber[sn] || sn) }}>
+                  <option value="">(select student)</option>
+                  {Array.from(new Set(rows.filter(r => (r.status || '').toLowerCase() === 'overdue').map(r => r.studentNumber || '').filter(Boolean))).map(sn => (
+                    <option key={sn} value={sn}>{studentNameByNumber[sn] || sn}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label"><span className="label-text">Student Number</span></label>
+                <input className="input input-bordered w-full" value={selectedStudentNumber} onChange={(e) => setSelectedStudentNumber(e.target.value)} />
+              </div>
+              <div>
+                <label className="label"><span className="label-text">Details</span></label>
+                <textarea className="textarea textarea-bordered w-full" rows={4} value={detailsField} onChange={(e) => setDetailsField(e.target.value)} />
+              </div>
+            </div>
+            <div className="modal-action">
+              <button className="btn" onClick={() => setAddOpen(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={async () => {
+                // basic validation
+                if (!selectedStudentNumber) { alert('Please select or enter a student number'); return }
+                if (!dateDue) { alert('Please select a due date'); return }
+                try {
+                  await addDoc(collection(db, 'accountabilities'), {
+                    studentNumber: selectedStudentNumber,
+                    details: detailsField || '',
+                    dueDate: new Date(dateDue),
+                    incurredDate: dateIncurred ? new Date(dateIncurred) : null,
+                    status: 'pending',
+                    createdAt: serverTimestamp()
+                  })
+                  // reset
+                  setAddOpen(false)
+                  setDateDue('')
+                  setDateIncurred('')
+                  setSelectedStudentNumber('')
+                  setSelectedStudentName('')
+                  setDetailsField('')
+                } catch (e) {
+                  console.error('Failed to create accountability', e)
+                  alert('Failed to create accountability')
+                }
+              }}>Create</button>
+            </div>
+          </div>
+          <form method="dialog" className="modal-backdrop"><button onClick={() => setAddOpen(false)}>close</button></form>
+        </dialog>
       )}
     </div>
   )
