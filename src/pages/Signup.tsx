@@ -20,6 +20,7 @@ export default function Signup() {
     try {
       setErr(null);
 
+      if (!name.trim()) throw new Error('Full name is required');
       if (pass !== pass2) throw new Error('Passwords do not match');
 
       // Create Firebase Auth user
@@ -65,9 +66,10 @@ export default function Signup() {
         {err && <p className="text-red-600 text-sm">{err}</p>}
         <input
           className="w-full p-2 border rounded"
-          placeholder="Full Name (optional)"
+          placeholder="Full Name"
           value={name}
           onChange={e => setName(e.target.value)}
+          required
         />
         <input
           className="w-full p-2 border rounded"
