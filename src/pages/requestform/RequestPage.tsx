@@ -1,11 +1,11 @@
 import React from "react";
-import './RequestPage.css'
 import { logicEquipment } from "../equipment/logicEquipment";
 
 import { db, auth } from "../../firebase";
 import { useAuth } from '../../hooks/useAuth'
 import { collection, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useNavigate } from 'react-router-dom'
+import { Calendar, Clock, User, FileText, Package, Plus, Minus, Search, Send } from 'lucide-react';
 
 // Import Cally calendar components
 import 'cally';
@@ -41,7 +41,9 @@ export const RequestForm: React.FC = () => {
 
   const [requestedItems, setRequestedItems] = React.useState<{ [id: string]: number }>({});
   const [showDateCalendar, setShowDateCalendar] = React.useState(false);
-  const [calendarKey, setCalendarKey] = React.useState(0); // Key to force calendar remount
+  const [calendarKey, setCalendarKey] = React.useState(0);
+  const [filterText, setFilterText] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const dateCalendarRef = React.useRef<HTMLDivElement>(null);
 
   // Close calendar when clicking outside
@@ -149,6 +151,7 @@ export const RequestForm: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       // prefer authenticated user from the auth hook (keeps behaviour consistent across renders)
       const currentUser = user || auth.currentUser
@@ -188,159 +191,187 @@ export const RequestForm: React.FC = () => {
     } catch (error) {
       console.error("Error submitting request:", error);
       alert("Something went wrong.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  return (
-  <div className="request-page min-h-screen">
-      <div className="flex-1">
+  // Filter equipment list
+  const filteredEquipment = equipmentList.filter(item => 
+    item.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+    item.category?.toLowerCase().includes(filterText.toLowerCase())
+  );
 
+  // Calculate totals
+  const totalItems = Object.values(requestedItems).reduce((a, b) => a + b, 0);
+  const selectedItems = Object.entries(requestedItems).filter(([_, qty]) => qty > 0);
+
+  return (
+    <div className="p-6">
       {/* Inject CSS to remove number arrows */}
       <style>{removeStepper}</style>
 
-      {/* HEADER */}
-      <header className="w-full bg-base-200 border-b border-base-300 px-4 py-2"></header>
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">New Equipment Request</h1>
+        <p className="text-base-content/70">Select equipment and fill in the request details</p>
+      </div>
 
-      {/* MAIN */}
-      <div className="mt-4 px-6 flex gap-6 items-start">
-
-        {/* LEFT PANEL */}
-        <section className="flex-1 space-y-3">
-
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold">Available Lab Equipment</h1>
-            <input
-              type="text"
-              placeholder="Filter equipment"
-              className="input input-sm input-bordered"
-            />
-          </div>
-
-          {/* EQUIPMENT LIST */}
-          <div className="border border-base-300 rounded-md bg-base-100 h-[418px] overflow-y-auto p-3">
-
-            {equipmentList.map((item) => (
-              <div
-                key={item.equipmentID}
-                className="flex justify-between items-center border-b py-2"
-              >
-                {/* Item Info */}
-                <div>
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-sm text-base-content/70">
-                    Quantity Available: {item.totalInventory}
-                  </p>
-                  {item.category && (
-                    <p className="text-xs text-base-content/60">
-                      Category: {item.category}
-                    </p>
-                  )}
-                </div>
-
-                {/* STEPPER NO ARROWS */}
-                <div className="flex items-center gap-2">
-                  <button
-                    className="btn btn-xs"
-                    onClick={() =>
-                      setRequestedItems((prev) => ({
-                        ...prev,
-                        [item.equipmentID!]: Math.max((prev[item.equipmentID!] || 0) - 1, 0),
-                      }))
-                    }
-                  >
-                    -
-                  </button>
-
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* LEFT PANEL - Equipment Selection */}
+        <div className="flex-1">
+          <div className="card bg-base-200 shadow-xl">
+            <div className="card-body p-4">
+              {/* Header with search */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h2 className="card-title text-lg">
+                  <Package className="w-5 h-5" />
+                  Available Equipment
+                </h2>
+                <div className="join">
+                  <div className="join-item bg-base-300 flex items-center px-3">
+                    <Search className="w-4 h-4 text-base-content/60" />
+                  </div>
                   <input
-                    type="number"
-                    min={0}
-                    value={requestedItems[item.equipmentID!] || 0}
-                    onChange={(e) =>
-                      setRequestedItems((prev) => ({
-                        ...prev,
-                        [item.equipmentID!]: Number(e.target.value),
-                      }))
-                    }
-                    className="input input-bordered input-xs w-12 text-center"
+                    type="text"
+                    placeholder="Search equipment..."
+                    className="input input-sm input-bordered join-item w-full sm:w-48"
+                    value={filterText}
+                    onChange={(e) => setFilterText(e.target.value)}
                   />
-
-                  <button
-                    className="btn btn-xs"
-                    onClick={() =>
-                      setRequestedItems((prev) => ({
-                        ...prev,
-                        [item.equipmentID!]: (prev[item.equipmentID!] || 0) + 1,
-                      }))
-                    }
-                  >
-                    +
-                  </button>
                 </div>
               </div>
-            ))}
+
+              {/* Equipment List */}
+              <div className="bg-base-100 rounded-lg border border-base-300 h-[400px] overflow-y-auto">
+                {filteredEquipment.length === 0 ? (
+                  <div className="p-8 text-center text-base-content/60">
+                    No equipment found
+                  </div>
+                ) : (
+                  <div className="divide-y divide-base-200">
+                    {filteredEquipment.map((item) => (
+                      <div
+                        key={item.equipmentID}
+                        className={`flex justify-between items-center p-3 hover:bg-base-200/50 transition-colors ${
+                          (requestedItems[item.equipmentID!] || 0) > 0 ? 'bg-primary/5' : ''
+                        }`}
+                      >
+                        {/* Item Info */}
+                        <div className="flex-1">
+                          <p className="font-medium">{item.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="badge badge-ghost badge-sm">
+                              Available: {item.totalInventory}
+                            </span>
+                            {item.category && (
+                              <span className="badge badge-outline badge-sm">
+                                {item.category}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Quantity Stepper */}
+                        <div className="join">
+                          <button
+                            type="button"
+                            className="btn btn-sm join-item"
+                            onClick={() =>
+                              setRequestedItems((prev) => ({
+                                ...prev,
+                                [item.equipmentID!]: Math.max((prev[item.equipmentID!] || 0) - 1, 0),
+                              }))
+                            }
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <input
+                            type="number"
+                            min={0}
+                            value={requestedItems[item.equipmentID!] || 0}
+                            onChange={(e) =>
+                              setRequestedItems((prev) => ({
+                                ...prev,
+                                [item.equipmentID!]: Math.max(0, Number(e.target.value)),
+                              }))
+                            }
+                            className="input input-sm input-bordered join-item w-14 text-center"
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm join-item"
+                            onClick={() =>
+                              setRequestedItems((prev) => ({
+                                ...prev,
+                                [item.equipmentID!]: (prev[item.equipmentID!] || 0) + 1,
+                              }))
+                            }
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Total Selected Stats */}
+              <div className="stats bg-base-300 shadow mt-4">
+                <div className="stat py-2 px-4">
+                  <div className="stat-title text-xs">Items Selected</div>
+                  <div className="stat-value text-lg">{selectedItems.length}</div>
+                </div>
+                <div className="stat py-2 px-4">
+                  <div className="stat-title text-xs">Total Quantity</div>
+                  <div className="stat-value text-lg text-primary">{totalItems}</div>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
 
-          {/* TOTAL SELECTED */}
-          <div className="border border-base-300 rounded-md bg-base-100 px-3 py-2">
-            <h2 className="font-medium">
-              Total No. of Items:{" "}
-              {Object.values(requestedItems).reduce((a, b) => a + b, 0)}
-            </h2>
-          </div>
-        </section>
+        {/* RIGHT PANEL - Request Form */}
+        <div className="w-full lg:w-96">
+          <div className="card bg-base-200 shadow-xl">
+            <div className="card-body p-4">
+              <h2 className="card-title text-lg justify-center mb-2">
+                <FileText className="w-5 h-5" />
+                Request Details
+              </h2>
 
-        {/* RIGHT PANEL */}
-        <section className="w-[355px]">
-
-          <h1 className="text-lg font-semibold mb-3 text-center">
-            NEW REQUEST FORM
-          </h1>
-
-          <form onSubmit={handleSubmit}>
-            <div className="border border-base-300 rounded-md bg-base-100 p-4 h-[500px] flex flex-col justify-between">
-
-              <div className="space-y-3">
-
-                {/* DATE RANGE */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Date Range */}
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium">Date of Usage</span>
+                  <label className="label py-1">
+                    <span className="label-text font-medium flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Date of Usage
+                    </span>
                   </label>
-
-                  {/* Merged Date Range Picker */}
                   <div className="relative" ref={dateCalendarRef}>
-                    <input
-                      type="hidden"
-                      name="startDate"
-                      value={formData.startDate}
-                      required
-                    />
-                    <input
-                      type="hidden"
-                      name="endDate"
-                      value={formData.endDate}
-                      required
-                    />
+                    <input type="hidden" name="startDate" value={formData.startDate} required />
+                    <input type="hidden" name="endDate" value={formData.endDate} required />
                     <button
                       type="button"
-                      className="input input-bordered input-sm w-full text-left flex items-center justify-between"
+                      className={`btn btn-sm w-full justify-between font-normal ${
+                        formData.startDate && formData.endDate ? '' : 'text-base-content/50'
+                      }`}
                       onClick={() => setShowDateCalendar(!showDateCalendar)}
                     >
-                      <span className={formData.startDate && formData.endDate ? '' : 'text-base-content/50'}>
+                      <span>
                         {formData.startDate && formData.endDate
                           ? `${formatDateDisplay(formData.startDate)} — ${formatDateDisplay(formData.endDate)}`
                           : formData.startDate
-                          ? `${formatDateDisplay(formData.startDate)} — Select end date`
+                          ? `${formatDateDisplay(formData.startDate)} — Select end`
                           : 'Select date range'}
                       </span>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                      <Calendar className="w-4 h-4" />
                     </button>
                     {showDateCalendar && (
-                      <div className="absolute z-50 mt-1 bg-base-100 border border-base-300 rounded-lg shadow-lg p-3">
-                        {/* Range Calendar with highlighting */}
-                        <div className="text-xs font-medium mb-2 text-center">
+                      <div className="absolute z-50 mt-1 bg-base-100 border border-base-300 rounded-lg shadow-xl p-3 right-0">
+                        <div className="text-xs font-medium mb-2 text-center text-base-content/70">
                           {formData.startDate && !formData.endDate ? 'Now select return date' : 'Select date range'}
                         </div>
                         <calendar-range
@@ -356,14 +387,12 @@ export const RequestForm: React.FC = () => {
                         >
                           <calendar-month></calendar-month>
                         </calendar-range>
-                        {/* Clear and Today buttons */}
                         <div className="flex gap-2 mt-3 pt-3 border-t border-base-300">
                           <button
                             type="button"
                             className="btn btn-xs btn-ghost flex-1"
                             onClick={() => {
                               setFormData(prev => ({ ...prev, startDate: '', endDate: '' }));
-                              // Force calendar to remount and clear highlights
                               setCalendarKey(prev => prev + 1);
                             }}
                           >
@@ -381,44 +410,41 @@ export const RequestForm: React.FC = () => {
                             Today
                           </button>
                         </div>
-                        {/* Selected range display */}
-                        <div className="mt-2 text-xs text-center text-base-content/70">
-                          {formData.startDate && formData.endDate
-                            ? `Selected: ${formatDateDisplay(formData.startDate)} — ${formatDateDisplay(formData.endDate)}`
-                            : formData.startDate
-                            ? `Start: ${formatDateDisplay(formData.startDate)} — click end date`
-                            : 'Click to select start date'}
-                        </div>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* TIME RANGE */}
+                {/* Time Range */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Start Time</span>
+                    <label className="label py-1">
+                      <span className="label-text font-medium flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Start Time
+                      </span>
                     </label>
                     <input
                       type="time"
                       name="start"
-                      className="input input-bordered input-sm w-full"
+                      className="input input-sm input-bordered w-full"
                       onChange={handleInput}
                       min={isStartDateToday() ? getCurrentTime() : undefined}
                       value={formData.start}
                       required
                     />
                   </div>
-
                   <div className="form-control">
-                    <label className="label">
-                      <span className="label-text font-medium">Return Time</span>
+                    <label className="label py-1">
+                      <span className="label-text font-medium flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Return Time
+                      </span>
                     </label>
                     <input
                       type="time"
                       name="end"
-                      className="input input-bordered input-sm w-full"
+                      className="input input-sm input-bordered w-full"
                       onChange={handleInput}
                       min={formData.startDate === formData.endDate && isStartDateToday() ? getCurrentTime() : undefined}
                       value={formData.end}
@@ -427,71 +453,94 @@ export const RequestForm: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ADVISER */}
+                {/* Adviser */}
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium">Adviser / Project Leader</span>
+                  <label className="label py-1">
+                    <span className="label-text font-medium flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Adviser / Project Leader
+                    </span>
                   </label>
                   <input
                     type="text"
                     name="adviser"
-                    className="input input-bordered input-sm w-full"
-                    placeholder="Enter Adviser/Project Leader"
+                    className="input input-sm input-bordered w-full"
+                    placeholder="Enter name"
                     onChange={handleInput}
+                    value={formData.adviser}
                     required
                   />
                 </div>
 
-                {/* PURPOSE */}
+                {/* Purpose */}
                 <div className="form-control">
-                  <label className="label">
-                    <span className="label-text font-medium">Purpose</span>
+                  <label className="label py-1">
+                    <span className="label-text font-medium flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Purpose
+                    </span>
                   </label>
                   <input
                     type="text"
                     name="purpose"
-                    className="input input-bordered input-sm w-full"
-                    placeholder="Enter Purpose of Usage"
+                    className="input input-sm input-bordered w-full"
+                    placeholder="Enter purpose of usage"
                     onChange={handleInput}
+                    value={formData.purpose}
                     required
                   />
                 </div>
 
-                {/* REQUEST SUMMARY */}
+                {/* Request Summary */}
                 <div className="form-control">
-                  <label className="label">
+                  <label className="label py-1">
                     <span className="label-text font-medium">Request Summary</span>
+                    <span className="label-text-alt">{selectedItems.length} items</span>
                   </label>
-
-                  <div className="border border-base-300 rounded-md bg-base-100 h-[100px] px-3 py-2 overflow-y-auto">
-                    {Object.entries(requestedItems)
-                      .filter(([_, qty]) => qty > 0)
-                      .map(([id, qty]) => {
-                        const item = equipmentList.find((e) => e.equipmentID === id);
-                        if (!item) return null;
-                        return (
-                          <p key={id} className="text-sm">
-                            {item.name} — {qty} pcs
-                          </p>
-                        );
-                      })}
-
-                    {Object.values(requestedItems).every((q) => q === 0) && (
-                      <p className="text-sm text-base-content/70">No items selected</p>
+                  <div className="bg-base-100 border border-base-300 rounded-lg h-24 overflow-y-auto">
+                    {selectedItems.length === 0 ? (
+                      <div className="p-3 text-sm text-base-content/50 text-center">
+                        No items selected
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-base-200">
+                        {selectedItems.map(([id, qty]) => {
+                          const item = equipmentList.find((e) => e.equipmentID === id);
+                          if (!item) return null;
+                          return (
+                            <div key={id} className="flex justify-between items-center px-3 py-2 text-sm">
+                              <span>{item.name}</span>
+                              <span className="badge badge-primary badge-sm">{qty} pcs</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 </div>
 
-              </div>
-
-              {/* SUBMIT BUTTON */}
-              <button className="btn btn-primary btn-block mt-4" type="submit">
-                Request
-              </button>
+                {/* Submit Button */}
+                <button 
+                  type="submit" 
+                  className="btn btn-primary btn-block gap-2"
+                  disabled={isSubmitting || selectedItems.length === 0}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Submit Request
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
-          </form>
-        </section>
-      </div>
+          </div>
+        </div>
       </div>
     </div>
   );
