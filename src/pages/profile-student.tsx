@@ -252,7 +252,6 @@ export default function ProfileStudent() {
                             <div className="w-10 h-10 rounded-full bg-transparent flex items-center justify-center text-base-content/60">📧</div>
                             <div>
                               <div className="font-medium">{profile?.email || user.email}</div>
-                              <div className="text-xs text-base-content/60">{formatDate(profile?.createdAt) || 'added recently'}</div>
                             </div>
                           </div>
                         </div>
