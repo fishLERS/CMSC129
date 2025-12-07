@@ -54,7 +54,7 @@ export default function LandingPage() {
       </div>
 
       {/* Navbar */}
-  <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10">
+  <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10 px-4">
         <div className="navbar-start">
           <Link to="/" className="btn btn-ghost text-xl gap-2 h-auto py-2">
             <Fish className="w-6 h-6 text-primary" />
@@ -118,7 +118,7 @@ export default function LandingPage() {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Feature Card 1 */}
-            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-cyan-800/10 hover:shadow-lg transition-shadow">
+            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-primary/10 hover:shadow-lg transition-shadow">
               <div className="card-body p-4">
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mb-2">
                   <ClipboardList className="w-5 h-5 text-primary" />
@@ -144,7 +144,7 @@ export default function LandingPage() {
             </div>
 
             {/* Feature Card 3 */}
-            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-cyan-800/10 hover:shadow-lg transition-shadow">
+            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-primary/10 hover:shadow-lg transition-shadow">
               <div className="card-body p-4">
                 <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center mb-2">
                   <BarChart3 className="w-5 h-5 text-accent" />
@@ -157,7 +157,7 @@ export default function LandingPage() {
             </div>
 
             {/* Feature Card 4 */}
-            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-cyan-800/10 hover:shadow-lg transition-shadow">
+            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-primary/10 hover:shadow-lg transition-shadow">
               <div className="card-body p-4">
                 <div className="w-10 h-10 bg-info/10 rounded-lg flex items-center justify-center mb-2">
                   <Users className="w-5 h-5 text-info" />
@@ -170,7 +170,7 @@ export default function LandingPage() {
             </div>
 
             {/* Feature Card 5 */}
-            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-cyan-800/10 hover:shadow-lg transition-shadow">
+            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-primary/10 hover:shadow-lg transition-shadow">
               <div className="card-body p-4">
                 <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center mb-2">
                   <Shield className="w-5 h-5 text-warning" />
@@ -183,7 +183,7 @@ export default function LandingPage() {
             </div>
 
             {/* Feature Card 6 */}
-            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-cyan-800/10 hover:shadow-lg transition-shadow">
+            <div className="card bg-base-100/80 backdrop-blur-sm shadow-md border border-primary/10 hover:shadow-lg transition-shadow">
               <div className="card-body p-4">
                 <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center mb-2">
                   <Fish className="w-5 h-5 text-success" />

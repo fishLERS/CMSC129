@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import ThemeToggle from '../components/ThemeToggle';
+import { ArrowLeft, Fish } from 'lucide-react';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -67,12 +68,24 @@ export default function Signup() {
     }
   }
 
+  const currentYear = new Date().getFullYear();
+
   return (
-  <div className="min-h-dvh grid place-items-center p-6 bg-gradient-to-b from-base-200 via-base-200 to-primary/30 relative overflow-hidden">
-      {/* Theme Toggle - Top Right */}
-      <div className="absolute top-4 right-4 z-50">
-        <ThemeToggle />
-      </div>
+  <div className="min-h-dvh flex flex-col bg-gradient-to-b from-base-200 via-base-200 to-primary/30 relative overflow-hidden">
+      <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10 px-4">
+        <div className="navbar-start">
+          <Link to="/" className="btn btn-ghost text-xl gap-2 h-auto py-2">
+            <Fish className="w-6 h-6 text-primary" />
+            <div className="flex flex-col items-start">
+              <span className="font-bold leading-tight">FishLERS</span>
+              <span className="text-[10px] text-base-content/60 font-normal hidden sm:block leading-tight">UPV CFOS IA-MSH</span>
+            </div>
+          </Link>
+        </div>
+        <div className="navbar-end gap-2">
+          <ThemeToggle />
+        </div>
+      </nav>
       
       {/* Ocean/Fisheries themed background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -95,19 +108,18 @@ export default function Signup() {
   <div className="absolute top-[85%] right-[18%] w-3 h-3 bg-primary/20 rounded-full animate-pulse" style={{animationDelay: '1.2s'}}></div>
 
         {/* Fish silhouettes */}
-  <svg className="absolute top-[20%] left-[5%] w-12 h-8 text-primary/10 rotate-12" viewBox="0 0 24 16" fill="currentColor">
-          <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
+        <svg className="absolute top-[18%] left-[6%] w-16 h-10 text-primary/15 rotate-12" viewBox="0 0 24 16" fill="currentColor">
+          <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z" />
         </svg>
-  <svg className="absolute top-[45%] right-[7%] w-16 h-10 text-primary/8 -rotate-6" viewBox="0 0 24 16" fill="currentColor">
-          <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
+        <svg className="absolute top-[35%] right-[8%] w-14 h-8 text-primary/20 -rotate-6" viewBox="0 0 24 16" fill="currentColor">
+          <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z" />
         </svg>
-        <svg className="absolute bottom-[25%] left-[8%] w-10 h-6 text-teal-500/10 rotate-[-20deg]" viewBox="0 0 24 16" fill="currentColor">
-          <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
+        <svg className="absolute top-[60%] left-[2%] w-12 h-7 text-primary/20 -rotate-12 opacity-80" viewBox="0 0 24 16" fill="currentColor">
+          <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z" />
         </svg>
-  <svg className="absolute bottom-[40%] right-[12%] w-8 h-5 text-primary/8 rotate-6" viewBox="0 0 24 16" fill="currentColor">
-          <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z"/>
+        <svg className="absolute top-[75%] right-[12%] w-10 h-6 text-primary/25 rotate-6 opacity-60" viewBox="0 0 24 16" fill="currentColor">
+          <path d="M17 8c3-2 5-2 7 0-2 2-4 2-7 0zm-2 0c-3 4-8 6-12 4 0-2 1-4 3-4-2 0-3-2-3-4 4-2 9 0 12 4z" />
         </svg>
-
         {/* Wave patterns - layered at bottom */}
         <div className="absolute bottom-0 left-0 w-full h-48 overflow-hidden">
           {/* Back wave - slowest */}
@@ -127,10 +139,22 @@ export default function Signup() {
         </div>
       </div>
 
-      <form onSubmit={onSubmit} className="w-full max-w-sm relative z-10">
+      <div className="absolute top-20 left-6 z-40">
+        <button 
+          type="button"
+          className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-base-content"
+          onClick={() => nav('/')}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Home
+        </button>
+      </div>
+
+      <main className="flex-1 flex items-center justify-center px-4 pt-24 pb-10 relative z-20">
+      <form onSubmit={onSubmit} className="w-full max-w-sm">
   <fieldset className="fieldset bg-base-100/90 backdrop-blur-sm border-primary/20 rounded-box border p-6 shadow-xl shadow-primary/10">
           <legend className="fieldset-legend text-xl font-semibold px-2 flex items-center gap-2">
-            🐟 FishLERS Sign Up {requestedRole === 'admin' ? '(Admin)' : '(Student)'}
+            FishLERS Sign Up {requestedRole === 'admin' ? '(Admin)' : '(Student)'}
           </legend>
 
           {err && <p className="text-error text-sm mb-3">{err}</p>}
@@ -257,6 +281,25 @@ export default function Signup() {
           </p>
         </fieldset>
       </form>
+      </main>
+
+      <footer className="relative z-20 mt-auto">
+        <div className="h-16 relative overflow-hidden">
+          <svg className="absolute bottom-0 left-0 w-[200%] h-full text-primary/40 animate-[wave_18s_ease-in-out_infinite]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+            <path fill="currentColor" d="M0,50 C240,90 480,20 720,60 C960,100 1200,30 1440,50 C1680,90 1920,20 2160,60 C2400,100 2640,30 2880,50 L2880,120 L0,120 Z"></path>
+          </svg>
+          <svg className="absolute bottom-0 left-0 w-[200%] h-14 text-primary/60 animate-[wave_12s_ease-in-out_infinite_reverse]" viewBox="0 0 2880 120" preserveAspectRatio="none">
+            <path fill="currentColor" d="M0,80 C360,40 720,90 1080,60 C1440,80 1800,40 2160,90 C2520,60 2700,70 2880,80 L2880,120 L0,120 Z"></path>
+          </svg>
+        </div>
+        <div className="bg-primary/90 backdrop-blur text-primary-content py-3 px-4">
+          <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-4 text-xs text-primary-content/70">
+            <span>FishLERS · UPV CFOS IA-MSH</span>
+            <span className="hidden sm:inline">•</span>
+            <span>© {currentYear} Laboratory Equipment Reservation System</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
