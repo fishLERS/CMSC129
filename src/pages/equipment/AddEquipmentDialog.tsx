@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { Equipment } from "../../db";
 import EquipmentForm from "./EquipmentForm";
 
@@ -50,8 +51,9 @@ export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) 
 
   return (
     <>
-      <button className="btn btn-outline rounded-full px-4 py-2" onClick={() => setOpen(true)}>
-        Add New Equipment <span className="ml-2">+</span>
+      <button className="btn btn-primary btn-sm gap-2" onClick={() => setOpen(true)}>
+        <Plus className="w-4 h-4" />
+        <span>Add New Equipment</span>
       </button>
 
       {open && (
