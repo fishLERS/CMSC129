@@ -30,3 +30,13 @@
 	white-space: nowrap !important;
 	border: 0 !important;
 }
+
+/* Wave animation for Login page */
+@keyframes wave {
+	0%, 100% {
+		transform: translateX(0);
+	}
+	50% {
+		transform: translateX(-25%);
+	}
+}
