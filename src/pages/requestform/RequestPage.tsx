@@ -223,6 +223,7 @@ export const RequestForm: React.FC = () => {
                         name="startDate"
                         className="input input-bordered input-sm w-full"
                         onChange={handleInput}
+                        required
                       />
                     </div>
 
@@ -235,6 +236,7 @@ export const RequestForm: React.FC = () => {
                         name="endDate"
                         className="input input-bordered input-sm w-full"
                         onChange={handleInput}
+                        required
                       />
                     </div>
                   </div>
@@ -251,6 +253,7 @@ export const RequestForm: React.FC = () => {
                       name="start"
                       className="input input-bordered input-sm w-full"
                       onChange={handleInput}
+                      required
                     />
                   </div>
 
@@ -263,6 +266,7 @@ export const RequestForm: React.FC = () => {
                       name="end"
                       className="input input-bordered input-sm w-full"
                       onChange={handleInput}
+                      required
                     />
                   </div>
                 </div>
@@ -278,6 +282,7 @@ export const RequestForm: React.FC = () => {
                     className="input input-bordered input-sm w-full"
                     placeholder="Enter Adviser/Project Leader"
                     onChange={handleInput}
+                    required
                   />
                 </div>
 
@@ -292,6 +297,7 @@ export const RequestForm: React.FC = () => {
                     className="input input-bordered input-sm w-full"
                     placeholder="Enter Purpose of Usage"
                     onChange={handleInput}
+                    required
                   />
                 </div>
 
