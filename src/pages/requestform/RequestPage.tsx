@@ -42,6 +42,7 @@ export const RequestForm: React.FC = () => {
 
   const [requestedItems, setRequestedItems] = React.useState<{ [id: string]: number }>({});
   const [showDateCalendar, setShowDateCalendar] = React.useState(false);
+  const [calendarKey, setCalendarKey] = React.useState(0); // Key to force calendar remount
   const dateCalendarRef = React.useRef<HTMLDivElement>(null);
 
   // Close calendar when clicking outside
@@ -345,6 +346,7 @@ export const RequestForm: React.FC = () => {
                           {formData.startDate && !formData.endDate ? 'Now select return date' : 'Select date range'}
                         </div>
                         <calendar-range
+                          key={calendarKey}
                           value={getCalendarRangeValue()}
                           min={getTodayDate()}
                           ref={(el: HTMLElement | null) => {
@@ -356,8 +358,33 @@ export const RequestForm: React.FC = () => {
                         >
                           <calendar-month></calendar-month>
                         </calendar-range>
+                        {/* Clear and Today buttons */}
+                        <div className="flex gap-2 mt-3 pt-3 border-t border-base-300">
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-ghost flex-1"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, startDate: '', endDate: '' }));
+                              // Force calendar to remount and clear highlights
+                              setCalendarKey(prev => prev + 1);
+                            }}
+                          >
+                            Clear
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-primary flex-1"
+                            onClick={() => {
+                              const today = getTodayDate();
+                              setFormData(prev => ({ ...prev, startDate: today, endDate: today }));
+                              setShowDateCalendar(false);
+                            }}
+                          >
+                            Today
+                          </button>
+                        </div>
                         {/* Selected range display */}
-                        <div className="mt-3 pt-3 border-t border-base-300 text-xs text-center text-base-content/70">
+                        <div className="mt-2 text-xs text-center text-base-content/70">
                           {formData.startDate && formData.endDate
                             ? `Selected: ${formatDateDisplay(formData.startDate)} — ${formatDateDisplay(formData.endDate)}`
                             : formData.startDate
