@@ -175,12 +175,11 @@ export default function ProfileStudent() {
                         <div>
                           <label className="text-xs text-base-content/60">Student Number</label>
                           <input
-                            className={`mt-2 w-full rounded-md bg-base-200 border-0 p-3 text-sm ${editing ? 'focus:ring-primary' : 'focus:ring-0 focus:outline-none'}`}
+                            className={`mt-2 w-full rounded-md border-0 p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
                             placeholder="20XX-XXXXX"
-                            value={editing ? studentNumber : (profile?.studentNumber || '')}
-                            onChange={(e) => setStudentNumber(e.target.value)}
-                            readOnly={!editing}
-                            tabIndex={editing ? 0 : -1}
+                            value={profile?.studentNumber || ''}
+                            readOnly
+                            tabIndex={-1}
                           />
                         </div>
 
