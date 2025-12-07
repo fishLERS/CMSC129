@@ -59,9 +59,40 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-dvh grid place-items-center p-6 bg-base-200">
-      <form onSubmit={onSubmit} className="w-full max-w-sm">
-        <fieldset className="fieldset bg-base-100 border-base-300 rounded-box border p-6 shadow-lg">
+    <div className="min-h-dvh grid place-items-center p-6 bg-base-200 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Top-left gradient blob */}
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl"></div>
+        
+        {/* Bottom-right gradient blob */}
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-secondary/20 rounded-full blur-3xl"></div>
+        
+        {/* Top-right accent */}
+        <div className="absolute top-20 right-20 w-32 h-32 bg-accent/10 rounded-full blur-2xl"></div>
+        
+        {/* Bottom-left accent */}
+        <div className="absolute bottom-32 left-20 w-24 h-24 bg-info/15 rounded-full blur-2xl"></div>
+        
+        {/* Floating circles */}
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary/40 rounded-full"></div>
+        <div className="absolute top-1/3 right-1/3 w-3 h-3 bg-secondary/30 rounded-full"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-2 h-2 bg-accent/40 rounded-full"></div>
+        <div className="absolute top-2/3 right-1/4 w-4 h-4 bg-primary/20 rounded-full"></div>
+        <div className="absolute bottom-1/3 right-1/2 w-2 h-2 bg-info/30 rounded-full"></div>
+        
+        {/* Grid pattern overlay */}
+        <div 
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)`,
+            backgroundSize: '50px 50px'
+          }}
+        ></div>
+      </div>
+
+      <form onSubmit={onSubmit} className="w-full max-w-sm relative z-10">
+        <fieldset className="fieldset bg-base-100/80 backdrop-blur-sm border-base-300 rounded-box border p-6 shadow-lg">
           <legend className="fieldset-legend text-xl font-semibold px-2">Login</legend>
 
           {err && <p className="text-error text-sm mb-3">{err}</p>}
