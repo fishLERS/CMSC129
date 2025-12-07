@@ -14,6 +14,7 @@ import { auth } from "../../firebase";
 interface AdminProfile {
   displayName?: string;
   email?: string;
+  photoURL?: string;
   staffId?: string;
   role?: string;
   uid?: string;
@@ -67,7 +68,7 @@ export default function ProfileAdmin() {
         await updateProfile(auth.currentUser as any, { displayName });
       }
       const staffValue = (staffId || "").trim();
-      const updates: Partial<AdminProfile> = { displayName, staffId: staffValue || null };
+      const updates: Partial<AdminProfile> = { displayName, staffId: staffValue || undefined };
       await updateDoc(doc(db, "users", user.uid), updates);
       setProfile((prev) => ({ ...(prev || {}), ...updates }));
     } catch (error) {
