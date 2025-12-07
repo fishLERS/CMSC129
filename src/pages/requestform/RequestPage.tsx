@@ -15,8 +15,8 @@ import 'cally';
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      'calendar-date': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { value?: string }, HTMLElement>;
-      'calendar-range': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { value?: string }, HTMLElement>;
+      'calendar-date': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { value?: string; min?: string }, HTMLElement>;
+      'calendar-range': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & { value?: string; min?: string }, HTMLElement>;
       'calendar-month': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
     }
   }
@@ -95,6 +95,28 @@ export const RequestForm: React.FC = () => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  // Get current time in HH:MM format
+  const getCurrentTime = () => {
+    const now = new Date();
+    return now.toTimeString().slice(0, 5);
+  };
+
+  // Check if selected start date is today
+  const isStartDateToday = () => {
+    return formData.startDate === getTodayDate();
+  };
+
+  // Get min time for start time (only restrict if start date is today)
+  const getMinStartTime = () => {
+    return isStartDateToday() ? getCurrentTime() : undefined;
   };
 
   // Get the range value for the calendar
@@ -324,6 +346,7 @@ export const RequestForm: React.FC = () => {
                         </div>
                         <calendar-range
                           value={getCalendarRangeValue()}
+                          min={getTodayDate()}
                           ref={(el: HTMLElement | null) => {
                             if (el) {
                               el.removeEventListener('change', handleRangeChange);
@@ -357,6 +380,8 @@ export const RequestForm: React.FC = () => {
                       name="start"
                       className="input input-bordered input-sm w-full"
                       onChange={handleInput}
+                      min={isStartDateToday() ? getCurrentTime() : undefined}
+                      value={formData.start}
                       required
                     />
                   </div>
@@ -370,6 +395,8 @@ export const RequestForm: React.FC = () => {
                       name="end"
                       className="input input-bordered input-sm w-full"
                       onChange={handleInput}
+                      min={formData.startDate === formData.endDate && isStartDateToday() ? getCurrentTime() : undefined}
+                      value={formData.end}
                       required
                     />
                   </div>
