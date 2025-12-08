@@ -1,11 +1,22 @@
 import { Equipment } from "../../db";
 
+export const CATEGORY_OPTIONS = [
+  "Supplies and Chemistry",
+  "Live Specimen",
+  "Instruments",
+  "Rearing Units",
+] as const;
+export type CategoryOption = typeof CATEGORY_OPTIONS[number];
+
 interface EquipmentFormProps {
   form: Omit<Equipment, "equipmentID">;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
 }
 
 export default function EquipmentForm({ form, onChange }: EquipmentFormProps) {
+  const categoryValue: CategoryOption =
+    CATEGORY_OPTIONS.find((option) => option === form.category) ?? CATEGORY_OPTIONS[0];
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -36,15 +47,19 @@ export default function EquipmentForm({ form, onChange }: EquipmentFormProps) {
 
       <div className="flex flex-col gap-1">
         <label htmlFor="category" className="text-sm font-medium">Category</label>
-        <input
+        <select
           id="category"
           name="category"
-          type="text"
-          value={form.category ?? ""}
+          value={categoryValue}
           onChange={onChange}
-          placeholder="Category"
-          className="input input-bordered w-full"
-        />
+          className="select select-bordered w-full"
+        >
+          {CATEGORY_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex items-center gap-2">

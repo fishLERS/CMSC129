@@ -15,15 +15,20 @@ export default function EditEquipmentDialog({ item, onEdit }: EditEquipmentDialo
     setForm(item);
   }, [item]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, type, value } = e.target;
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const target = e.target;
+    const { name } = target;
 
-    let newValue: string | number | boolean = value;
+    let newValue: string | number | boolean = target.value;
 
-    if (type === "number") {
-      newValue = Number(value);
-    } else if (type === "checkbox" && e.target instanceof HTMLInputElement) {
-      newValue = e.target.checked;
+    if (target instanceof HTMLInputElement) {
+      if (target.type === "number") {
+        newValue = Number(target.value);
+      } else if (target.type === "checkbox") {
+        newValue = target.checked;
+      }
     }
 
     setForm({
