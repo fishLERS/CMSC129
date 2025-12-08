@@ -6,6 +6,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { ArrowLeft, Fish } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 
+const LOGOUT_TOAST_KEY = "fishlers-logout-toast";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -34,6 +36,22 @@ export default function Login() {
     const timer = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem(LOGOUT_TOAST_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed?.message && parsed?.type) {
+          setToast(parsed);
+        }
+      } catch (e) {
+        console.warn("Failed to parse logout toast:", e);
+      } finally {
+        sessionStorage.removeItem(LOGOUT_TOAST_KEY);
+      }
+    }
+  }, []);
 
   async function handleForgotPassword() {
     if (!email) {

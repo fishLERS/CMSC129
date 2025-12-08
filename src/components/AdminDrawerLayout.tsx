@@ -10,6 +10,8 @@ interface AdminDrawerLayoutProps {
   children: React.ReactNode;
 }
 
+const LOGOUT_TOAST_KEY = "fishlers-logout-toast";
+
 const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,9 +34,14 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate("/login");
-    } catch (e) {
+      sessionStorage.setItem(
+        LOGOUT_TOAST_KEY,
+        JSON.stringify({ type: "success", message: "Logged out successfully" })
+      );
+      navigate("/login", { replace: true });
+    } catch (e: any) {
       console.error("Sign out failed", e);
+      alert(e?.message ?? "Logout failed. Please try again.");
     }
   };
 
