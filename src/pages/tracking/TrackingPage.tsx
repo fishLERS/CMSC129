@@ -7,7 +7,7 @@ import { MapPin, Clock, CheckCircle, XCircle, AlertCircle, FileText, X, Eye, Cop
 export default function TrackingPage(){
   const { user } = useAuth()
   const [rows, setRows] = React.useState<Array<any>>([])
-  const [filter, setFilter] = React.useState<'all' | 'pending' | 'completed' | 'ongoing' | 'approved' | 'declined'>('all')
+  const [filter, setFilter] = React.useState<'all' | 'pending' | 'completed' | 'approved' | 'declined'>('all')
   
   const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
   const [showRemarksText, setShowRemarksText] = React.useState('')
@@ -130,32 +130,66 @@ export default function TrackingPage(){
 
   // Filter rows
   const filteredRows = rows.filter(r => {
-    if (filter === 'all') return true
     const s = (r.status || '').toLowerCase()
+    const now = new Date()
+    
+    let startDate: Date | null = null
+    let endDate: Date | null = null
+    if (r.duration) {
+      const [startStr, endStr] = r.duration.split('→')
+      startDate = new Date(startStr)
+      endDate = new Date(endStr)
+    }
+    const inCurrentRange = startDate && endDate ? now >= startDate && now <= endDate : false
+
+    if (filter === 'all') return true
     if (filter === 'pending') return s === 'pending'
-    if (filter === 'ongoing') return s === 'ongoing'
-    if (filter === 'approved') return s === 'approved'
+    if (filter === 'ongoing') return s === 'approved' && inCurrentRange
+    if (filter === 'approved') return s === 'approved' &&!inCurrentRange
     if (filter === 'declined') return s === 'declined' || s === 'rejected'
     return true
   })
 
   // Stats
   const pendingCount = rows.filter(r => r.status?.toLowerCase() === 'pending').length
-  const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'ongoing').length
-  const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved').length
+  
+  const ongoingCount = rows.filter(r => {if (r.status?.toLowerCase() !== 'approved') return false
+    if (!r.duration) return false
+    const [startStr, endStr] = r.duration.split('→')
+    const startDate = new Date(startStr)
+    const endDate = new Date(endStr)
+    const now = new Date()
+    return now >= startDate && now <= endDate}).length
+  const approvedCount = rows.filter(r => {if (r.status?.toLowerCase() !== 'approved') return false
+    if (!r.duration) return true
+    const [startStr, endStr] = r.duration.split('→')
+    const startDate = new Date(startStr)
+    const endDate = new Date(endStr)
+    const now = new Date()
+    return now < startDate || now > endDate}).length
   const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
   const completedCount = rows.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length
 
   // Status badge helper
-  const getStatusBadge = (status: string) => {
-    const s = (status || 'ongoing').toLowerCase()
+  const getStatusBadge = (r: any) => {
+    const s = (r.status || 'ongoing').toLowerCase()
+    const now = new Date()
+    let isCurrent = false
+    if (r.duration) {
+      try {
+        const [startStr, endStr] = r.duration.split('→').map(s => s.trim())
+        const startDate = new Date(startStr)
+        const endDate = new Date(endStr)
+        isCurrent = !isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && now >= startDate && now <= endDate
+      } catch {}
+    }
+    if (s === 'approved' &&isCurrent) return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Ongoing</span>
     if (s === 'approved') return <span className="badge badge-success gap-1"><CheckCircle className="w-3 h-3" />Approved</span>
     if (s === 'pending') return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Pending</span>
-    if (s === 'ongoing') return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Ongoing</span>
     if (s === 'declined' || s === 'rejected') return <span className="badge badge-error gap-1"><XCircle className="w-3 h-3" />Declined</span>
     if (s === 'returned' || s === 'completed') return <span className="badge badge-info gap-1"><RotateCcw className="w-3 h-3" />Returned</span>
     if (s === 'cancelled') return <span className="badge badge-neutral gap-1">Cancelled</span>
-    return <span className="badge badge-ghost">{status}</span>
+    return <span className="badge badge-ghost">{r.status}</span>
   }
 
   // Copy to clipboard
@@ -295,7 +329,7 @@ export default function TrackingPage(){
                           </button>
                         </div>
                       </td>
-                      <td>{getStatusBadge(r.status)}</td>
+                      <td>{getStatusBadge(r)}</td>
                       <td>
                         {r.remarks ? (
                           <button 
