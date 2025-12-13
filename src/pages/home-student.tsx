@@ -23,7 +23,7 @@ function formatDateTime(v: any) {
 export default function HomeStudent() {
   const { user } = useAuth();
   const [requests, setRequests] = React.useState<any[]>([]);
-  const [tab, setTab] = React.useState<'all'|'ongoing'|'completed'|'rejected'|'cancelled'>('all');
+  const [tab, setTab] = React.useState<'all'|'pending'| 'ongoing' | 'approved' |'completed'|'rejected'|'cancelled'>('all');
   const [notifOpen, setNotifOpen] = React.useState(false)
   const [notifAllOpen, setNotifAllOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<Array<any>>([])
@@ -154,7 +154,9 @@ export default function HomeStudent() {
     const s = (r.status || '').toLowerCase()
 
     if (tab === 'all') return true
+    if (tab === 'pending') return s === 'pending'
     if (tab === 'ongoing') return s === 'approved' && isOngoing(r)
+    if (tab === 'approved') return s === 'approved' && !isOngoing(r)
     if (tab === 'completed') return ['completed', 'returned'].includes(s)
     if (tab === 'rejected') return ['declined', 'rejected'].includes(s)
     if (tab === 'cancelled') return s === 'cancelled'
@@ -296,6 +298,9 @@ export default function HomeStudent() {
     return <span className="badge">{r.status}</span>;
   };
 
+  const ongoingCount = requests.filter( r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
+
+
   return (
     <div className="p-6 space-y-6">
       {/* Header Section */}
@@ -380,8 +385,8 @@ export default function HomeStudent() {
           <div className="stat-desc">All time</div>
         </div>
         <div className="stat">
-          <div className="stat-title">Ongoing</div>
-          <div className="stat-value text-warning">{requests.filter(r => (r.status || 'ongoing').toLowerCase() === 'ongoing').length}</div>
+          <div className="stat-title">Pending</div>
+          <div className="stat-value text-warning">{requests.filter(r => (r.status).toLowerCase() === 'pending').length}</div>
           <div className="stat-desc">Pending approval</div>
         </div>
         <div className="stat">
@@ -403,7 +408,9 @@ export default function HomeStudent() {
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300">
               <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
+              <a role="tab" className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
               <a role="tab" className={`tab ${tab === 'ongoing' ? 'tab-active' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
+              <a role="tab" className={`tab ${tab === 'approved' ? 'tab-active' : ''}`} onClick={() => setTab('approved')}>Approved</a>
               <a role="tab" className={`tab ${tab === 'completed' ? 'tab-active' : ''}`} onClick={() => setTab('completed')}>Completed</a>
               <a role="tab" className={`tab ${tab === 'rejected' ? 'tab-active' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
               <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
