@@ -151,14 +151,17 @@ export default function HomeStudent() {
   }, [user]);
 
   let filtered = requests.filter(r => {
-    if (tab === 'all') return true;
-    const s = (r.status || 'ongoing').toString().toLowerCase();
-    // treat returned requests as completed for the student view
-    const isCompletedLike = s === 'completed' || s === 'returned';
-    // treat admin-declined statuses as rejected for student view (admin may write 'Declined')
-    const isRejectedLike = s === 'rejected' || s === 'declined';
-    return (tab === 'ongoing' && s === 'ongoing') || (tab === 'completed' && isCompletedLike) || (tab === 'rejected' && isRejectedLike) || (tab === 'cancelled' && s === 'cancelled');
-  });
+    const s = (r.status || '').toLowerCase()
+
+    if (tab === 'all') return true
+    if (tab === 'ongoing') return s === 'approved' && isOngoing(r)
+    if (tab === 'completed') return ['completed', 'returned'].includes(s)
+    if (tab === 'rejected') return ['declined', 'rejected'].includes(s)
+    if (tab === 'cancelled') return s === 'cancelled'
+
+    return true
+  })
+
 
   // When showing "All", order groups as: approved -> ongoing/pending -> declined/rejected -> returned -> cancelled
   if (tab === 'all') {
@@ -266,15 +269,31 @@ export default function HomeStudent() {
 
   const nav = useNavigate();
 
+  function isOngoing(r: any) {
+  try {
+    if ((r.status || '').toLowerCase() !== 'approved') return false
+    if (!r.startDate || !r.endDate) return false
+
+    const now = new Date()
+    const start = new Date(`${r.startDate}T${r.start || '00:00'}`)
+    const end = new Date(`${r.endDate}T${r.end || '23:59'}`)
+
+    return now >= start && now <= end
+  } catch {
+    return false
+  }
+}
+
   // Status badge helper
-  const getStatusBadge = (status: string) => {
-    const s = (status || 'ongoing').toLowerCase();
-    if (s === 'approved') return <span className="badge badge-success">Approved</span>;
-    if (s === 'ongoing' || s === 'pending') return <span className="badge badge-warning">Ongoing</span>;
+  const getStatusBadge = (r: any) => {
+    const s = (r.status || '').toLowerCase();
+    if (s === 'approved' && isOngoing(r)) return <span className="badge badge-success">Ongoing</span>;
+    if (s === 'approved' && !isOngoing(r)) return <span className="badge badge-success">Approved</span>;
+    if (s === 'pending') return <span className="badge badge-warning">Pending</span>;
     if (s === 'declined' || s === 'rejected') return <span className="badge badge-error">Rejected</span>;
     if (s === 'returned' || s === 'completed') return <span className="badge badge-info">Completed</span>;
     if (s === 'cancelled') return <span className="badge badge-neutral">Cancelled</span>;
-    return <span className="badge">{status}</span>;
+    return <span className="badge">{r.status}</span>;
   };
 
   return (
@@ -424,9 +443,9 @@ export default function HomeStudent() {
                           {Array.isArray(r.items) ? r.items.reduce((s: any, i: any) => s + (i.qty || 0), 0) : '-'}
                         </span>
                       </td>
-                      <td>{getStatusBadge(r.status)}</td>
+                      <td>{getStatusBadge(r)}</td>
                       <td>
-                        {((r.status || '').toString().toLowerCase() === 'ongoing') && (
+                        {((r.status || '').toString().toLowerCase() === 'pending') && (
                           <button 
                             className="btn btn-error btn-sm gap-1" 
                             disabled={busyId === r.id} 
@@ -436,7 +455,7 @@ export default function HomeStudent() {
                             Cancel
                           </button>
                         )}
-                        {((r.status || '').toString().toLowerCase() === 'approved') && (
+                        {((r.status || '').toString().toLowerCase() === 'approved' && isOngoing(r)) && (
                           <button 
                             className="btn btn-primary btn-sm gap-1" 
                             disabled={busyId === r.id} 
