@@ -152,6 +152,15 @@ export const RequestForm: React.FC = () => {
       .filter(([_, qty]) => qty > 0)
       .map(([equipmentID, qty]) => ({ equipmentID, qty }));
 
+    for (const { equipmentID, qty } of itemsArray) {
+      const item = availableEquipment.find((e) => e.equipmentID === equipmentID);
+      if (!item) continue;
+      if (qty > item.available) {
+        alert(`"${item.name}" exceeds available stock (${item.available}).`);
+        return;
+    }
+  }
+    
     if (itemsArray.length === 0) {
       alert("Please select at least one item.");
       return;
