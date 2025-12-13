@@ -1,5 +1,5 @@
 import React from "react";
-import { logicEquipment } from "../equipment/logicEquipment";
+import { logicEquipment, useFetchAvailableItems } from "../equipment/logicEquipment";
 
 import { db, auth } from "../../firebase";
 import { useAuth } from '../../hooks/useAuth'
@@ -65,6 +65,12 @@ export const RequestForm: React.FC = () => {
     adviser: "",
     purpose: "",
   });
+
+  const { availableEquipment, isFetching} = useFetchAvailableItems(
+    equipmentList,
+    formData.startDate,
+    formData.endDate
+  );
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -167,7 +173,7 @@ export const RequestForm: React.FC = () => {
         createdAt: serverTimestamp(),
         createdAtClient: new Date().toISOString(),
         createdBy: currentUser.uid,
-        status: 'ongoing',
+        status: 'pending',
       });
       
       console.log('Submitted to Firebase with dates:', { startDate: formData.startDate, endDate: formData.endDate });
@@ -197,7 +203,7 @@ export const RequestForm: React.FC = () => {
   };
 
   // Filter equipment list
-  const filteredEquipment = equipmentList.filter(item => 
+  const filteredEquipment = availableEquipment.filter(item => 
     item.name?.toLowerCase().includes(filterText.toLowerCase()) ||
     item.category?.toLowerCase().includes(filterText.toLowerCase())
   );
@@ -262,7 +268,7 @@ export const RequestForm: React.FC = () => {
                           <p className="font-medium">{item.name}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="badge badge-ghost badge-sm">
-                              Available: {item.totalInventory}
+                              Available: {item.available}
                             </span>
                             {item.category && (
                               <span className="badge badge-outline badge-sm">

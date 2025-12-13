@@ -368,7 +368,7 @@ const AdminDashboard: React.FC = () => {
                     className="btn btn-success"
                     onClick={async () => {
                       try {
-                        await updateStatus(viewRequest.id, 'Approved');
+                        await updateStatus(viewRequest.id, 'approved');
                       } catch (e) {
                         console.error(e);
                       } finally {

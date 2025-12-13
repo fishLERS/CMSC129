@@ -7,6 +7,12 @@ export interface Equipment {
     isDisposable: boolean;
 }
 
+export interface AvailableEquipmentItem extends Equipment {
+    available: number;
+    reserved: number;
+    isAvailable: boolean;
+}
+
 export interface EquipmentIssue {
     equipmentIssueID?: string;
     equipmentID: string;
