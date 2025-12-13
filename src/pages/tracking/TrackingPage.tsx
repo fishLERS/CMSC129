@@ -7,7 +7,7 @@ import { MapPin, Clock, CheckCircle, XCircle, AlertCircle, FileText, X, Eye, Cop
 export default function TrackingPage(){
   const { user } = useAuth()
   const [rows, setRows] = React.useState<Array<any>>([])
-  const [filter, setFilter] = React.useState<'all' | 'ongoing' | 'approved' | 'declined'>('all')
+  const [filter, setFilter] = React.useState<'all' | 'pending' | 'completed' | 'ongoing' | 'approved' | 'declined'>('all')
   
   const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
   const [showRemarksText, setShowRemarksText] = React.useState('')
@@ -132,22 +132,26 @@ export default function TrackingPage(){
   const filteredRows = rows.filter(r => {
     if (filter === 'all') return true
     const s = (r.status || '').toLowerCase()
-    if (filter === 'ongoing') return s === 'ongoing' || s === 'pending'
+    if (filter === 'pending') return s === 'pending'
+    if (filter === 'ongoing') return s === 'ongoing'
     if (filter === 'approved') return s === 'approved'
     if (filter === 'declined') return s === 'declined' || s === 'rejected'
     return true
   })
 
   // Stats
-  const ongoingCount = rows.filter(r => ['ongoing', 'pending'].includes((r.status || '').toLowerCase())).length
+  const pendingCount = rows.filter(r => r.status?.toLowerCase() === 'pending').length
+  const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'ongoing').length
   const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved').length
   const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
+  const completedCount = rows.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length
 
   // Status badge helper
   const getStatusBadge = (status: string) => {
     const s = (status || 'ongoing').toLowerCase()
     if (s === 'approved') return <span className="badge badge-success gap-1"><CheckCircle className="w-3 h-3" />Approved</span>
-    if (s === 'ongoing' || s === 'pending') return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Ongoing</span>
+    if (s === 'pending') return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Pending</span>
+    if (s === 'ongoing') return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Ongoing</span>
     if (s === 'declined' || s === 'rejected') return <span className="badge badge-error gap-1"><XCircle className="w-3 h-3" />Declined</span>
     if (s === 'returned' || s === 'completed') return <span className="badge badge-info gap-1"><RotateCcw className="w-3 h-3" />Returned</span>
     if (s === 'cancelled') return <span className="badge badge-neutral gap-1">Cancelled</span>
@@ -186,8 +190,8 @@ export default function TrackingPage(){
           <div className="stat-figure text-warning">
             <Clock className="w-8 h-8" />
           </div>
-          <div className="stat-title">Ongoing</div>
-          <div className="stat-value text-warning">{ongoingCount}</div>
+          <div className="stat-title">Pending</div>
+          <div className="stat-value text-warning">{pendingCount}</div>
           <div className="stat-desc">Pending approval</div>
         </div>
         <div className="stat">
@@ -217,11 +221,17 @@ export default function TrackingPage(){
               <a role="tab" className={`tab ${filter === 'all' ? 'tab-active' : ''}`} onClick={() => setFilter('all')}>
                 All ({rows.length})
               </a>
+              <a role="tab" className={`tab ${filter === 'pending' ? 'tab-active' : ''}`} onClick={() => setFilter('pending')}>
+                Pending ({pendingCount})
+              </a>
               <a role="tab" className={`tab ${filter === 'ongoing' ? 'tab-active' : ''}`} onClick={() => setFilter('ongoing')}>
                 Ongoing ({ongoingCount})
               </a>
               <a role="tab" className={`tab ${filter === 'approved' ? 'tab-active' : ''}`} onClick={() => setFilter('approved')}>
                 Approved ({approvedCount})
+              </a>
+              <a role="tab" className={`tab ${filter === 'completed' ? 'tab-active' : ''}`} onClick={() => setFilter('completed')}>
+                Completed ({completedCount})
               </a>
               <a role="tab" className={`tab ${filter === 'declined' ? 'tab-active' : ''}`} onClick={() => setFilter('declined')}>
                 Declined ({declinedCount})
