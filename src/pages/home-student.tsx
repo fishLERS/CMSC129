@@ -507,7 +507,7 @@ export default function HomeStudent() {
               </div>
               <div className="form-control">
                 <label className="label"><span className="label-text text-xs">Status</span></label>
-                <div className="bg-base-300 p-2 rounded text-sm">{getStatusBadge(showModalRequest.status)}</div>
+                <div className="bg-base-300 p-2 rounded text-sm">{getStatusBadge(showModalRequest)}</div>
               </div>
               <div className="form-control md:col-span-2">
                 <label className="label"><span className="label-text text-xs">Purpose</span></label>
