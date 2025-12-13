@@ -3,6 +3,7 @@ import { logicEquipment } from './equipment/logicEquipment';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
+import { isOngoing } from "../utils/requestTime"
 import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Bell, X, Eye, XCircle, RotateCcw } from 'lucide-react';
 
@@ -270,21 +271,6 @@ export default function HomeStudent() {
   }
 
   const nav = useNavigate();
-
-  function isOngoing(r: any) {
-  try {
-    if ((r.status || '').toLowerCase() !== 'approved') return false
-    if (!r.startDate || !r.endDate) return false
-
-    const now = new Date()
-    const start = new Date(`${r.startDate}T${r.start || '00:00'}`)
-    const end = new Date(`${r.endDate}T${r.end || '23:59'}`)
-
-    return now >= start && now <= end
-  } catch {
-    return false
-  }
-}
 
   // Status badge helper
   const getStatusBadge = (r: any) => {

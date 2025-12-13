@@ -1,13 +1,14 @@
 import React from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
+import { isOngoing } from "../../utils/requestTime"
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 import { MapPin, Clock, CheckCircle, XCircle, AlertCircle, FileText, X, Eye, Copy, RotateCcw } from 'lucide-react'
 
 export default function TrackingPage(){
   const { user } = useAuth()
   const [rows, setRows] = React.useState<Array<any>>([])
-  const [filter, setFilter] = React.useState<'all' | 'pending' | 'completed' | 'approved' | 'declined'>('all')
+  const [filter, setFilter] = React.useState<'all' | 'pending'| 'ongoing' | 'completed' | 'approved' | 'declined'>('all')
   
   const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
   const [showRemarksText, setShowRemarksText] = React.useState('')
@@ -15,7 +16,7 @@ export default function TrackingPage(){
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
 
   React.useEffect(()=>{
-    if(!user) return
+    if(!user) return <div>Loading requests...</div>
     console.info('Tracking mounted for user', user.uid)
   // order by client timestamp to avoid missing docs while serverTimestamp resolves
   const q = query(collection(db,'requests'), where('createdBy','==', user.uid), orderBy('createdAtClient','desc'))
@@ -61,7 +62,7 @@ export default function TrackingPage(){
         else if (data && data.createdAt) {
           try { sortKey = new Date(data.createdAt).toISOString() } catch { sortKey = '' }
         }
-        docs.push({ purpose, requestId, status, remarks, sortKey, duration })
+        docs.push({ purpose, requestId, status, remarks, sortKey, startDate: data.startDate, start: data.start, endDate: data.endDate, end: data.end,duration })
       })
       // sort by sortKey desc (newest first); if no keys present, keep server ordering
       docs.sort((a,b) => (b.sortKey || '').localeCompare(a.sortKey || ''))
@@ -131,21 +132,10 @@ export default function TrackingPage(){
   // Filter rows
   const filteredRows = rows.filter(r => {
     const s = (r.status || '').toLowerCase()
-    const now = new Date()
-    
-    let startDate: Date | null = null
-    let endDate: Date | null = null
-    if (r.duration) {
-      const [startStr, endStr] = r.duration.split('→')
-      startDate = new Date(startStr)
-      endDate = new Date(endStr)
-    }
-    const inCurrentRange = startDate && endDate ? now >= startDate && now <= endDate : false
-
     if (filter === 'all') return true
     if (filter === 'pending') return s === 'pending'
-    if (filter === 'ongoing') return s === 'approved' && inCurrentRange
-    if (filter === 'approved') return s === 'approved' &&!inCurrentRange
+    if (filter === 'ongoing') return s === 'approved' && isOngoing(r)
+    if (filter === 'approved') return s === 'approved' && !isOngoing(r)
     if (filter === 'declined') return s === 'declined' || s === 'rejected'
     return true
   })
@@ -153,38 +143,17 @@ export default function TrackingPage(){
   // Stats
   const pendingCount = rows.filter(r => r.status?.toLowerCase() === 'pending').length
   
-  const ongoingCount = rows.filter(r => {if (r.status?.toLowerCase() !== 'approved') return false
-    if (!r.duration) return false
-    const [startStr, endStr] = r.duration.split('→')
-    const startDate = new Date(startStr)
-    const endDate = new Date(endStr)
-    const now = new Date()
-    return now >= startDate && now <= endDate}).length
-  const approvedCount = rows.filter(r => {if (r.status?.toLowerCase() !== 'approved') return false
-    if (!r.duration) return true
-    const [startStr, endStr] = r.duration.split('→')
-    const startDate = new Date(startStr)
-    const endDate = new Date(endStr)
-    const now = new Date()
-    return now < startDate || now > endDate}).length
+  const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
+  const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && !isOngoing(r)).length
   const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
   const completedCount = rows.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length
 
   // Status badge helper
   const getStatusBadge = (r: any) => {
-    const s = (r.status || 'ongoing').toLowerCase()
-    const now = new Date()
-    let isCurrent = false
-    if (r.duration) {
-      try {
-        const [startStr, endStr] = r.duration.split('→').map(s => s.trim())
-        const startDate = new Date(startStr)
-        const endDate = new Date(endStr)
-        isCurrent = !isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && now >= startDate && now <= endDate
-      } catch {}
-    }
-    if (s === 'approved' &&isCurrent) return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Ongoing</span>
-    if (s === 'approved') return <span className="badge badge-success gap-1"><CheckCircle className="w-3 h-3" />Approved</span>
+    const s = (r.status || '').toLowerCase()
+
+    if (s === 'approved' && isOngoing(r)) return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Ongoing</span>
+    if (s === 'approved' && !isOngoing(r)) return <span className="badge badge-success gap-1"><CheckCircle className="w-3 h-3" />Approved</span>
     if (s === 'pending') return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Pending</span>
     if (s === 'declined' || s === 'rejected') return <span className="badge badge-error gap-1"><XCircle className="w-3 h-3" />Declined</span>
     if (s === 'returned' || s === 'completed') return <span className="badge badge-info gap-1"><RotateCcw className="w-3 h-3" />Returned</span>
