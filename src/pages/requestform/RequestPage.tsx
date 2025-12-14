@@ -224,12 +224,15 @@ export const RequestForm: React.FC = () => {
     return Array.from(categories).sort((a, b) => a.localeCompare(b));
   }, [equipmentList]);
 
+  const normalizedFilter = filterText.trim().toLowerCase();
   const filteredEquipment = availableEquipment
     .filter((item: AvailableEquipmentItem) => item.available > 0)
-    .filter((item: AvailableEquipmentItem) => 
-      item.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-      item.category?.toLowerCase().includes(filterText.toLowerCase())
-    )
+    .filter((item: AvailableEquipmentItem) => {
+      if (!normalizedFilter) return true;
+      const nameMatch = (item.name || "").toLowerCase().includes(normalizedFilter);
+      const categoryMatch = (item.category || "").toLowerCase().includes(normalizedFilter);
+      return nameMatch || categoryMatch;
+    })
     .filter((item: AvailableEquipmentItem) => {
       if (categoryFilter === 'all') return true;
       return (item.category || '').trim() === categoryFilter;
@@ -257,6 +260,13 @@ export const RequestForm: React.FC = () => {
   const closePreview = () => {
     setIsPreviewOpen(false);
     setPreviewItem(null);
+  };
+
+  // Reset filters handler
+  const resetFilters = () => {
+    setFilterText('');
+    setSortOrder('asc');
+    setCategoryFilter('all');
   };
 
   return (
@@ -758,8 +768,3 @@ export const RequestForm: React.FC = () => {
 };
 
 export default RequestForm;
-  const resetFilters = () => {
-    setFilterText('');
-    setSortOrder('asc');
-    setCategoryFilter('all');
-  };
