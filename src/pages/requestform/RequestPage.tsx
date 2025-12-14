@@ -389,6 +389,9 @@ export const RequestForm: React.FC = () => {
                             <span className="badge badge-ghost badge-sm">
                               Available: {item.available}
                             </span>
+                            <span className="badge badge-outline badge-sm">
+                              Pending: {item.reserved ?? 0}
+                            </span>
                             {item.category && (
                               <span className="badge badge-outline badge-sm">
                                 {item.category}
@@ -723,21 +726,23 @@ export const RequestForm: React.FC = () => {
                     </p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-base-content/60 uppercase tracking-wide">
-                        Available
-                      </p>
-                      <p className="text-lg font-semibold">{previewDetails.available ?? 0}</p>
+                    <div className="flex flex-col gap-2">
+                      <div>
+                        <span className="badge badge-ghost badge-sm">
+                          Available: {previewDetails.available ?? 0}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="badge badge-outline badge-sm">
+                          Pending: {previewDetails.reserved ?? 0}
+                        </span>
+                      </div>
                     </div>
                     <div>
                       <p className="text-xs text-base-content/60 uppercase tracking-wide">Type</p>
                       <p className="text-lg font-semibold">
                         {previewDetails.isDisposable ? "Disposable" : "Durable"}
                       </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-base-content/60 uppercase tracking-wide">Reserved</p>
-                      <p className="text-lg font-semibold">{previewDetails.reserved ?? 0}</p>
                     </div>
                     <div>
                       <p className="text-xs text-base-content/60 uppercase tracking-wide">Status</p>

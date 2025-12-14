@@ -54,8 +54,8 @@ export function useFetchAvailableItems(
       snapshot.forEach((doc) => {
         const data = doc.data() as any
         const status = (data.status || "").toString().toLowerCase()
-        // count only approved/ongoing requests; returned/cancelled/not approved shouldn't reduce availability
-        if (!["approved", "ongoing"].includes(status)) return
+        // count only requests awaiting approval
+        if (status !== "pending" && status !== "ongoing") return
         const items = Array.isArray(data.items) ? data.items : []
         items.forEach((item: any) => {
           const equipmentID = item?.equipmentID

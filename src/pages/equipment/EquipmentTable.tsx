@@ -81,11 +81,17 @@ export default function EquipmentTable({
                   )}
                 </td>
                 <td>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{item.totalInventory ?? 0}</span>
-                    {(item.totalInventory ?? 0) <= LOW_STOCK_THRESHOLD && (
-                      <span className="badge badge-warning badge-sm">Low</span>
-                    )}
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{item.totalInventory ?? 0}</span>
+                      {(item.totalInventory ?? 0) <= LOW_STOCK_THRESHOLD && (
+                        <span className="badge badge-warning badge-sm">Low</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-base-content/60">
+                      Pending: {item.reserved ?? 0} · Available now:{" "}
+                      {Math.max((item.totalInventory ?? 0) - (item.reserved ?? 0), 0)}
+                    </div>
                   </div>
                 </td>
                 <td>
@@ -187,6 +193,9 @@ export default function EquipmentTable({
                     <div>
                       <p className="text-xs text-base-content/60 uppercase tracking-wide">Quantity</p>
                       <p className="text-lg font-semibold">{selectedItem.totalInventory ?? 0}</p>
+                      <p className="text-xs text-base-content/60">
+                        Pending: {selectedItem.reserved ?? 0}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-base-content/60 uppercase tracking-wide">Status</p>
