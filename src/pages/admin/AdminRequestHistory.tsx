@@ -381,74 +381,78 @@ const AdminRequestHistory: React.FC = () => {
                 <h2 className="text-lg font-semibold">{bucket}</h2>
                 <span className="badge badge-outline">{entries.length}</span>
               </div>
-              <div className="overflow-x-auto">
-                <table className="table table-zebra">
-                  <thead>
-                    <tr>
-                      <th>Request</th>
-                      <th>Requester</th>
-                      <th>Schedule</th>
-                      <th>Items</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.map((req) => {
-                      const requester = getRequester(req);
-                      const itemCount =
-                        req.items?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0;
-                      const submittedOn = req.createdAt
-                        ? req.createdAt.toLocaleString()
-                        : req.createdAtClient || "Unknown";
-
-                      return (
-                        <tr key={req.id}>
-                          <td>
-                            <div className="font-semibold">{req.purpose || "Untitled Request"}</div>
-                            <div className="text-xs text-base-content/60">
-                              Submitted {submittedOn}
-                            </div>
-                            <div className="text-xs text-base-content/60 font-mono">
-                              ID: {req.id}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="font-semibold">{requester}</div>
-                            <div className="text-xs text-base-content/60">
-                              Adviser: {req.adviser || "Not provided"}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Clock className="w-4 h-4" />
-                              {formatRange(req)}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="flex items-center gap-2">
-                              <Package className="w-4 h-4" />
-                              {itemCount} items
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`badge ${getStatusBadgeClass(req.status || "")}`}>
-                              {req.status || "Pending"}
-                            </span>
-                          </td>
-                          <td>
-                            <button
-                              className="btn btn-sm"
-                              onClick={() => setSelectedRequest(req)}
-                            >
-                              View details
-                            </button>
-                          </td>
+              <div className="card bg-base-100 border border-base-300 shadow">
+                <div className="card-body p-0">
+                  <div className="overflow-x-auto">
+                    <table className="table table-zebra w-full">
+                      <thead>
+                        <tr>
+                          <th>Request</th>
+                          <th>Requester</th>
+                          <th>Schedule</th>
+                          <th>Items</th>
+                          <th>Status</th>
+                          <th>Actions</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody>
+                        {entries.map((req) => {
+                          const requester = getRequester(req);
+                          const itemCount =
+                            req.items?.reduce((sum, item) => sum + (item.qty || 0), 0) || 0;
+                          const submittedOn = req.createdAt
+                            ? req.createdAt.toLocaleString()
+                            : req.createdAtClient || "Unknown";
+
+                          return (
+                            <tr key={req.id}>
+                              <td>
+                                <div className="font-semibold">{req.purpose || "Untitled Request"}</div>
+                                <div className="text-xs text-base-content/60">
+                                  Submitted {submittedOn}
+                                </div>
+                                <div className="text-xs text-base-content/60 font-mono">
+                                  ID: {req.id}
+                                </div>
+                              </td>
+                              <td>
+                                <div className="font-semibold">{requester}</div>
+                                <div className="text-xs text-base-content/60">
+                                  Adviser: {req.adviser || "Not provided"}
+                                </div>
+                              </td>
+                              <td>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Clock className="w-4 h-4" />
+                                  {formatRange(req)}
+                                </div>
+                              </td>
+                              <td>
+                                <div className="flex items-center gap-2">
+                                  <Package className="w-4 h-4" />
+                                  {itemCount} items
+                                </div>
+                              </td>
+                              <td>
+                                <span className={`badge ${getStatusBadgeClass(req.status || "")}`}>
+                                  {req.status || "Pending"}
+                                </span>
+                              </td>
+                              <td>
+                                <button
+                                  className="btn btn-sm"
+                                  onClick={() => setSelectedRequest(req)}
+                                >
+                                  View details
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
