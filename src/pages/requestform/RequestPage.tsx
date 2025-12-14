@@ -297,17 +297,19 @@ export const RequestForm: React.FC = () => {
                                 [item.equipmentID!]: Math.max((prev[item.equipmentID!] || 0) - 1, 0),
                               }))
                             }
+                            disabled={(requestedItems[item.equipmentID!] || 0) <= 0}
                           >
                             <Minus className="w-4 h-4" />
                           </button>
                           <input
                             type="number"
                             min={0}
+                            max={item.available}
                             value={requestedItems[item.equipmentID!] || 0}
                             onChange={(e) =>
                               setRequestedItems((prev) => ({
                                 ...prev,
-                                [item.equipmentID!]: Math.max(0, Number(e.target.value)),
+                                [item.equipmentID!]: Math.max(0, Math.min(Number(e.target.value), item.available)),
                               }))
                             }
                             className="input input-sm input-bordered join-item w-14 text-center"
@@ -321,6 +323,7 @@ export const RequestForm: React.FC = () => {
                                 [item.equipmentID!]: (prev[item.equipmentID!] || 0) + 1,
                               }))
                             }
+                            disabled={(requestedItems[item.equipmentID!] || 0) >= item.available}
                           >
                             <Plus className="w-4 h-4" />
                           </button>
