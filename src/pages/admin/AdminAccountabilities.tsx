@@ -6,6 +6,7 @@ import { FileWarning, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react
 const AdminAccountabilities: React.FC = () => {
   const [rows, setRows] = React.useState<any[]>([])
   const [tab, setTab] = React.useState<'all'|'pending'|'resolved'|'overdue'>('all')
+  const [issueFilter, setIssueFilter] = React.useState<'all' | 'damaged' | 'missing'>('all')
   const [busyId, setBusyId] = React.useState<string | null>(null)
   const [showModal, setShowModal] = React.useState<any | null>(null)
   const [addOpen, setAddOpen] = React.useState(false)
@@ -102,12 +103,18 @@ const AdminAccountabilities: React.FC = () => {
 
   // Filter rows
   let filtered = rows.filter(r => {
-    if (tab === 'all') return true
-    const s = (r.status || 'pending').toLowerCase()
-    if (tab === 'pending') return s === 'pending'
-    if (tab === 'resolved') return s === 'resolved' || s === 'completed'
-    if (tab === 'overdue') return s === 'overdue'
-    return false
+    if (tab !== 'all') {
+      const s = (r.status || 'pending').toLowerCase()
+      if (tab === 'pending' && s !== 'pending') return false
+      if (tab === 'resolved' && !['resolved','completed'].includes(s)) return false
+      if (tab === 'overdue' && s !== 'overdue') return false
+    }
+    if (issueFilter !== 'all') {
+      const text = (r.details || '').toLowerCase()
+      if (issueFilter === 'damaged' && !text.includes('damaged')) return false
+      if (issueFilter === 'missing' && !text.includes('missing')) return false
+    }
+    return true
   })
 
   const pendingCount = rows.filter(r => (r.status || '').toLowerCase() === 'pending').length
@@ -188,12 +195,26 @@ const AdminAccountabilities: React.FC = () => {
       {/* Table Card */}
       <div className="card bg-base-200 shadow-xl">
         <div className="card-body p-0">
-          <div className="p-4 border-b border-base-300">
+          <div className="p-4 border-b border-base-300 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div role="tablist" className="tabs tabs-boxed bg-base-300">
               <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
               <a role="tab" className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
               <a role="tab" className={`tab ${tab === 'resolved' ? 'tab-active' : ''}`} onClick={() => setTab('resolved')}>Resolved</a>
               <a role="tab" className={`tab ${tab === 'overdue' ? 'tab-active' : ''}`} onClick={() => setTab('overdue')}>Overdue</a>
+            </div>
+            <div className="form-control w-full lg:w-56">
+              <label className="label py-1">
+                <span className="label-text text-sm font-medium">Issue filter</span>
+              </label>
+              <select
+                className="select select-bordered select-sm"
+                value={issueFilter}
+                onChange={(e) => setIssueFilter(e.target.value as 'all' | 'damaged' | 'missing')}
+              >
+                <option value="all">All issues</option>
+                <option value="damaged">Damaged only</option>
+                <option value="missing">Missing only</option>
+              </select>
             </div>
           </div>
 
