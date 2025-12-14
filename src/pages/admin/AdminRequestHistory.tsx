@@ -523,7 +523,7 @@ const AdminRequestHistory: React.FC = () => {
                 </p>
                 {selectedRequest.items && selectedRequest.items.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="table table-zebra">
+                    <table className="table">
                       <thead>
                         <tr>
                           <th>Item</th>
