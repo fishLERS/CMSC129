@@ -20,12 +20,6 @@ export default function Login() {
 
   const currentYear = new Date().getFullYear();
   useEffect(() => {
-    if (err) {
-      setToast({ type: "error", message: err });
-    }
-  }, [err]);
-
-  useEffect(() => {
     if (successMsg) {
       setToast({ type: "success", message: successMsg });
     }
@@ -68,6 +62,8 @@ export default function Login() {
         setErr("No account found with this email");
       } else if (e.code === "auth/invalid-email") {
         setErr("Invalid email address");
+      } else if (e.code === "auth/invalid-credential" || (typeof e.message === "string" && e.message.includes("auth/invalid-credential"))) {
+        setErr("We couldn't verify your identity. Please sign in again.");
       } else {
         setErr(e.message ?? "Failed to send reset email");
       }
@@ -88,7 +84,13 @@ export default function Login() {
       if (role === "admin") nav("/admindashboard", { replace: true });
       else nav("/student", { replace: true });
     } catch (e: any) {
-      setErr(e.message ?? "Login failed");
+      if (e.code === "auth/invalid-credential") {
+        setErr("The email or password you entered is incorrect. Please try again.");
+      } else if (typeof e.message === "string" && e.message.includes("auth/invalid-credential")) {
+        setErr("The email or password you entered is incorrect. Please try again.");
+      } else {
+        setErr(e.message ?? "Login failed");
+      }
     }
   }
 
