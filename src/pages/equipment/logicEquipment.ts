@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { collection, onSnapshot } from "firebase/firestore"
+import { collection, onSnapshot, addDoc } from "firebase/firestore"
 import { Equipment, AvailableEquipmentItem} from "../../db"
 import { db } from "../../firebase"
 import { addEquipment, listenerEquipment, updateEquipment, deleteEquipment } from "./query"
@@ -32,6 +32,19 @@ export function logicEquipment() {
     await deleteEquipment(equipmentID)
   }
 
+  const handlePurge = async (item: Equipment) => {
+    if (!item.equipmentID) return
+    try {
+      await addDoc(collection(db, "equipment_purged"), {
+        ...item,
+        purgedAt: new Date().toISOString(),
+      })
+    } catch (e) {
+      console.error("Failed to log purged equipment", e)
+    }
+    await deleteEquipment(item.equipmentID)
+  }
+
   const handleArchive = async (equipmentID: string) => {
     await updateEquipment(equipmentID, {
       isDeleted: true,
@@ -46,7 +59,7 @@ export function logicEquipment() {
     })
   }
 
-  return { equipmentList, handleAdd, handleEdit, handleDelete, isLoading, handleArchive, handleRestore }
+  return { equipmentList, handleAdd, handleEdit, handleDelete, isLoading, handleArchive, handleRestore, handlePurge }
 }
 
 /**

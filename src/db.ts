@@ -7,6 +7,7 @@ export interface Equipment {
     isDisposable: boolean;
     isDeleted?: boolean;
     deletedAt?: string;
+    purgedAt?: string;
 }
 
 export interface AvailableEquipmentItem extends Equipment {

@@ -8,8 +8,10 @@ interface EquipmentTableProps {
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
   onRestore: (id: string) => void;
+  onPurge: (item: Equipment) => void;
   sortOrder: "asc" | "desc";
   onSortOrderChange: (order: "asc" | "desc") => void;
+  view: "active" | "archived" | "purged";
 }
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -20,8 +22,10 @@ export default function EquipmentTable({
   onDelete,
   onArchive,
   onRestore,
+  onPurge,
   sortOrder,
   onSortOrderChange,
+  view,
 }: EquipmentTableProps) {
   const [selectedItem, setSelectedItem] = React.useState<Equipment | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -75,11 +79,13 @@ export default function EquipmentTable({
             equipmentList.map((item) => {
               const archived = !!item.isDeleted;
               const archivedAt = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString() : null;
+              const purgedAt = (item as any).purgedAt ? new Date((item as any).purgedAt).toLocaleDateString() : null;
+              const statusLabel = view === "purged" ? "Purged" : "Archived";
               return (
               <tr
                 key={item.equipmentID}
                 className={`transition-colors cursor-pointer ${
-                  archived ? "opacity-70 bg-base-200" : "hover:bg-primary/10"
+                  !archived ? "hover:bg-primary/10" : ""
                 }`}
                 onClick={() => openDetails(item)}
               >
@@ -89,9 +95,13 @@ export default function EquipmentTable({
                     <div className="text-xs text-base-content/60">ID: {item.equipmentID}</div>
                   )}
                   {archived && (
-                    <div className="text-xs text-warning flex items-center gap-2 mt-1">
-                      <span className="badge badge-warning badge-outline">Archived</span>
-                      {archivedAt && <span>since {archivedAt}</span>}
+                    <div className="text-xs flex items-center gap-2 mt-1 text-warning">
+                      <span className={`badge ${view === "purged" ? "badge-error" : "badge-warning"} badge-outline`}>
+                        {statusLabel}
+                      </span>
+                      {(view === "purged" ? purgedAt : archivedAt) && (
+                        <span>since {view === "purged" ? purgedAt : archivedAt}</span>
+                      )}
                     </div>
                   )}
                 </td>
@@ -137,7 +147,7 @@ export default function EquipmentTable({
                     className="flex flex-wrap gap-2 justify-center"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {!archived ? (
+                    {view === "active" && !archived && (
                       <>
                         <EditEquipmentDialog item={item} onEdit={onEdit} />
                         <button
@@ -150,7 +160,8 @@ export default function EquipmentTable({
                           Archive
                         </button>
                       </>
-                    ) : (
+                    )}
+                    {view === "archived" && archived && (
                       <>
                         <button
                           className="btn btn-xs btn-ghost"
@@ -162,12 +173,17 @@ export default function EquipmentTable({
                           className="btn btn-xs btn-error"
                           onClick={() => {
                             if (!confirm(`Permanently delete ${item.name}? This cannot be undone.`)) return;
-                            onDelete(item.equipmentID!);
+                            onPurge(item);
                           }}
                         >
                           Purge
                         </button>
                       </>
+                    )}
+                    {view === "purged" && (
+                      <div className="text-xs text-base-content/60">
+                        History record
+                      </div>
                     )}
                   </div>
                 </td>

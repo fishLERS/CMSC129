@@ -6,16 +6,41 @@ import AddEquipmentDialog from "./AddEquipmentDialog";
 import EquipmentTable from "./EquipmentTable";
 import { CATEGORY_OPTIONS } from "./EquipmentForm";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "../../firebase";
+import { Equipment } from "../../db";
 
 const LOW_STOCK_THRESHOLD = 5;
 
 export default function Dashboard() {
-  const { equipmentList, handleAdd, handleEdit, handleDelete, handleArchive, handleRestore, isLoading } = logicEquipment();
+  const { equipmentList, handleAdd, handleEdit, handleDelete, handleArchive, handleRestore, handlePurge, isLoading } = logicEquipment();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
   const [typeFilter, setTypeFilter] = React.useState<"all" | "disposable" | "durable">("all");
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("asc");
   const [tab, setTab] = React.useState<"active" | "archived" | "purged">("active");
+  const [purgedEquipment, setPurgedEquipment] = React.useState<Equipment[]>([]);
+
+  React.useEffect(() => {
+    const unsub = onSnapshot(collection(db, "equipment_purged"), (snapshot) => {
+      const list: Equipment[] = snapshot.docs.map((doc) => {
+        const data = doc.data() as any;
+        return {
+          equipmentID: doc.id,
+          imageLink: data.imageLink,
+          name: data.name,
+          totalInventory: data.totalInventory,
+          category: data.category,
+          isDisposable: data.isDisposable,
+          isDeleted: true,
+          deletedAt: data.deletedAt,
+          purgedAt: data.purgedAt,
+        };
+      });
+      setPurgedEquipment(list);
+    });
+    return () => unsub();
+  }, []);
 
   const categories = React.useMemo(() => {
     const baseCategories = CATEGORY_OPTIONS as readonly string[];
@@ -63,7 +88,7 @@ export default function Dashboard() {
     } else if (tab === "archived") {
       baseList = equipmentList.filter(item => item.isDeleted);
     } else {
-      baseList = [];
+      baseList = purgedEquipment;
     }
     const filtered = baseList.filter((item) => {
       const matchesSearch =
@@ -91,7 +116,7 @@ export default function Dashboard() {
     });
 
     return sorted;
-  }, [equipmentList, searchTerm, categoryFilter, typeFilter, sortOrder, tab]);
+  }, [equipmentList, purgedEquipment, searchTerm, categoryFilter, typeFilter, sortOrder, tab]);
 
   const filtersActive =
     searchTerm.trim().length > 0 || categoryFilter !== "all" || typeFilter !== "all";
@@ -156,12 +181,18 @@ export default function Dashboard() {
 
       <div className="card bg-base-200 shadow-xl">
         <div className="card-body p-0">
-          <div className="tabs tabs-boxed bg-base-300 p-2">
+          <div className="tabs tabs-boxed bg-base-300 p-2 flex flex-wrap">
             <button className={`tab ${tab === "active" ? "tab-active" : ""}`} onClick={() => setTab("active")}>Active</button>
             <button className={`tab ${tab === "archived" ? "tab-active" : ""}`} onClick={() => setTab("archived")}>Archived</button>
+            <button className={`tab ${tab === "purged" ? "tab-active" : ""}`} onClick={() => setTab("purged")}>Purged</button>
           </div>
         </div>
         <div className="card-body space-y-4">
+          {tab === "purged" && (
+            <div className="alert alert-info">
+              <span>Purged items are read-only history of equipment that was permanently removed.</span>
+            </div>
+          )}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
             <label className="form-control w-full">
               <div className="label">
@@ -218,8 +249,14 @@ export default function Dashboard() {
 
           <div className="text-sm text-base-content/70 flex flex-wrap items-center justify-between gap-2">
             <span>
-              Showing <span className="font-semibold">{filteredEquipment.length}</span> of{" "}
-              {equipmentList.length} records
+              {tab === "purged"
+                ? `Archived records available for purge: ${filteredEquipment.length}`
+                : (
+                  <>
+                    Showing <span className="font-semibold">{filteredEquipment.length}</span> of{" "}
+                    {equipmentList.length} records
+                  </>
+                )}
             </span>
             <span className="badge badge-outline">
               {stats.totalQuantity} total pieces • {stats.disposableCount} disposable
@@ -232,8 +269,10 @@ export default function Dashboard() {
               onDelete={handleDelete}
               onArchive={handleArchive}
               onRestore={handleRestore}
+              onPurge={handlePurge}
               sortOrder={sortOrder}
               onSortOrderChange={setSortOrder}
+              view={tab}
             />
         </div>
       </div>
