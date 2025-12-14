@@ -1,7 +1,5 @@
 import React from "react";
 import { logicEquipment, useFetchAvailableItems } from "../equipment/logicEquipment";
-import { logicEquipment, useFetchAvailableItems } from "../equipment/logicEquipment";
-
 import { db, auth } from "../../firebase";
 import { useAuth } from '../../hooks/useAuth'
 import { collection, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
@@ -153,7 +151,7 @@ export const RequestForm: React.FC = () => {
       .filter(([_, qty]) => qty > 0)
       .map(([equipmentID, qty]) => ({ equipmentID, qty }));
     for (const { equipmentID, qty } of itemsArray) {
-      const item = availableEquipment.find((e) => e.equipmentID === equipmentID);
+      const item = availableEquipment.find((e: typeof availableEquipment[number]) => e.equipmentID === equipmentID);
       if (!item) continue;
       if (qty > item.available) {
         alert(`"${item.name}" exceeds available stock (${item.available}).`);
@@ -212,10 +210,12 @@ export const RequestForm: React.FC = () => {
   };
 
   // Filter equipment list
-  const filteredEquipment = availableEquipment.filter(item => item.available > 0).filter(item => 
-    item.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-    item.category?.toLowerCase().includes(filterText.toLowerCase())
-  );
+  const filteredEquipment = availableEquipment
+    .filter((item: typeof availableEquipment[number]) => item.available > 0)
+    .filter((item: typeof availableEquipment[number]) => 
+      item.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+      item.category?.toLowerCase().includes(filterText.toLowerCase())
+    );
 
   // Calculate totals
   const totalItems = Object.values(requestedItems).reduce((a, b) => a + b, 0);
@@ -265,7 +265,7 @@ export const RequestForm: React.FC = () => {
                   </div>
                 ) : (
                   <div className="divide-y divide-base-200">
-                    {filteredEquipment.map((item) => (
+                    {filteredEquipment.map((item: typeof availableEquipment[number]) => (
                       <div
                         key={item.equipmentID}
                         className={`flex justify-between items-center p-3 hover:bg-base-200/50 transition-colors ${

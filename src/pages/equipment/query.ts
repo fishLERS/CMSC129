@@ -1,6 +1,6 @@
 import { db } from "../../firebase";
 import { Equipment} from "../../db";
-import { doc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, getDocs, Firestore, query, where, getDocs, Firestore } from "firebase/firestore";
+import { doc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, getDocs, Firestore } from "firebase/firestore";
 
 const COLLECTION = "equipment";
 
