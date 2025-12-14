@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react"
+import { collection, onSnapshot } from "firebase/firestore"
 import { Equipment, AvailableEquipmentItem} from "../../db"
+import { db } from "../../firebase"
 import { addEquipment, listenerEquipment, updateEquipment, deleteEquipment } from "./query"
 
 
@@ -44,19 +46,43 @@ export function useFetchAvailableItems(
   _endDate?: string
 ) {
   const [availableEquipment, setAvailableEquipment] = useState<AvailableEquipmentItem[]>([])
+  const [activeReservations, setActiveReservations] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "requests"), (snapshot) => {
+      const reservedTotals: Record<string, number> = {}
+      snapshot.forEach((doc) => {
+        const data = doc.data() as any
+        const status = (data.status || "").toString().toLowerCase()
+        // count only approved/ongoing requests; returned/cancelled/not approved shouldn't reduce availability
+        if (!["approved", "ongoing"].includes(status)) return
+        const items = Array.isArray(data.items) ? data.items : []
+        items.forEach((item: any) => {
+          const equipmentID = item?.equipmentID
+          const qty = Number(item?.qty) || 0
+          if (!equipmentID || qty <= 0) return
+          reservedTotals[equipmentID] = (reservedTotals[equipmentID] || 0) + qty
+        })
+      })
+      setActiveReservations(reservedTotals)
+    })
+    return () => unsubscribe()
+  }, [])
 
   useEffect(() => {
     const withAvailability: AvailableEquipmentItem[] = (equipmentList || []).map((item) => {
       const total = item.totalInventory || 0
+      const reserved = activeReservations[item.equipmentID || ""] || 0
+      const remaining = Math.max(total - reserved, 0)
       return {
         ...item,
-        available: total,
-        reserved: 0,
-        isAvailable: total > 0,
+        available: remaining,
+        reserved,
+        isAvailable: remaining > 0,
       }
     })
     setAvailableEquipment(withAvailability)
-  }, [equipmentList, _startDate, _endDate])
+  }, [equipmentList, activeReservations, _startDate, _endDate])
 
   return {
     availableEquipment,
