@@ -8,6 +8,7 @@ export interface Equipment {
     isDeleted?: boolean;
     deletedAt?: string;
     purgedAt?: string;
+    serialNumbers?: string[];
 }
 
 export interface AvailableEquipmentItem extends Equipment {

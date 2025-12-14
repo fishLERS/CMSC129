@@ -29,6 +29,16 @@ export default function EquipmentTable({
 }: EquipmentTableProps) {
   const [selectedItem, setSelectedItem] = React.useState<Equipment | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const getSerialNumbers = React.useCallback((item: Equipment | null) => {
+    if (!item || item.isDisposable) return [];
+    if (Array.isArray(item.serialNumbers) && item.serialNumbers.length > 0) {
+      return item.serialNumbers;
+    }
+    const qty = Math.max(item.totalInventory ?? 0, 0);
+    const base = (item.equipmentID || item.name || "ITEM").toString();
+    const prefix = base.replace(/[^A-Za-z0-9]/g, "").toUpperCase() || "ITEM";
+    return Array.from({ length: qty }, (_, idx) => `${prefix}-${String(idx + 1).padStart(3, "0")}`);
+  }, []);
 
   const openDetails = (item: Equipment) => {
     setSelectedItem(item);
@@ -275,6 +285,26 @@ export default function EquipmentTable({
                       <span className="badge badge-warning">Needs restock</span>
                     )}
                   </div>
+                  {!selectedItem.isDisposable && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-base-content/60 uppercase tracking-wide">
+                        Serial numbers
+                      </p>
+                      <div className="bg-base-200 rounded-lg p-3 max-h-48 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {getSerialNumbers(selectedItem).map((serial) => (
+                          <span
+                            key={serial}
+                            className="font-mono text-sm px-2 py-1 rounded border border-base-300 bg-base-100"
+                          >
+                            {serial}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-xs text-base-content/60">
+                        Each durable piece is uniquely labeled for return inspections.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
