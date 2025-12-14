@@ -23,7 +23,18 @@ const AdminAccountabilities: React.FC = () => {
       snap.forEach((d: any) => {
         const data: any = d.data()
         const due = data.dueDate?.toDate ? data.dueDate.toDate().toLocaleDateString() : (data.dueDate ? new Date(data.dueDate).toLocaleDateString() : '')
-        list.push({ id: d.id, due, details: data.details || '', status: data.status || 'pending', studentNumber: data.studentNumber || '', amount: data.amount || null, createdAt: data.createdAt })
+        list.push({
+          id: d.id,
+          due,
+          details: data.details || '',
+          status: data.status || 'pending',
+          studentNumber: data.studentNumber || '',
+          studentName: data.studentName || '',
+          createdByName: data.createdByName || '',
+          createdByNumber: data.studentNumber || data.createdBy || '',
+          amount: data.amount || null,
+          createdAt: data.createdAt
+        })
       })
       setRows(list)
     }
@@ -154,8 +165,8 @@ const AdminAccountabilities: React.FC = () => {
               <thead>
                 <tr>
                   <th>Date Due</th>
-                  <th>Details</th>
                   <th>Student</th>
+                  <th>Details</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -172,29 +183,18 @@ const AdminAccountabilities: React.FC = () => {
                         <div className="font-medium">{r.due || 'No date set'}</div>
                       </td>
                       <td>
-                        <div className="max-w-md">
+                        <div className="font-medium">{studentNameByNumber[r.studentNumber] || r.studentName || 'Unknown'}</div>
+                        <div className="text-xs font-mono text-base-content/70">{r.studentNumber || r.createdByNumber || '-'}</div>
+                      </td>
+                      <td>
+                        <div className="max-w-md space-y-1">
+                          <p className="text-sm font-semibold">Items involved</p>
                           <p className="text-sm">{r.details || 'No details provided'}</p>
                         </div>
                       </td>
-                      <td className="font-mono text-sm">{r.studentNumber || '-'}</td>
                       <td>{getStatusBadge(r.status)}</td>
                       <td>
                         <button className="btn btn-ghost btn-sm" onClick={() => setShowModal(r)}>View</button>
-                        {r.status?.toLowerCase() === 'pending' && (
-                          <button className="btn btn-success btn-sm ml-2" disabled={busyId === r.id} onClick={async () => {
-                            setBusyId(r.id)
-                            try {
-                              await import('firebase/firestore').then(({ updateDoc, doc }) =>
-                                updateDoc(doc(db, 'accountabilities', r.id), { status: 'resolved' })
-                              )
-                            } catch (e) {
-                              console.error(e)
-                              setToast({ type: 'error', message: 'Failed to mark resolved' })
-                              setTimeout(() => setToast(null), 3500)
-                            }
-                            setBusyId(null)
-                          }}>Mark as Resolved</button>
-                        )}
                       </td>
                     </tr>
                   ))
@@ -219,16 +219,19 @@ const AdminAccountabilities: React.FC = () => {
                 <div className="bg-base-300 p-2 rounded text-sm">{showModal.due || 'No date set'}</div>
               </div>
               <div className="form-control">
-                <label className="label"><span className="label-text text-xs">Details</span></label>
+                <label className="label"><span className="label-text text-xs">Items / Details</span></label>
                 <div className="bg-base-300 p-2 rounded text-sm whitespace-pre-wrap">{showModal.details || 'No details provided'}</div>
               </div>
               <div className="form-control">
                 <label className="label"><span className="label-text text-xs">Status</span></label>
-                <div className="bg-base-300 p-2 rounded text-sm">{getStatusBadge(showModal.status)}</div>
+                <div className="bg-base-300 p-2 rounded text-sm flex items-center gap-2">{getStatusBadge(showModal.status)}</div>
               </div>
               <div className="form-control">
                 <label className="label"><span className="label-text text-xs">Student</span></label>
-                <div className="bg-base-300 p-2 rounded text-sm font-mono">{showModal.studentNumber || '-'}</div>
+                <div className="bg-base-300 p-2 rounded text-sm">
+                  <div className="font-medium">{studentNameByNumber[showModal.studentNumber] || showModal.studentName || 'Unknown'}</div>
+                  <div className="text-xs font-mono text-base-content/70">{showModal.studentNumber || showModal.createdByNumber || '-'}</div>
+                </div>
               </div>
             </div>
             <div className="modal-action">

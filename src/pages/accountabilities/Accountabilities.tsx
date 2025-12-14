@@ -20,7 +20,14 @@ export default function Accountabilities(){
       snap.forEach((d: any) => {
         const data: any = d.data()
         const due = data.dueDate?.toDate ? data.dueDate.toDate().toLocaleDateString() : (data.dueDate ? new Date(data.dueDate).toLocaleDateString() : '')
-        list.push({ id: d.id, due, details: data.details || '', status: data.status || 'pending' })
+        list.push({
+          id: d.id,
+          due,
+          details: data.details || '',
+          status: data.status || 'pending',
+          studentName: data.studentName || data.createdByName || user?.displayName || user?.email || 'Student',
+          studentNumber: data.studentNumber || data.createdByNumber || data.studentNo || ''
+        })
       })
       setRows(list)
     }
@@ -172,6 +179,7 @@ export default function Accountabilities(){
                       <thead>
                         <tr>
                           <th>Date Due</th>
+                          <th>Student</th>
                           <th>Details</th>
                           <th>Status</th>
                           <th>Actions</th>
@@ -180,7 +188,7 @@ export default function Accountabilities(){
                       <tbody>
                         {filtered.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="text-center py-8 text-base-content/60">
+                            <td colSpan={5} className="text-center py-8 text-base-content/60">
                               No accountabilities found
                             </td>
                           </tr>
@@ -189,6 +197,12 @@ export default function Accountabilities(){
                             <tr key={r.id} className="hover">
                               <td>
                                 <div className="font-medium">{r.due || 'No date set'}</div>
+                              </td>
+                              <td>
+                                <div className="font-medium">{r.studentName || 'Student'}</div>
+                                <div className="text-xs font-mono text-base-content/60">
+                                  {r.studentNumber || 'No student number'}
+                                </div>
                               </td>
                               <td>
                                 <div className="max-w-md">
@@ -234,6 +248,13 @@ export default function Accountabilities(){
                       <div className="form-control">
                         <label className="label"><span className="label-text text-xs">Due Date</span></label>
                         <div className="bg-base-300 p-2 rounded text-sm">{showModal.due || 'No date set'}</div>
+                      </div>
+                      <div className="form-control">
+                        <label className="label"><span className="label-text text-xs">Student</span></label>
+                        <div className="bg-base-300 p-2 rounded text-sm">
+                          <div className="font-medium">{showModal.studentName || 'Student'}</div>
+                          <div className="text-xs font-mono text-base-content/70">{showModal.studentNumber || 'No student number'}</div>
+                        </div>
                       </div>
                       <div className="form-control">
                         <label className="label"><span className="label-text text-xs">Details</span></label>
