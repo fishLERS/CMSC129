@@ -48,7 +48,9 @@ const AdminDashboard: React.FC = () => {
   const [viewRequest, setViewRequest] = useState<Request | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [isFinalizingReturn, setIsFinalizingReturn] = useState(false);
-  const [returnAssessments, setReturnAssessments] = useState<Record<string, ItemCondition[]>>({});
+  const [returnAssessments, setReturnAssessments] = useState<
+    Record<string, (ItemCondition | null)[]>
+  >({});
 
   const closeRequestModal = useCallback(() => {
     if (isFinalizingReturn) return;
@@ -120,7 +122,7 @@ const AdminDashboard: React.FC = () => {
       const key = getItemKey(item, idx);
       const qty = Math.max(0, Number(item.qty) || 0);
       const values = returnAssessments[key] || [];
-      return values.length >= qty;
+      return values.length >= qty && values.every((val) => val !== null);
     });
 
   // format a time string like "13:00" into "1:00 PM"; handle existing AM/PM
@@ -208,14 +210,14 @@ const AdminDashboard: React.FC = () => {
       return;
     }
     setReturnAssessments((prev) => {
-      const next: Record<string, ItemCondition[]> = {};
+      const next: Record<string, (ItemCondition | null)[]> = {};
       (viewRequest.items || []).forEach((item, idx) => {
         const lookup = equipmentLookup[item.equipmentID || ""];
         if (lookup?.isDisposable) return;
         const key = getItemKey(item, idx);
         const qty = Math.max(0, Number(item.qty) || 0);
         const existing = prev[key] || [];
-        next[key] = Array.from({ length: qty }, (_, pieceIdx) => existing[pieceIdx] || "functional");
+        next[key] = Array.from({ length: qty }, (_, pieceIdx) => existing[pieceIdx] ?? null);
       });
       return next;
     });
@@ -316,7 +318,7 @@ const AdminDashboard: React.FC = () => {
         const values = returnAssessments[key] || [];
         for (let pieceIdx = 0; pieceIdx < qty; pieceIdx++) {
           const condition: ItemCondition =
-            lookup.isDisposable ? "consumed" : values[pieceIdx] || "functional";
+            lookup.isDisposable ? "consumed" : (values[pieceIdx] ?? "functional");
           summary[condition] = (summary[condition] || 0) + 1;
           assessmentRecords.push({
             equipmentID: item.equipmentID,
@@ -695,7 +697,7 @@ const AdminDashboard: React.FC = () => {
                                 <td>
                                   <div className="flex flex-wrap gap-2">
                                     {Array.from({ length: qty }).map((_, pieceIdx) => {
-                                      const value = (returnAssessments[key] || [])[pieceIdx] || "functional";
+                                      const value = (returnAssessments[key] || [])[pieceIdx];
                                       const buttonClass = (condition: ItemCondition) =>
                                         `btn btn-xs ${
                                           value === condition
