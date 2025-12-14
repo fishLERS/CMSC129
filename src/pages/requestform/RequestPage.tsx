@@ -152,6 +152,22 @@ export const RequestForm: React.FC = () => {
       alert("Please select a return date.");
       return;
     }
+    if (!formData.start) {
+      alert("Please select a start time.");
+      return;
+    }
+    if (!formData.end) {
+      alert("Please select a return time.");
+      return;
+    }
+    if (!formData.adviser.trim()) {
+      alert("Please enter an adviser or project leader.");
+      return;
+    }
+    if (!formData.purpose.trim()) {
+      alert("Please enter the purpose of your request.");
+      return;
+    }
 
     const itemsArray = Object.entries(requestedItems)
       .filter(([_, qty]) => qty > 0)
