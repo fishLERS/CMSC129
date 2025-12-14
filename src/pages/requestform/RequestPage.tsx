@@ -286,15 +286,28 @@ export const RequestForm: React.FC = () => {
                     {filteredEquipment.map((item: AvailableEquipmentItem) => (
                       <div
                         key={item.equipmentID}
-                        className={`flex justify-between items-center p-3 transition-colors cursor-pointer ${
+                        className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-3 transition-colors cursor-pointer ${
                           (requestedItems[item.equipmentID!] || 0) > 0 ? 'bg-primary/5' : 'hover:bg-primary/10'
                         }`}
                         onClick={() => openPreview(item)}
                       >
+                        {/* Thumbnail */}
+                        <div className="w-14 h-14 flex items-center justify-center bg-base-200 rounded-lg overflow-hidden">
+                          {item.imageLink ? (
+                            <img
+                              src={item.imageLink}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package className="w-5 h-5 text-base-content/60" />
+                          )}
+                        </div>
+
                         {/* Item Info */}
-                        <div className="flex-1">
-                          <p className="font-medium">{item.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <p className="font-medium truncate">{item.name}</p>
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
                             <span className="badge badge-ghost badge-sm">
                               Available: {item.available}
                             </span>
@@ -306,63 +319,50 @@ export const RequestForm: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Thumbnail + Quantity Stepper */}
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <div className="w-12 h-12 flex items-center justify-center bg-base-200 rounded-lg overflow-hidden">
-                            {item.imageLink ? (
-                              <img
-                                src={item.imageLink}
-                                alt={item.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <Package className="w-5 h-5 text-base-content/60" />
-                            )}
-                          </div>
-                          <div className="join">
-                            <button
-                              type="button"
-                              className="btn btn-sm join-item"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRequestedItems((prev) => ({
-                                  ...prev,
-                                  [item.equipmentID!]: Math.max((prev[item.equipmentID!] || 0) - 1, 0),
-                                }));
-                              }}
-                              disabled={(requestedItems[item.equipmentID!] || 0) <= 0}
-                            >
-                              <Minus className="w-4 h-4" />
-                            </button>
-                            <input
-                              type="number"
-                              min={0}
-                              max={item.available}
-                              value={requestedItems[item.equipmentID!] || 0}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) =>
-                                setRequestedItems((prev) => ({
-                                  ...prev,
-                                  [item.equipmentID!]: Math.max(0, Math.min(Number(e.target.value), item.available)),
-                                }))
-                              }
-                              className="input input-sm input-bordered join-item w-14 text-center"
-                            />
-                            <button
-                              type="button"
-                              className="btn btn-sm join-item"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setRequestedItems((prev) => ({
-                                  ...prev,
-                                  [item.equipmentID!]: (prev[item.equipmentID!] || 0) + 1,
-                                }));
-                              }}
-                              disabled={(requestedItems[item.equipmentID!] || 0) >= item.available}
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
+                        {/* Quantity Stepper */}
+                        <div className="join" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            className="btn btn-sm join-item"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRequestedItems((prev) => ({
+                                ...prev,
+                                [item.equipmentID!]: Math.max((prev[item.equipmentID!] || 0) - 1, 0),
+                              }));
+                            }}
+                            disabled={(requestedItems[item.equipmentID!] || 0) <= 0}
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <input
+                            type="number"
+                            min={0}
+                            max={item.available}
+                            value={requestedItems[item.equipmentID!] || 0}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) =>
+                              setRequestedItems((prev) => ({
+                                ...prev,
+                                [item.equipmentID!]: Math.max(0, Math.min(Number(e.target.value), item.available)),
+                              }))
+                            }
+                            className="input input-sm input-bordered join-item w-14 text-center"
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm join-item"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRequestedItems((prev) => ({
+                                ...prev,
+                                [item.equipmentID!]: (prev[item.equipmentID!] || 0) + 1,
+                              }));
+                            }}
+                            disabled={(requestedItems[item.equipmentID!] || 0) >= item.available}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
