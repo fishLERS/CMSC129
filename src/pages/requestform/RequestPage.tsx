@@ -43,6 +43,8 @@ export const RequestForm: React.FC = () => {
   const [showDateCalendar, setShowDateCalendar] = React.useState(false);
   const [calendarKey, setCalendarKey] = React.useState(0);
   const [filterText, setFilterText] = React.useState('');
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
+  const [categoryFilter, setCategoryFilter] = React.useState<'all' | string>('all');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const dateCalendarRef = React.useRef<HTMLDivElement>(null);
   const [previewItem, setPreviewItem] = React.useState<AvailableEquipmentItem | null>(null);
@@ -213,12 +215,29 @@ export const RequestForm: React.FC = () => {
   };
 
   // Filter equipment list
+  const categoryOptions = React.useMemo(() => {
+    const categories = new Set<string>();
+    equipmentList.forEach((item) => {
+      if (item.category) categories.add(item.category.trim());
+    });
+    return Array.from(categories).sort((a, b) => a.localeCompare(b));
+  }, [equipmentList]);
+
   const filteredEquipment = availableEquipment
     .filter((item: AvailableEquipmentItem) => item.available > 0)
     .filter((item: AvailableEquipmentItem) => 
       item.name?.toLowerCase().includes(filterText.toLowerCase()) ||
       item.category?.toLowerCase().includes(filterText.toLowerCase())
-    );
+    )
+    .filter((item: AvailableEquipmentItem) => {
+      if (categoryFilter === 'all') return true;
+      return (item.category || '').trim() === categoryFilter;
+    })
+    .sort((a: AvailableEquipmentItem, b: AvailableEquipmentItem) => {
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+    });
 
   // Calculate totals
   const totalItems = Object.values(requestedItems).reduce((a, b) => a + b, 0);
@@ -250,28 +269,74 @@ export const RequestForm: React.FC = () => {
         <p className="text-base-content/70">Select equipment and fill in the request details</p>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
         {/* LEFT PANEL - Equipment Selection */}
         <div className="flex-1">
-          <div className="card bg-base-200 shadow-xl">
+          <div className="card bg-base-200 shadow-xl border border-base-300 dark:border-base-content/20 dark:bg-base-300">
             <div className="card-body p-4">
-              {/* Header with search */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <h2 className="card-title text-lg">
-                  <Package className="w-5 h-5" />
-                  Available Equipment
-                </h2>
-                <div className="join">
-                  <div className="join-item bg-base-300 flex items-center px-3">
-                    <Search className="w-4 h-4 text-base-content/60" />
+              {/* Header with search & filters */}
+              <div className="space-y-4 mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h2 className="card-title text-lg">
+                    <Package className="w-5 h-5" />
+                    Available Equipment
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr_auto] gap-3">
+                  <label className="form-control">
+                    <span className="label-text text-xs uppercase tracking-wide text-base-content/60">
+                      Search
+                    </span>
+                    <label className="input input-sm input-bordered flex items-center gap-2">
+                      <Search className="w-4 h-4 text-base-content/60" />
+                      <input
+                        type="text"
+                        placeholder="Search equipment..."
+                        className="grow"
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                      />
+                    </label>
+                  </label>
+                  <label className="form-control w-full">
+                    <span className="label-text text-xs uppercase tracking-wide text-base-content/60">
+                      Sort
+                    </span>
+                    <select
+                      className="select select-bordered select-sm"
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                    >
+                      <option value="asc">Alphabetical (A → Z)</option>
+                      <option value="desc">Alphabetical (Z → A)</option>
+                    </select>
+                  </label>
+                  <label className="form-control w-full">
+                    <span className="label-text text-xs uppercase tracking-wide text-base-content/60">
+                      Category
+                    </span>
+                    <select
+                      className="select select-bordered select-sm"
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value as 'all' | string)}
+                    >
+                      <option value="all">All categories</option>
+                      {categoryOptions.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="flex items-end justify-end">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline w-full lg:w-auto"
+                      onClick={resetFilters}
+                    >
+                      Reset filters
+                    </button>
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Search equipment..."
-                    className="input input-sm input-bordered join-item w-full sm:w-48"
-                    value={filterText}
-                    onChange={(e) => setFilterText(e.target.value)}
-                  />
                 </div>
               </div>
 
@@ -387,7 +452,7 @@ export const RequestForm: React.FC = () => {
 
         {/* RIGHT PANEL - Request Form */}
         <div className="w-full lg:w-96">
-          <div className="card bg-base-200 shadow-xl">
+          <div className="card bg-base-200 shadow-xl border border-base-300 dark:border-base-content/20 dark:bg-base-300">
             <div className="card-body p-4">
               <h2 className="card-title text-lg justify-center mb-2">
                 <FileText className="w-5 h-5" />
@@ -690,3 +755,8 @@ export const RequestForm: React.FC = () => {
 };
 
 export default RequestForm;
+  const resetFilters = () => {
+    setFilterText('');
+    setSortOrder('asc');
+    setCategoryFilter('all');
+  };
