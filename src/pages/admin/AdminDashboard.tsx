@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, getDocs, updateDoc, doc, getDoc, serverTimestamp, addDoc } from "firebase/firestore";
 import { logicEquipment } from "../equipment/logicEquipment";
@@ -49,6 +49,12 @@ const AdminDashboard: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [isFinalizingReturn, setIsFinalizingReturn] = useState(false);
   const [returnAssessments, setReturnAssessments] = useState<Record<string, ItemCondition[]>>({});
+
+  const closeRequestModal = useCallback(() => {
+    if (isFinalizingReturn) return;
+    setViewOpen(false);
+    setViewRequest(null);
+  }, [isFinalizingReturn]);
 
   const getItemKey = (item: RequestItem, index: number) =>
     `${item.equipmentID || "item"}-${index}`;
@@ -180,6 +186,17 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     fetchRequests();
   }, []);
+
+  useEffect(() => {
+    if (!viewOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeRequestModal();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [viewOpen, closeRequestModal]);
 
   useEffect(() => {
     if (
@@ -570,9 +587,23 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
       {viewOpen && viewRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4">
-            <h3 className="text-lg font-semibold">Request Details</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeRequestModal();
+          }}
+        >
+          <div
+            className="bg-base-100 p-4 rounded shadow max-w-3xl w-full max-h-[90vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="btn btn-sm btn-circle btn-ghost absolute right-4 top-4"
+              onClick={closeRequestModal}
+            >
+              ✕
+            </button>
+            <h3 className="text-lg font-semibold pr-10">Request Details</h3>
             <div className="space-y-1 mt-2">
               <p className="text-xs uppercase tracking-wide text-base-content/60">Purpose</p>
               <p className="text-2xl font-bold break-words">{viewRequest.purpose || "Untitled Request"}</p>
@@ -842,7 +873,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
               ) : null}
               <div className="flex justify-end">
-                <button className="btn" onClick={() => { if (!isFinalizingReturn) { setViewOpen(false); setViewRequest(null); } }} disabled={isFinalizingReturn}>
+                <button className="btn" onClick={closeRequestModal} disabled={isFinalizingReturn}>
                   Close
                 </button>
               </div>
