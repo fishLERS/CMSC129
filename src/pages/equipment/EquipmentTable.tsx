@@ -114,8 +114,8 @@ export default function EquipmentTable({
                       )}
                     </div>
                     <div className="text-xs text-base-content/60">
-                      Pending: {item.reserved ?? 0} · Available now:{" "}
-                      {Math.max((item.totalInventory ?? 0) - (item.reserved ?? 0), 0)}
+                      Pending: {(item as any).reserved ?? 0} · Available now:{" "}
+                      {Math.max((item.totalInventory ?? 0) - ((item as any).reserved ?? 0), 0)}
                     </div>
                   </div>
                 </td>
@@ -257,7 +257,7 @@ export default function EquipmentTable({
                       <p className="text-xs text-base-content/60 uppercase tracking-wide">Quantity</p>
                       <p className="text-lg font-semibold">{selectedItem.totalInventory ?? 0}</p>
                       <p className="text-xs text-base-content/60">
-                        Pending: {selectedItem.reserved ?? 0}
+                        Pending: {(selectedItem as any).reserved ?? 0}
                       </p>
                     </div>
                     <div>
