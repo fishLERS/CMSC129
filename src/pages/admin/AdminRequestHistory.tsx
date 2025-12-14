@@ -470,14 +470,19 @@ const AdminRequestHistory: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-base-content/60">
-                  Request ID
+                  Request Purpose
                 </p>
-                <h3 className="text-2xl font-bold break-all">{selectedRequest.id}</h3>
+                <h3 className="text-2xl font-bold break-words">
+                  {selectedRequest.purpose || "Untitled Request"}
+                </h3>
                 <p className="text-sm text-base-content/70">
                   {getRequester(selectedRequest)} •{" "}
                   {selectedRequest.createdAt
                     ? selectedRequest.createdAt.toLocaleString()
                     : selectedRequest.createdAtClient || "Unknown timestamp"}
+                </p>
+                <p className="text-xs text-base-content/60 font-mono mt-1">
+                  ID: {selectedRequest.id}
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
