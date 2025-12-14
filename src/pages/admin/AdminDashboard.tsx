@@ -295,12 +295,14 @@ const AdminDashboard: React.FC = () => {
         const key = getItemKey(item, idx);
         const qty = Math.max(0, Number(item.qty) || 0);
         const lookup = equipmentLookup[item.equipmentID || ""];
+        if (lookup?.isDisposable) {
+          return;
+        }
         const values = returnAssessments[key] || [];
         const totalPieces = qty || 0;
         const iterator = Array.from({ length: totalPieces });
         iterator.forEach((_, pieceIdx) => {
-          const condition =
-            lookup?.isDisposable ? "functional" : values[pieceIdx] || "functional";
+          const condition = values[pieceIdx] || "functional";
           summary[condition] = (summary[condition] || 0) + 1;
           assessmentRecords.push({
             equipmentID: item.equipmentID,
