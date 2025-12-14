@@ -510,7 +510,7 @@ const AdminDashboard: React.FC = () => {
         </div>
         <div className="stat">
           <div className="stat-title">Cancelled</div>
-          <div className="stat-value text-base">{cancelledCount}</div>
+          <div className="stat-value text-info">{cancelledCount}</div>
           <div className="stat-desc">Requests cancelled</div>
         </div>
       </div>
