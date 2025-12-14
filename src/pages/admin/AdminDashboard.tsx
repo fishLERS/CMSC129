@@ -53,11 +53,17 @@ const AdminDashboard: React.FC = () => {
   const getItemKey = (item: RequestItem, index: number) =>
     `${item.equipmentID || "item"}-${index}`;
 
-  const equipmentNameById = React.useMemo(() => {
-    const map: Record<string, string> = {};
+  const equipmentLookup = React.useMemo(() => {
+    const map: Record<
+      string,
+      { name?: string; isDisposable?: boolean }
+    > = {};
     equipmentList.forEach((item) => {
       if (item.equipmentID) {
-        map[item.equipmentID] = item.name;
+        map[item.equipmentID] = {
+          name: item.name,
+          isDisposable: item.isDisposable,
+        };
       }
     });
     return map;
@@ -75,7 +81,7 @@ const AdminDashboard: React.FC = () => {
       if (!groups[key]) {
         groups[key] = {
           equipmentID: entry.equipmentID,
-          name: entry.equipmentID ? equipmentNameById[entry.equipmentID] : "Unknown item",
+          name: equipmentLookup[entry.equipmentID || ""]?.name || entry.equipmentID || "Unknown item",
           functional: 0,
           damaged: 0,
           missing: 0,
@@ -85,15 +91,25 @@ const AdminDashboard: React.FC = () => {
     });
 
     return Object.values(groups);
-  }, [viewRequest, equipmentNameById]);
+  }, [viewRequest, equipmentLookup]);
 
   const normalizedViewStatus = (viewRequest?.status || "").toString().toLowerCase();
-  const requiresReturnAssessment = !!viewRequest && normalizedViewStatus === "returned";
+  const hasDurableItems = React.useMemo(() => {
+    if (!viewRequest?.items) return false;
+    return viewRequest.items.some((item) => {
+      const lookup = equipmentLookup[item.equipmentID || ""];
+      return !lookup?.isDisposable && (item.qty || 0) > 0;
+    });
+  }, [viewRequest, equipmentLookup]);
+  const requiresReturnAssessment =
+    !!viewRequest && normalizedViewStatus === "returned" && hasDurableItems;
   const showApprovalActions =
     !!viewRequest && !["cancelled", "approved", "returned", "cleared"].includes(normalizedViewStatus);
   const assessmentsReady =
     !requiresReturnAssessment ||
     (viewRequest?.items || []).every((item, idx) => {
+      const lookup = equipmentLookup[item.equipmentID || ""];
+      if (lookup?.isDisposable) return true;
       const key = getItemKey(item, idx);
       const qty = Math.max(0, Number(item.qty) || 0);
       const values = returnAssessments[key] || [];
@@ -165,13 +181,19 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!viewRequest || (viewRequest.status || "").toLowerCase() !== "returned") {
+    if (
+      !viewRequest ||
+      (viewRequest.status || "").toLowerCase() !== "returned" ||
+      !hasDurableItems
+    ) {
       setReturnAssessments({});
       return;
     }
     setReturnAssessments((prev) => {
       const next: Record<string, ItemCondition[]> = {};
       (viewRequest.items || []).forEach((item, idx) => {
+        const lookup = equipmentLookup[item.equipmentID || ""];
+        if (lookup?.isDisposable) return;
         const key = getItemKey(item, idx);
         const qty = Math.max(0, Number(item.qty) || 0);
         const existing = prev[key] || [];
@@ -179,7 +201,7 @@ const AdminDashboard: React.FC = () => {
       });
       return next;
     });
-  }, [viewRequest]);
+  }, [viewRequest, equipmentLookup, hasDurableItems]);
 
   const handleAssessmentChange = (
     key: string,
@@ -187,7 +209,8 @@ const AdminDashboard: React.FC = () => {
     condition: ItemCondition
   ) => {
     setReturnAssessments((prev) => {
-      const entry = prev[key] ? [...prev[key]] : [];
+      if (!prev[key]) return prev;
+      const entry = [...prev[key]];
       entry[index] = condition;
       return { ...prev, [key]: entry };
     });
@@ -271,9 +294,13 @@ const AdminDashboard: React.FC = () => {
       (request.items || []).forEach((item, idx) => {
         const key = getItemKey(item, idx);
         const qty = Math.max(0, Number(item.qty) || 0);
+        const lookup = equipmentLookup[item.equipmentID || ""];
         const values = returnAssessments[key] || [];
-        for (let pieceIdx = 0; pieceIdx < qty; pieceIdx++) {
-          const condition = values[pieceIdx] || "functional";
+        const totalPieces = qty || 0;
+        const iterator = Array.from({ length: totalPieces });
+        iterator.forEach((_, pieceIdx) => {
+          const condition =
+            lookup?.isDisposable ? "functional" : values[pieceIdx] || "functional";
           summary[condition] = (summary[condition] || 0) + 1;
           assessmentRecords.push({
             equipmentID: item.equipmentID,
@@ -283,9 +310,7 @@ const AdminDashboard: React.FC = () => {
           if (condition !== "functional") {
             const issueKey = item.equipmentID || key;
             if (!issueMap[issueKey]) {
-              const equipmentName =
-                equipmentList.find((eq) => eq.equipmentID === item.equipmentID)?.name ||
-                item.equipmentID;
+              const equipmentName = lookup?.name || item.equipmentID;
               issueMap[issueKey] = {
                 equipmentID: item.equipmentID,
                 equipmentName,
@@ -295,7 +320,7 @@ const AdminDashboard: React.FC = () => {
             }
             issueMap[issueKey][condition] += 1;
           }
-        }
+        });
       });
 
       const finalCondition =
@@ -600,13 +625,28 @@ const AdminDashboard: React.FC = () => {
                           {viewRequest.items?.map((item, idx) => {
                             const key = getItemKey(item, idx);
                             const qty = Math.max(0, Number(item.qty) || 0);
+                            const lookup = equipmentLookup[item.equipmentID || ""];
+                            const itemName =
+                              lookup?.name ||
+                              equipmentList.find((eq) => eq.equipmentID === item.equipmentID)?.name ||
+                              item.equipmentID;
+                            const isDisposable = lookup?.isDisposable;
+                            if (isDisposable) {
+                              return (
+                                <tr key={key}>
+                                  <td>
+                                    <div className="font-medium">{itemName}</div>
+                                    <div className="text-xs text-base-content/60">ID: {item.equipmentID || "—"}</div>
+                                  </td>
+                                  <td>{qty}</td>
+                                  <td></td>
+                                </tr>
+                              );
+                            }
                             return (
                               <tr key={key}>
                                 <td>
-                                  <div className="font-medium">
-                                    {equipmentList.find((eq) => eq.equipmentID === item.equipmentID)?.name ||
-                                      item.equipmentID}
-                                  </div>
+                                  <div className="font-medium">{itemName}</div>
                                   <div className="text-xs text-base-content/60">
                                     ID: {item.equipmentID || "—"}
                                   </div>
@@ -743,6 +783,19 @@ const AdminDashboard: React.FC = () => {
                     onClick={() => finalizeReturnAssessment(viewRequest)}
                   >
                     {isFinalizingReturn ? "Finalizing..." : "Finalize assessment"}
+                  </button>
+                </div>
+              ) : normalizedViewStatus === "returned" ? (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-base-content/70">
+                    This return contains only disposable items. Finalize to clear it.
+                  </p>
+                  <button
+                    className="btn btn-primary"
+                    disabled={isFinalizingReturn}
+                    onClick={() => finalizeReturnAssessment(viewRequest)}
+                  >
+                    {isFinalizingReturn ? "Finalizing..." : "Finalize"}
                   </button>
                 </div>
               ) : showApprovalActions ? (
