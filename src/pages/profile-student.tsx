@@ -31,6 +31,7 @@ export default function ProfileStudent() {
   const [confirmPassword, setConfirmPassword] = React.useState('')
   const [passwordError, setPasswordError] = React.useState('')
   const [passwordSuccess, setPasswordSuccess] = React.useState('')
+  const [profileAlert, setProfileAlert] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   React.useEffect(() => {
     if (!user) return
@@ -66,7 +67,7 @@ export default function ProfileStudent() {
       // validate student number format if provided
       const sn = (studentNumber || '').trim()
       if (sn && !/^20\d{2}-\d{5}$/.test(sn)) {
-        alert('Student number must be in the format 20XX-XXXXX')
+        setProfileAlert({ type: 'error', message: 'Student number must be in the format 20XX-XXXXX' })
         setEditing(true)
         return
       }
@@ -75,9 +76,10 @@ export default function ProfileStudent() {
   const updates: any = { displayName, studentNumber: sn }
   await updateDoc(ref, updates)
   setProfile((p:any) => ({ ...(p||{}), displayName, studentNumber: sn }))
+  setProfileAlert({ type: 'success', message: 'Profile updated successfully.' })
     } catch (e) {
       console.error('Failed to save profile', e)
-      alert('Failed to save profile; see console')
+      setProfileAlert({ type: 'error', message: 'Failed to save profile. Please try again.' })
     }
   }
 
@@ -131,6 +133,12 @@ export default function ProfileStudent() {
 
   return (
     <div className="p-6 space-y-6">
+      {profileAlert && (
+        <div className={`alert ${profileAlert.type === 'error' ? 'alert-error' : 'alert-success'}`}>
+          <span>{profileAlert.message}</span>
+          <button className="btn btn-sm" onClick={() => setProfileAlert(null)}>Close</button>
+        </div>
+      )}
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">

@@ -30,6 +30,7 @@ export default function HomeStudent() {
   const [notifAllOpen, setNotifAllOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<Array<any>>([])
   const [recentNotifications, setRecentNotifications] = React.useState<Array<any>>([])
+  const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (!user) {
@@ -228,7 +229,7 @@ export default function HomeStudent() {
       // snapshot will update the UI automatically
     } catch (e) {
       console.error('Failed to cancel request', e)
-      alert('Failed to cancel request; see console')
+      setAlertMessage('Failed to cancel request. Please try again.')
     } finally {
       setBusyId(null)
     }
@@ -244,7 +245,7 @@ export default function HomeStudent() {
       })
     } catch (e) {
       console.error('Failed to mark request returned', e)
-      alert('Failed to mark returned; see console')
+      setAlertMessage('Failed to mark returned. Please try again.')
     } finally {
       setBusyId(null)
     }
@@ -292,6 +293,12 @@ export default function HomeStudent() {
     <>
       <LoadingOverlay show={isEquipmentLoading} message="Loading equipment data..." />
       <div className="p-6 space-y-6">
+        {alertMessage && (
+          <div className="alert alert-error">
+            <span>{alertMessage}</span>
+            <button className="btn btn-sm" onClick={() => setAlertMessage(null)}>Close</button>
+          </div>
+        )}
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

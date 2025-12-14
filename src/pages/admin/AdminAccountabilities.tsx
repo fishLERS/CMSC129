@@ -187,7 +187,11 @@ const AdminAccountabilities: React.FC = () => {
                               await import('firebase/firestore').then(({ updateDoc, doc }) =>
                                 updateDoc(doc(db, 'accountabilities', r.id), { status: 'resolved' })
                               )
-                            } catch (e) { alert('Failed to mark resolved') }
+                            } catch (e) {
+                              console.error(e)
+                              setToast({ type: 'error', message: 'Failed to mark resolved' })
+                              setTimeout(() => setToast(null), 3500)
+                            }
                             setBusyId(null)
                           }}>Mark as Resolved</button>
                         )}
@@ -236,7 +240,11 @@ const AdminAccountabilities: React.FC = () => {
                     await import('firebase/firestore').then(({ updateDoc, doc }) =>
                       updateDoc(doc(db, 'accountabilities', showModal.id), { status: 'resolved' })
                     )
-                  } catch (e) { alert('Failed to mark resolved') }
+                  } catch (e) {
+                    console.error(e)
+                    setToast({ type: 'error', message: 'Failed to mark resolved' })
+                    setTimeout(() => setToast(null), 3500)
+                  }
                   setBusyId(null); setShowModal(null)
                 }}>Mark as Resolved</button>
               )}
@@ -294,8 +302,16 @@ const AdminAccountabilities: React.FC = () => {
               <button className="btn" onClick={() => setAddOpen(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={async () => {
                 // basic validation
-                if (!selectedStudentNumber) { alert('Please select or enter a student number'); return }
-                if (!dateDue) { alert('Please select a due date'); return }
+                if (!selectedStudentNumber) {
+                  setToast({ type: 'error', message: 'Please select or enter a student number' })
+                  setTimeout(() => setToast(null), 3500)
+                  return
+                }
+                if (!dateDue) {
+                  setToast({ type: 'error', message: 'Please select a due date' })
+                  setTimeout(() => setToast(null), 3500)
+                  return
+                }
                 try {
                   await addDoc(collection(db, 'accountabilities'), {
                     studentNumber: selectedStudentNumber,

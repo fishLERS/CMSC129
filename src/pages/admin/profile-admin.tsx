@@ -25,6 +25,7 @@ export default function ProfileAdmin() {
   const [loading, setLoading] = React.useState(true);
   const [profile, setProfile] = React.useState<AdminProfile | null>(null);
   const [editing, setEditing] = React.useState(false);
+  const [alertMessage, setAlertMessage] = React.useState<string | null>(null);
 
   const [displayName, setDisplayName] = React.useState("");
   const [staffId, setStaffId] = React.useState("");
@@ -73,7 +74,7 @@ export default function ProfileAdmin() {
       setProfile((prev) => ({ ...(prev || {}), ...updates }));
     } catch (error) {
       console.error("Failed to save profile", error);
-      alert("Failed to save profile; see console for details.");
+      setAlertMessage("Failed to save profile. Please try again.");
       setEditing(true);
     }
   }
@@ -129,6 +130,12 @@ export default function ProfileAdmin() {
 
   return (
     <div className="p-6 space-y-6">
+      {alertMessage && (
+        <div className="alert alert-error">
+          <span>{alertMessage}</span>
+          <button className="btn btn-sm" onClick={() => setAlertMessage(null)}>Close</button>
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <User className="w-6 h-6" />

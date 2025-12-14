@@ -39,6 +39,7 @@ const AdminDashboard: React.FC = () => {
   const [declineRemarks, setDeclineRemarks] = useState('');
   const [viewOpen, setViewOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<Request | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
   // format a time string like "13:00" into "1:00 PM"; handle existing AM/PM
   const formatTime = (t: any) => {
@@ -126,7 +127,7 @@ const AdminDashboard: React.FC = () => {
       );
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Failed to update status.");
+      setAlertMessage("Failed to update status. Please try again.");
     }
   };
 
@@ -141,7 +142,7 @@ const AdminDashboard: React.FC = () => {
       setRequests(prev => prev.map(r => r.id === declineId ? { ...r, status: 'Declined', declinedRemarks: declineRemarks } : r));
     } catch (e) {
       console.error('Failed to decline request', e);
-      alert('Failed to decline request; see console');
+      setAlertMessage('Failed to decline request. Please try again.');
     } finally {
       setDeclineOpen(false);
       setDeclineId(null);
@@ -201,6 +202,12 @@ const AdminDashboard: React.FC = () => {
     <>
       <LoadingOverlay show={loading || isEquipmentLoading} message="Loading requests..." />
       <div className="p-6 space-y-6">
+        {alertMessage && (
+          <div className="alert alert-error">
+            <span>{alertMessage}</span>
+            <button className="btn btn-sm" onClick={() => setAlertMessage(null)}>Close</button>
+          </div>
+        )}
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

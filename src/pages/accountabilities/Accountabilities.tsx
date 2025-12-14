@@ -10,6 +10,7 @@ export default function Accountabilities(){
   const [tab, setTab] = React.useState<'all'|'pending'|'resolved'|'overdue'>('all');
   const [busyId, setBusyId] = React.useState<string | null>(null);
   const [showModal, setShowModal] = React.useState<any | null>(null);
+  const [alertMessage, setAlertMessage] = React.useState<string | null>(null);
 
   React.useEffect(()=>{
     if(!user) return
@@ -72,6 +73,12 @@ export default function Accountabilities(){
 
   return (
     <div className="p-6 space-y-6">
+      {alertMessage && (
+        <div className="alert alert-error">
+          <span>{alertMessage}</span>
+          <button className="btn btn-sm" onClick={() => setAlertMessage(null)}>Close</button>
+        </div>
+      )}
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -198,7 +205,10 @@ export default function Accountabilities(){
                                       await import('firebase/firestore').then(({ updateDoc, doc }) =>
                                         updateDoc(doc(db, 'accountabilities', r.id), { status: 'resolved' })
                                       );
-                                    } catch (e) { alert('Failed to mark resolved'); }
+                                    } catch (e) {
+                                      console.error(e);
+                                      setAlertMessage('Failed to mark resolved. Please try again.');
+                                    }
                                     setBusyId(null);
                                   }}>Mark as Resolved</button>
                                 )}
@@ -243,7 +253,10 @@ export default function Accountabilities(){
                             await import('firebase/firestore').then(({ updateDoc, doc }) =>
                               updateDoc(doc(db, 'accountabilities', showModal.id), { status: 'resolved' })
                             );
-                          } catch (e) { alert('Failed to mark resolved'); }
+                          } catch (e) {
+                            console.error(e);
+                            setAlertMessage('Failed to mark resolved. Please try again.');
+                          }
                           setBusyId(null); setShowModal(null);
                         }}>Mark as Resolved</button>
                       )}

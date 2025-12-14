@@ -16,6 +16,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = React.useState(true)
   const [updating, setUpdating] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState('')
+  const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const usersRef = collection(db, 'users')
@@ -70,7 +71,7 @@ export default function AdminUsers() {
       )
     } catch (error) {
       console.error('Failed to update user role', error)
-      alert('Failed to update user role. See console for details.')
+      setAlertMessage('Failed to update user role. Please try again.')
     } finally {
       setUpdating(null)
     }
@@ -103,6 +104,12 @@ export default function AdminUsers() {
 
   return (
     <div className="p-6 space-y-6">
+      {alertMessage && (
+        <div className="alert alert-error">
+          <span>{alertMessage}</span>
+          <button className="btn btn-sm" onClick={() => setAlertMessage(null)}>Close</button>
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-bold">Admin Management</h1>
         <p className="text-base-content/70">Review admin accounts and pending requests using daisyUI cards.</p>

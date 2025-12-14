@@ -16,6 +16,7 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   // Check if on large screen (drawer always open)
@@ -41,7 +42,7 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
       navigate("/login", { replace: true });
     } catch (e: any) {
       console.error("Sign out failed", e);
-      alert(e?.message ?? "Logout failed. Please try again.");
+      setLogoutError(e?.message ?? "Logout failed. Please try again.");
     }
   };
 
@@ -100,6 +101,12 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
         
         {/* Page content - scrollable */}
         <main className="flex-1 p-4 bg-base-200 overflow-y-auto">
+          {logoutError && (
+            <div className="alert alert-error mb-4">
+              <span>{logoutError}</span>
+              <button className="btn btn-sm" onClick={() => setLogoutError(null)}>Close</button>
+            </div>
+          )}
           {children}
         </main>
       </div>

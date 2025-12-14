@@ -50,6 +50,8 @@ export const RequestForm: React.FC = () => {
   const dateCalendarRef = React.useRef<HTMLDivElement>(null);
   const [previewItem, setPreviewItem] = React.useState<AvailableEquipmentItem | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   // Close calendar when clicking outside
   React.useEffect(() => {
@@ -142,30 +144,31 @@ export const RequestForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
 
     // Validate date fields
     if (!formData.startDate) {
-      alert("Please select a start date.");
+      setErrorMessage("Please select a start date.");
       return;
     }
     if (!formData.endDate) {
-      alert("Please select a return date.");
+      setErrorMessage("Please select a return date.");
       return;
     }
     if (!formData.start) {
-      alert("Please select a start time.");
+      setErrorMessage("Please select a start time.");
       return;
     }
     if (!formData.end) {
-      alert("Please select a return time.");
+      setErrorMessage("Please select a return time.");
       return;
     }
     if (!formData.adviser.trim()) {
-      alert("Please enter an adviser or project leader.");
+      setErrorMessage("Please enter an adviser or project leader.");
       return;
     }
     if (!formData.purpose.trim()) {
-      alert("Please enter the purpose of your request.");
+      setErrorMessage("Please enter the purpose of your request.");
       return;
     }
 
@@ -176,13 +179,13 @@ export const RequestForm: React.FC = () => {
       const item = availableEquipment.find((e: AvailableEquipmentItem) => e.equipmentID === equipmentID);
       if (!item) continue;
       if (qty > item.available) {
-        alert(`"${item.name}" exceeds available stock (${item.available}).`);
+        setErrorMessage(`"${item.name}" exceeds available stock (${item.available}).`);
         return;
       }
     }
 
     if (itemsArray.length === 0) {
-      alert("Please select at least one item.");
+      setErrorMessage("Please select at least one item.");
       return;
     }
 
@@ -191,7 +194,7 @@ export const RequestForm: React.FC = () => {
       // prefer authenticated user from the auth hook (keeps behaviour consistent across renders)
       const currentUser = user || auth.currentUser
       if (!currentUser) {
-        alert('You must be signed in to submit a request');
+        setErrorMessage('You must be signed in to submit a request');
         return;
       }
 
@@ -220,12 +223,13 @@ export const RequestForm: React.FC = () => {
       // clear local form state and show confirmation
       setRequestedItems({})
       setFormData({ startDate: "", endDate: "", start: "", end: "", adviser: "", purpose: "" })
-      alert("Request submitted!")
+      setSuccessMessage("Request submitted!")
+      setErrorMessage(null)
       // navigate to tracking so user can see the created request
       navigate('/tracking')
     } catch (error) {
       console.error("Error submitting request:", error);
-      alert("Something went wrong.");
+      setErrorMessage("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -291,6 +295,23 @@ export const RequestForm: React.FC = () => {
       <style>{removeStepper}</style>
 
       <LoadingOverlay show={isEquipmentLoading} message="Loading equipment inventory..." />
+
+      {errorMessage && (
+        <div className="alert alert-error mb-4 shadow flex items-center justify-between">
+          <span>{errorMessage}</span>
+          <button className="btn btn-sm" onClick={() => setErrorMessage(null)}>
+            Close
+          </button>
+        </div>
+      )}
+      {successMessage && (
+        <div className="alert alert-success mb-4 shadow flex items-center justify-between">
+          <span>{successMessage}</span>
+          <button className="btn btn-sm" onClick={() => setSuccessMessage(null)}>
+            Close
+          </button>
+        </div>
+      )}
 
       {/* Page Header */}
       <div className="mb-6">
