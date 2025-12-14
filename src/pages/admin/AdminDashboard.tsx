@@ -366,11 +366,23 @@ const AdminDashboard: React.FC = () => {
         (entry) => entry.damaged > 0 || entry.missing > 0
       );
       if (issues.length > 0) {
+        const issueDescriptions = issues.map((entry) => {
+          const parts: string[] = [];
+          if (entry.damaged > 0) parts.push(`${entry.damaged} damaged`);
+          if (entry.missing > 0) parts.push(`${entry.missing} missing`);
+          const label = entry.equipmentName || entry.equipmentID || "Item";
+          return `${label}: ${parts.join(", ")}`;
+        });
+        const details = [
+          `Return inspection for request ${request.id} found issues:`,
+          ...issueDescriptions,
+        ].join("\n");
         await addDoc(collection(db, "accountabilities"), {
           requestId: request.id,
           createdBy: request.createdBy,
           createdByName: request.createdByName || request.createdBy,
           issues,
+          details,
           status: "pending",
           reason: "Return inspection issues",
           dueDate: new Date().toISOString(),
