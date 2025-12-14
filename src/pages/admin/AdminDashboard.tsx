@@ -698,16 +698,28 @@ const AdminDashboard: React.FC = () => {
                                   <div className="flex flex-wrap gap-2">
                                     {Array.from({ length: qty }).map((_, pieceIdx) => {
                                       const value = (returnAssessments[key] || [])[pieceIdx];
-                                      const buttonClass = (condition: ItemCondition) =>
-                                        `btn btn-xs ${
-                                          value === condition
-                                            ? condition === "functional"
-                                              ? "btn-success"
-                                              : condition === "damaged"
-                                              ? "btn-warning"
-                                              : "btn-error"
-                                            : "btn-ghost"
-                                        }`;
+                                      const buttonClass = (condition: ItemCondition) => {
+                                        // DaisyUI color classes for each condition
+                                        let palette = "";
+                                        switch (condition) {
+                                          case "functional":
+                                            palette = "btn-success"; // green
+                                            break;
+                                          case "damaged":
+                                            palette = "btn-warning"; // yellow
+                                            break;
+                                          case "missing":
+                                            palette = "btn-error"; // red
+                                            break;
+                                          case "consumed":
+                                            palette = "btn-info"; // blue (if ever used)
+                                            break;
+                                          default:
+                                            palette = "btn-ghost";
+                                        }
+                                        const outline = value === condition ? "" : "btn-outline";
+                                        return `btn btn-xs ${palette} ${outline}`.trim();
+                                      };
                                       return (
                                         <div key={`${key}-${pieceIdx}`} className="flex items-center gap-1">
                                           <span className="text-xs">#{pieceIdx + 1}</span>
@@ -885,8 +897,30 @@ const AdminDashboard: React.FC = () => {
       )}
       {/* Decline remarks modal */}
       {declineOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-base-100 p-4 rounded shadow max-w-lg w-full mx-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setDeclineOpen(false);
+              setDeclineId(null);
+              setDeclineRemarks('');
+            }
+          }}
+        >
+          <div
+            className="bg-base-100 p-4 rounded shadow max-w-lg w-full max-h-[80vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="btn btn-sm btn-circle btn-ghost absolute right-4 top-4"
+              onClick={() => {
+                setDeclineOpen(false);
+                setDeclineId(null);
+                setDeclineRemarks('');
+              }}
+            >
+              ✕
+            </button>
             <h3 className="text-lg font-semibold">Decline Request</h3>
             <p className="text-sm text-base-content/70 mb-2">Provide remarks explaining why this request is declined (optional):</p>
             <textarea
