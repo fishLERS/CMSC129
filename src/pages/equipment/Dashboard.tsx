@@ -4,6 +4,7 @@ import { Boxes, Package, Recycle, AlertTriangle } from "lucide-react";
 import { logicEquipment } from "./logicEquipment";
 import AddEquipmentDialog from "./AddEquipmentDialog";
 import EquipmentTable from "./EquipmentTable";
+import { CATEGORY_OPTIONS } from "./EquipmentForm";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -14,11 +15,27 @@ export default function Dashboard() {
   const [typeFilter, setTypeFilter] = React.useState<"all" | "disposable" | "durable">("all");
 
   const categories = React.useMemo(() => {
-    const unique = new Set<string>();
+    const baseCategories = CATEGORY_OPTIONS as readonly string[];
+    const extraCategories = new Set<string>();
+    let hasUncategorized = false;
+
     equipmentList.forEach((item) => {
-      unique.add(item.category?.trim() || "Uncategorized");
+      const label = item.category?.trim() || "Uncategorized";
+      if (baseCategories.includes(label)) {
+        return;
+      }
+      if (label === "Uncategorized") {
+        hasUncategorized = true;
+        return;
+      }
+      extraCategories.add(label);
     });
-    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+
+    return [
+      ...baseCategories,
+      ...Array.from(extraCategories).sort((a, b) => a.localeCompare(b)),
+      ...(hasUncategorized ? ["Uncategorized"] : []),
+    ];
   }, [equipmentList]);
 
   const stats = React.useMemo(() => {
