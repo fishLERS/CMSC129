@@ -3,6 +3,7 @@ import { logicEquipment } from './equipment/logicEquipment';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
+import { isOngoing } from "../utils/requestTime"
 import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Bell, X, Eye, XCircle, RotateCcw } from 'lucide-react';
 
@@ -23,7 +24,7 @@ function formatDateTime(v: any) {
 export default function HomeStudent() {
   const { user } = useAuth();
   const [requests, setRequests] = React.useState<any[]>([]);
-  const [tab, setTab] = React.useState<'all'|'ongoing'|'completed'|'rejected'|'cancelled'>('all');
+  const [tab, setTab] = React.useState<'all'|'pending'| 'ongoing' | 'approved' |'completed'|'rejected'|'cancelled'>('all');
   const [notifOpen, setNotifOpen] = React.useState(false)
   const [notifAllOpen, setNotifAllOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<Array<any>>([])
@@ -151,14 +152,19 @@ export default function HomeStudent() {
   }, [user]);
 
   let filtered = requests.filter(r => {
-    if (tab === 'all') return true;
-    const s = (r.status || 'ongoing').toString().toLowerCase();
-    // treat returned requests as completed for the student view
-    const isCompletedLike = s === 'completed' || s === 'returned';
-    // treat admin-declined statuses as rejected for student view (admin may write 'Declined')
-    const isRejectedLike = s === 'rejected' || s === 'declined';
-    return (tab === 'ongoing' && s === 'ongoing') || (tab === 'completed' && isCompletedLike) || (tab === 'rejected' && isRejectedLike) || (tab === 'cancelled' && s === 'cancelled');
-  });
+    const s = (r.status || '').toLowerCase()
+
+    if (tab === 'all') return true
+    if (tab === 'pending') return s === 'pending'
+    if (tab === 'ongoing') return s === 'approved' && isOngoing(r)
+    if (tab === 'approved') return s === 'approved' && !isOngoing(r)
+    if (tab === 'completed') return ['completed', 'returned'].includes(s)
+    if (tab === 'rejected') return ['declined', 'rejected'].includes(s)
+    if (tab === 'cancelled') return s === 'cancelled'
+
+    return true
+  })
+
 
   // When showing "All", order groups as: approved -> ongoing/pending -> declined/rejected -> returned -> cancelled
   if (tab === 'all') {
@@ -267,15 +273,19 @@ export default function HomeStudent() {
   const nav = useNavigate();
 
   // Status badge helper
-  const getStatusBadge = (status: string) => {
-    const s = (status || 'ongoing').toLowerCase();
-    if (s === 'approved') return <span className="badge badge-success">Approved</span>;
-    if (s === 'ongoing' || s === 'pending') return <span className="badge badge-warning">Ongoing</span>;
+  const getStatusBadge = (r: any) => {
+    const s = (r.status || '').toLowerCase();
+    if (s === 'approved' && isOngoing(r)) return <span className="badge badge-success">Ongoing</span>;
+    if (s === 'approved' && !isOngoing(r)) return <span className="badge badge-success">Approved</span>;
+    if (s === 'pending') return <span className="badge badge-warning">Pending</span>;
     if (s === 'declined' || s === 'rejected') return <span className="badge badge-error">Rejected</span>;
     if (s === 'returned' || s === 'completed') return <span className="badge badge-info">Completed</span>;
     if (s === 'cancelled') return <span className="badge badge-neutral">Cancelled</span>;
-    return <span className="badge">{status}</span>;
+    return <span className="badge">{r.status}</span>;
   };
+
+  const ongoingCount = requests.filter( r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
+
 
   return (
     <div className="p-6 space-y-6">
@@ -361,8 +371,8 @@ export default function HomeStudent() {
           <div className="stat-desc">All time</div>
         </div>
         <div className="stat">
-          <div className="stat-title">Ongoing</div>
-          <div className="stat-value text-warning">{requests.filter(r => (r.status || 'ongoing').toLowerCase() === 'ongoing').length}</div>
+          <div className="stat-title">Pending</div>
+          <div className="stat-value text-warning">{requests.filter(r => (r.status).toLowerCase() === 'pending').length}</div>
           <div className="stat-desc">Pending approval</div>
         </div>
         <div className="stat">
@@ -384,7 +394,9 @@ export default function HomeStudent() {
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300">
               <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
+              <a role="tab" className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
               <a role="tab" className={`tab ${tab === 'ongoing' ? 'tab-active' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
+              <a role="tab" className={`tab ${tab === 'approved' ? 'tab-active' : ''}`} onClick={() => setTab('approved')}>Approved</a>
               <a role="tab" className={`tab ${tab === 'completed' ? 'tab-active' : ''}`} onClick={() => setTab('completed')}>Completed</a>
               <a role="tab" className={`tab ${tab === 'rejected' ? 'tab-active' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
               <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
@@ -424,9 +436,9 @@ export default function HomeStudent() {
                           {Array.isArray(r.items) ? r.items.reduce((s: any, i: any) => s + (i.qty || 0), 0) : '-'}
                         </span>
                       </td>
-                      <td>{getStatusBadge(r.status)}</td>
+                      <td>{getStatusBadge(r)}</td>
                       <td>
-                        {((r.status || '').toString().toLowerCase() === 'ongoing') && (
+                        {((r.status || '').toString().toLowerCase() === 'pending') && (
                           <button 
                             className="btn btn-error btn-sm gap-1" 
                             disabled={busyId === r.id} 
@@ -436,7 +448,7 @@ export default function HomeStudent() {
                             Cancel
                           </button>
                         )}
-                        {((r.status || '').toString().toLowerCase() === 'approved') && (
+                        {((r.status || '').toString().toLowerCase() === 'approved' && isOngoing(r)) && (
                           <button 
                             className="btn btn-primary btn-sm gap-1" 
                             disabled={busyId === r.id} 
@@ -488,7 +500,7 @@ export default function HomeStudent() {
               </div>
               <div className="form-control">
                 <label className="label"><span className="label-text text-xs">Status</span></label>
-                <div className="bg-base-300 p-2 rounded text-sm">{getStatusBadge(showModalRequest.status)}</div>
+                <div className="bg-base-300 p-2 rounded text-sm">{getStatusBadge(showModalRequest)}</div>
               </div>
               <div className="form-control md:col-span-2">
                 <label className="label"><span className="label-text text-xs">Purpose</span></label>

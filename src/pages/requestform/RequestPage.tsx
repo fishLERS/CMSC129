@@ -1,5 +1,6 @@
 import React from "react";
 import { logicEquipment, useFetchAvailableItems } from "../equipment/logicEquipment";
+import { logicEquipment, useFetchAvailableItems } from "../equipment/logicEquipment";
 
 import { db, auth } from "../../firebase";
 import { useAuth } from '../../hooks/useAuth'
@@ -211,7 +212,7 @@ export const RequestForm: React.FC = () => {
   };
 
   // Filter equipment list
-  const filteredEquipment = availableEquipment.filter(item => 
+  const filteredEquipment = availableEquipment.filter(item => item.available > 0).filter(item => 
     item.name?.toLowerCase().includes(filterText.toLowerCase()) ||
     item.category?.toLowerCase().includes(filterText.toLowerCase())
   );

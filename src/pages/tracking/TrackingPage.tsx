@@ -1,13 +1,14 @@
 import React from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
+import { isOngoing } from "../../utils/requestTime"
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 import { MapPin, Clock, CheckCircle, XCircle, AlertCircle, FileText, X, Eye, Copy, RotateCcw } from 'lucide-react'
 
 export default function TrackingPage(){
   const { user } = useAuth()
   const [rows, setRows] = React.useState<Array<any>>([])
-  const [filter, setFilter] = React.useState<'all' | 'ongoing' | 'approved' | 'declined'>('all')
+  const [filter, setFilter] = React.useState<'all' | 'pending'| 'ongoing' | 'completed' | 'approved' | 'declined'>('all')
   
   const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
   const [showRemarksText, setShowRemarksText] = React.useState('')
@@ -15,7 +16,7 @@ export default function TrackingPage(){
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
 
   React.useEffect(()=>{
-    if(!user) return
+    if(!user) return <div>Loading requests...</div>
     console.info('Tracking mounted for user', user.uid)
   // order by client timestamp to avoid missing docs while serverTimestamp resolves
   const q = query(collection(db,'requests'), where('createdBy','==', user.uid), orderBy('createdAtClient','desc'))
@@ -61,7 +62,7 @@ export default function TrackingPage(){
         else if (data && data.createdAt) {
           try { sortKey = new Date(data.createdAt).toISOString() } catch { sortKey = '' }
         }
-        docs.push({ purpose, requestId, status, remarks, sortKey, duration })
+        docs.push({ purpose, requestId, status, remarks, sortKey, startDate: data.startDate, start: data.start, endDate: data.endDate, end: data.end,duration })
       })
       // sort by sortKey desc (newest first); if no keys present, keep server ordering
       docs.sort((a,b) => (b.sortKey || '').localeCompare(a.sortKey || ''))
@@ -130,28 +131,34 @@ export default function TrackingPage(){
 
   // Filter rows
   const filteredRows = rows.filter(r => {
-    if (filter === 'all') return true
     const s = (r.status || '').toLowerCase()
-    if (filter === 'ongoing') return s === 'ongoing' || s === 'pending'
-    if (filter === 'approved') return s === 'approved'
+    if (filter === 'all') return true
+    if (filter === 'pending') return s === 'pending'
+    if (filter === 'ongoing') return s === 'approved' && isOngoing(r)
+    if (filter === 'approved') return s === 'approved' && !isOngoing(r)
     if (filter === 'declined') return s === 'declined' || s === 'rejected'
     return true
   })
 
   // Stats
-  const ongoingCount = rows.filter(r => ['ongoing', 'pending'].includes((r.status || '').toLowerCase())).length
-  const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved').length
+  const pendingCount = rows.filter(r => r.status?.toLowerCase() === 'pending').length
+  
+  const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
+  const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && !isOngoing(r)).length
   const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
+  const completedCount = rows.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length
 
   // Status badge helper
-  const getStatusBadge = (status: string) => {
-    const s = (status || 'ongoing').toLowerCase()
-    if (s === 'approved') return <span className="badge badge-success gap-1"><CheckCircle className="w-3 h-3" />Approved</span>
-    if (s === 'ongoing' || s === 'pending') return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Ongoing</span>
+  const getStatusBadge = (r: any) => {
+    const s = (r.status || '').toLowerCase()
+
+    if (s === 'approved' && isOngoing(r)) return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Ongoing</span>
+    if (s === 'approved' && !isOngoing(r)) return <span className="badge badge-success gap-1"><CheckCircle className="w-3 h-3" />Approved</span>
+    if (s === 'pending') return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Pending</span>
     if (s === 'declined' || s === 'rejected') return <span className="badge badge-error gap-1"><XCircle className="w-3 h-3" />Declined</span>
     if (s === 'returned' || s === 'completed') return <span className="badge badge-info gap-1"><RotateCcw className="w-3 h-3" />Returned</span>
     if (s === 'cancelled') return <span className="badge badge-neutral gap-1">Cancelled</span>
-    return <span className="badge badge-ghost">{status}</span>
+    return <span className="badge badge-ghost">{r.status}</span>
   }
 
   // Copy to clipboard
@@ -186,8 +193,8 @@ export default function TrackingPage(){
           <div className="stat-figure text-warning">
             <Clock className="w-8 h-8" />
           </div>
-          <div className="stat-title">Ongoing</div>
-          <div className="stat-value text-warning">{ongoingCount}</div>
+          <div className="stat-title">Pending</div>
+          <div className="stat-value text-warning">{pendingCount}</div>
           <div className="stat-desc">Pending approval</div>
         </div>
         <div className="stat">
@@ -217,11 +224,17 @@ export default function TrackingPage(){
               <a role="tab" className={`tab ${filter === 'all' ? 'tab-active' : ''}`} onClick={() => setFilter('all')}>
                 All ({rows.length})
               </a>
+              <a role="tab" className={`tab ${filter === 'pending' ? 'tab-active' : ''}`} onClick={() => setFilter('pending')}>
+                Pending ({pendingCount})
+              </a>
               <a role="tab" className={`tab ${filter === 'ongoing' ? 'tab-active' : ''}`} onClick={() => setFilter('ongoing')}>
                 Ongoing ({ongoingCount})
               </a>
               <a role="tab" className={`tab ${filter === 'approved' ? 'tab-active' : ''}`} onClick={() => setFilter('approved')}>
                 Approved ({approvedCount})
+              </a>
+              <a role="tab" className={`tab ${filter === 'completed' ? 'tab-active' : ''}`} onClick={() => setFilter('completed')}>
+                Completed ({completedCount})
               </a>
               <a role="tab" className={`tab ${filter === 'declined' ? 'tab-active' : ''}`} onClick={() => setFilter('declined')}>
                 Declined ({declinedCount})
@@ -285,7 +298,7 @@ export default function TrackingPage(){
                           </button>
                         </div>
                       </td>
-                      <td>{getStatusBadge(r.status)}</td>
+                      <td>{getStatusBadge(r)}</td>
                       <td>
                         {r.remarks ? (
                           <button 
