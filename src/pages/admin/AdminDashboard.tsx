@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { collection, getDocs, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, getDoc, serverTimestamp, addDoc } from "firebase/firestore";
 import { logicEquipment } from "../equipment/logicEquipment";
 import { Eye } from "lucide-react";
 import LoadingOverlay from "../../components/LoadingOverlay";
@@ -185,6 +185,24 @@ const AdminDashboard: React.FC = () => {
         returnCondition: condition,
         clearedAt: serverTimestamp(),
       });
+
+      if (condition !== "functional") {
+        await addDoc(collection(db, "accountabilities"), {
+          requestId: request.id,
+          createdBy: request.createdBy,
+          createdByName: request.createdByName || request.createdBy,
+          items: request.items || [],
+          status: "pending",
+          reason:
+            condition === "missing"
+              ? "Item(s) reported missing upon return"
+              : "Item(s) returned damaged",
+          condition,
+          dueDate: new Date().toISOString(),
+          createdAt: serverTimestamp(),
+        });
+      }
+
       setRequests((prev) =>
         prev.map((r) =>
           r.id === request.id
@@ -201,8 +219,8 @@ const AdminDashboard: React.FC = () => {
         condition === "functional"
           ? "Return cleared as functional."
           : condition === "damaged"
-          ? "Return recorded as damaged."
-          : "Return recorded as missing."
+          ? "Return recorded as damaged. Accountability created."
+          : "Return recorded as missing. Accountability created."
       );
       setViewOpen(false);
       setViewRequest(null);
