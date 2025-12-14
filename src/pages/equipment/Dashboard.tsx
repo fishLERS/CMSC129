@@ -10,11 +10,12 @@ import LoadingOverlay from "../../components/LoadingOverlay";
 const LOW_STOCK_THRESHOLD = 5;
 
 export default function Dashboard() {
-  const { equipmentList, handleAdd, handleEdit, handleDelete, isLoading } = logicEquipment();
+  const { equipmentList, handleAdd, handleEdit, handleDelete, handleArchive, handleRestore, isLoading } = logicEquipment();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
   const [typeFilter, setTypeFilter] = React.useState<"all" | "disposable" | "durable">("all");
   const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("asc");
+  const [tab, setTab] = React.useState<"active" | "archived" | "purged">("active");
 
   const categories = React.useMemo(() => {
     const baseCategories = CATEGORY_OPTIONS as readonly string[];
@@ -56,7 +57,15 @@ export default function Dashboard() {
 
   const filteredEquipment = React.useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
-    const filtered = equipmentList.filter((item) => {
+    let baseList = equipmentList;
+    if (tab === "active") {
+      baseList = equipmentList.filter(item => !item.isDeleted);
+    } else if (tab === "archived") {
+      baseList = equipmentList.filter(item => item.isDeleted);
+    } else {
+      baseList = [];
+    }
+    const filtered = baseList.filter((item) => {
       const matchesSearch =
         !search ||
         item.name?.toLowerCase().includes(search) ||
@@ -82,7 +91,7 @@ export default function Dashboard() {
     });
 
     return sorted;
-  }, [equipmentList, searchTerm, categoryFilter, typeFilter, sortOrder]);
+  }, [equipmentList, searchTerm, categoryFilter, typeFilter, sortOrder, tab]);
 
   const filtersActive =
     searchTerm.trim().length > 0 || categoryFilter !== "all" || typeFilter !== "all";
@@ -146,6 +155,12 @@ export default function Dashboard() {
       </div>
 
       <div className="card bg-base-200 shadow-xl">
+        <div className="card-body p-0">
+          <div className="tabs tabs-boxed bg-base-300 p-2">
+            <button className={`tab ${tab === "active" ? "tab-active" : ""}`} onClick={() => setTab("active")}>Active</button>
+            <button className={`tab ${tab === "archived" ? "tab-active" : ""}`} onClick={() => setTab("archived")}>Archived</button>
+          </div>
+        </div>
         <div className="card-body space-y-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
             <label className="form-control w-full">
@@ -211,13 +226,15 @@ export default function Dashboard() {
             </span>
           </div>
 
-          <EquipmentTable
-            equipmentList={filteredEquipment}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            sortOrder={sortOrder}
-            onSortOrderChange={setSortOrder}
-          />
+            <EquipmentTable
+              equipmentList={filteredEquipment}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onArchive={handleArchive}
+              onRestore={handleRestore}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+            />
         </div>
       </div>
     </div>

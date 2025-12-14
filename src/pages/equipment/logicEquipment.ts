@@ -32,7 +32,21 @@ export function logicEquipment() {
     await deleteEquipment(equipmentID)
   }
 
-  return { equipmentList, handleAdd, handleEdit, handleDelete, isLoading }
+  const handleArchive = async (equipmentID: string) => {
+    await updateEquipment(equipmentID, {
+      isDeleted: true,
+      deletedAt: new Date().toISOString(),
+    })
+  }
+
+  const handleRestore = async (equipmentID: string) => {
+    await updateEquipment(equipmentID, {
+      isDeleted: false,
+      deletedAt: "",
+    })
+  }
+
+  return { equipmentList, handleAdd, handleEdit, handleDelete, isLoading, handleArchive, handleRestore }
 }
 
 /**
@@ -70,7 +84,8 @@ export function useFetchAvailableItems(
   }, [])
 
   useEffect(() => {
-    const withAvailability: AvailableEquipmentItem[] = (equipmentList || []).map((item) => {
+    const activeEquipment = (equipmentList || []).filter((item) => !item.isDeleted)
+    const withAvailability: AvailableEquipmentItem[] = activeEquipment.map((item) => {
       const total = item.totalInventory || 0
       const reserved = activeReservations[item.equipmentID || ""] || 0
       const remaining = Math.max(total - reserved, 0)

@@ -34,7 +34,9 @@ export function listenerEquipment(callback: (items: Equipment[]) => void) {
         name: data.name as string,
         totalInventory: data.totalInventory as number,
         category: data.category as string | undefined,
-        isDisposable: data.isDisposable as boolean, 
+        isDisposable: data.isDisposable as boolean,
+        isDeleted: data.isDeleted as boolean | undefined,
+        deletedAt: data.deletedAt as string | undefined,
       };
     });
     callback(items);

@@ -6,6 +6,8 @@ interface EquipmentTableProps {
   equipmentList: Equipment[];
   onEdit: (id: string, info: Partial<Omit<Equipment, "equipmentID">>) => void;
   onDelete: (id: string) => void;
+  onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
   sortOrder: "asc" | "desc";
   onSortOrderChange: (order: "asc" | "desc") => void;
 }
@@ -16,6 +18,8 @@ export default function EquipmentTable({
   equipmentList,
   onEdit,
   onDelete,
+  onArchive,
+  onRestore,
   sortOrder,
   onSortOrderChange,
 }: EquipmentTableProps) {
@@ -68,16 +72,27 @@ export default function EquipmentTable({
               </td>
             </tr>
           ) : (
-            equipmentList.map((item) => (
+            equipmentList.map((item) => {
+              const archived = !!item.isDeleted;
+              const archivedAt = item.deletedAt ? new Date(item.deletedAt).toLocaleDateString() : null;
+              return (
               <tr
                 key={item.equipmentID}
-                className="transition-colors hover:bg-primary/10 cursor-pointer"
+                className={`transition-colors cursor-pointer ${
+                  archived ? "opacity-70 bg-base-200" : "hover:bg-primary/10"
+                }`}
                 onClick={() => openDetails(item)}
               >
                 <td>
                   <div className="font-semibold">{item.name}</div>
                   {item.equipmentID && (
                     <div className="text-xs text-base-content/60">ID: {item.equipmentID}</div>
+                  )}
+                  {archived && (
+                    <div className="text-xs text-warning flex items-center gap-2 mt-1">
+                      <span className="badge badge-warning badge-outline">Archived</span>
+                      {archivedAt && <span>since {archivedAt}</span>}
+                    </div>
                   )}
                 </td>
                 <td>
@@ -122,17 +137,42 @@ export default function EquipmentTable({
                     className="flex flex-wrap gap-2 justify-center"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <EditEquipmentDialog item={item} onEdit={onEdit} />
-                    <button
-                      className="btn btn-xs btn-error"
-                      onClick={() => onDelete(item.equipmentID!)}
-                    >
-                      Delete
-                    </button>
+                    {!archived ? (
+                      <>
+                        <EditEquipmentDialog item={item} onEdit={onEdit} />
+                        <button
+                          className="btn btn-xs"
+                          onClick={() => {
+                            if (!confirm(`Archive ${item.name}? This hides it from requests but keeps history.`)) return;
+                            onArchive(item.equipmentID!);
+                          }}
+                        >
+                          Archive
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="btn btn-xs btn-ghost"
+                          onClick={() => onRestore(item.equipmentID!)}
+                        >
+                          Restore
+                        </button>
+                        <button
+                          className="btn btn-xs btn-error"
+                          onClick={() => {
+                            if (!confirm(`Permanently delete ${item.name}? This cannot be undone.`)) return;
+                            onDelete(item.equipmentID!);
+                          }}
+                        >
+                          Purge
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>
-            ))
+            )})
           )}
         </tbody>
       </table>
@@ -162,6 +202,13 @@ export default function EquipmentTable({
                   <p className="text-sm text-base-content/60 mt-1">
                     ID: {selectedItem.equipmentID}
                   </p>
+                )}
+                {selectedItem.isDeleted && (
+                  <div className="alert alert-warning mt-3">
+                    <span>
+                      Archived item{selectedItem.deletedAt ? ` since ${new Date(selectedItem.deletedAt).toLocaleString()}` : ''}.
+                    </span>
+                  </div>
                 )}
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

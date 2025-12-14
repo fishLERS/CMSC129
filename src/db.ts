@@ -5,6 +5,8 @@ export interface Equipment {
     totalInventory: number;
     category?: string;
     isDisposable: boolean;
+    isDeleted?: boolean;
+    deletedAt?: string;
 }
 
 export interface AvailableEquipmentItem extends Equipment {
