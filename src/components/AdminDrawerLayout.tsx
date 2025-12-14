@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { useAuth } from "../hooks/useAuth";
-import { Home, Box, ClipboardList, BarChart2, Users, LogOut, PanelLeftClose, PanelLeftOpen, Fish } from "lucide-react";
+import { Home, Box, ClipboardList, BarChart2, Users, LogOut, PanelLeftClose, PanelLeftOpen, Fish, History } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 
 interface AdminDrawerLayoutProps {
@@ -49,6 +49,7 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
   const menuItems = [
     { icon: <Home size={20} />, text: "Dashboard", path: "/admindashboard", active: location.pathname.startsWith("/admindashboard") },
     { icon: <Box size={20} />, text: "Inventory", path: "/inventory", active: location.pathname.startsWith("/inventory") },
+    { icon: <History size={20} />, text: "Request History", path: "/admin/history", active: location.pathname.startsWith("/admin/history") },
     { icon: <ClipboardList size={20} />, text: "Accountabilities", path: "/admin/accountabilities", active: location.pathname.startsWith("/admin/accountabilities") },
     { icon: <BarChart2 size={20} />, text: "Analytics", path: "/analytics", active: location.pathname.startsWith("/analytics") },
     { icon: <Users size={20} />, text: "Admin", path: "/admin/users", active: location.pathname.startsWith("/admin/users") },

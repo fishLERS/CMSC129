@@ -16,7 +16,7 @@ export default function TrackingPage(){
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
 
   React.useEffect(()=>{
-    if(!user) return <div>Loading requests...</div>
+    if(!user) return
     console.info('Tracking mounted for user', user.uid)
   // order by client timestamp to avoid missing docs while serverTimestamp resolves
   const q = query(collection(db,'requests'), where('createdBy','==', user.uid), orderBy('createdAtClient','desc'))

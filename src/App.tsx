@@ -15,6 +15,8 @@ import ProfileStudent from "./pages/profile-student";
 import ProfileAdmin from "./pages/admin/profile-admin";
 import AdminUsers from "./pages/admin/AdminUsers";
 import Analytics from "./pages/admin/Analytics";
+import RequestHistory from "./pages/history/RequestHistory";
+import AdminRequestHistory from "./pages/admin/AdminRequestHistory";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import DrawerLayout from "./components/DrawerLayout";
@@ -65,6 +67,19 @@ const App: React.FC = () => {
             <DrawerLayout>
               <PageWithFooter>
                 <TrackingPage />
+              </PageWithFooter>
+            </DrawerLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/history"
+        element={
+          <ProtectedRoute forbidAdmin>
+            <DrawerLayout>
+              <PageWithFooter>
+                <RequestHistory />
               </PageWithFooter>
             </DrawerLayout>
           </ProtectedRoute>
@@ -170,6 +185,19 @@ const App: React.FC = () => {
             <AdminDrawerLayout>
               <PageWithFooter>
                 <Analytics />
+              </PageWithFooter>
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/history"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AdminDrawerLayout>
+              <PageWithFooter>
+                <AdminRequestHistory />
               </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>
