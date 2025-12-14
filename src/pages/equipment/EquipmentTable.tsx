@@ -6,6 +6,8 @@ interface EquipmentTableProps {
   equipmentList: Equipment[];
   onEdit: (id: string, info: Partial<Omit<Equipment, "equipmentID">>) => void;
   onDelete: (id: string) => void;
+  sortOrder: "asc" | "desc";
+  onSortOrderChange: (order: "asc" | "desc") => void;
 }
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -14,6 +16,8 @@ export default function EquipmentTable({
   equipmentList,
   onEdit,
   onDelete,
+  sortOrder,
+  onSortOrderChange,
 }: EquipmentTableProps) {
   const [selectedItem, setSelectedItem] = React.useState<Equipment | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -30,6 +34,21 @@ export default function EquipmentTable({
 
   return (
     <div className="overflow-x-auto">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-start">
+        <div className="form-control w-full sm:w-60">
+          <label className="label py-1">
+            <span className="label-text text-sm font-medium">Sort alphabetically</span>
+          </label>
+          <select
+            className="select select-bordered select-sm"
+            value={sortOrder}
+            onChange={(e) => onSortOrderChange(e.target.value as "asc" | "desc")}
+          >
+            <option value="asc">A → Z (Ascending)</option>
+            <option value="desc">Z → A (Descending)</option>
+          </select>
+        </div>
+      </div>
       <table className="table w-full">
         <thead>
           <tr>

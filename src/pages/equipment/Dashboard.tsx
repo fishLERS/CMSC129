@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
   const [typeFilter, setTypeFilter] = React.useState<"all" | "disposable" | "durable">("all");
+  const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("asc");
 
   const categories = React.useMemo(() => {
     const baseCategories = CATEGORY_OPTIONS as readonly string[];
@@ -54,7 +55,7 @@ export default function Dashboard() {
 
   const filteredEquipment = React.useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
-    return equipmentList.filter((item) => {
+    const filtered = equipmentList.filter((item) => {
       const matchesSearch =
         !search ||
         item.name?.toLowerCase().includes(search) ||
@@ -69,7 +70,18 @@ export default function Dashboard() {
 
       return matchesSearch && matchesCategory && matchesType;
     });
-  }, [equipmentList, searchTerm, categoryFilter, typeFilter]);
+
+    const sorted = filtered.slice().sort((a, b) => {
+      const nameA = (a.name || "").toLowerCase();
+      const nameB = (b.name || "").toLowerCase();
+      if (sortOrder === "asc") {
+        return nameA.localeCompare(nameB);
+      }
+      return nameB.localeCompare(nameA);
+    });
+
+    return sorted;
+  }, [equipmentList, searchTerm, categoryFilter, typeFilter, sortOrder]);
 
   const filtersActive =
     searchTerm.trim().length > 0 || categoryFilter !== "all" || typeFilter !== "all";
@@ -196,17 +208,13 @@ export default function Dashboard() {
             </span>
           </div>
 
-          {filteredEquipment.length === 0 ? (
-            <div className="border border-dashed border-base-300 rounded-box p-8 text-center text-base-content/70">
-              No equipment matches the current filters.
-            </div>
-          ) : (
-            <EquipmentTable
-              equipmentList={filteredEquipment}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          )}
+          <EquipmentTable
+            equipmentList={filteredEquipment}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+          />
         </div>
       </div>
     </div>
