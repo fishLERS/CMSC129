@@ -5,7 +5,7 @@ import { logicEquipment } from "../equipment/logicEquipment";
 import { Eye } from "lucide-react";
 import LoadingOverlay from "../../components/LoadingOverlay";
 
-type ItemCondition = "functional" | "damaged" | "missing";
+type ItemCondition = "functional" | "damaged" | "missing" | "consumed";
 
 interface RequestItem {
   equipmentID: string;
@@ -32,7 +32,7 @@ interface Request {
   returnedAt?: any;
   clearedAt?: any;
   returnCondition?: ItemCondition;
-  returnConditionSummary?: { functional: number; damaged: number; missing: number };
+  returnConditionSummary?: { functional: number; damaged: number; missing: number; consumed: number };
   returnAssessment?: Array<{ equipmentID?: string; index: number; condition: ItemCondition }>;
 }
 
@@ -73,7 +73,7 @@ const AdminDashboard: React.FC = () => {
     if (!viewRequest?.returnAssessment) return null;
     const groups: Record<
       string,
-      { equipmentID?: string; name?: string; functional: number; damaged: number; missing: number }
+      { equipmentID?: string; name?: string; functional: number; damaged: number; missing: number; consumed: number }
     > = {};
 
     viewRequest.returnAssessment.forEach((entry) => {
@@ -85,6 +85,7 @@ const AdminDashboard: React.FC = () => {
           functional: 0,
           damaged: 0,
           missing: 0,
+          consumed: 0,
         };
       }
       groups[key][entry.condition] = (groups[key][entry.condition] || 0) + 1;
@@ -284,7 +285,7 @@ const AdminDashboard: React.FC = () => {
     if (!request?.id) return;
     try {
       setIsFinalizingReturn(true);
-      const summary = { functional: 0, damaged: 0, missing: 0 };
+      const summary = { functional: 0, damaged: 0, missing: 0, consumed: 0 };
       const assessmentRecords: NonNullable<Request["returnAssessment"]> = [];
       const issueMap: Record<
         string,
@@ -294,25 +295,23 @@ const AdminDashboard: React.FC = () => {
       (request.items || []).forEach((item, idx) => {
         const key = getItemKey(item, idx);
         const qty = Math.max(0, Number(item.qty) || 0);
-        const lookup = equipmentLookup[item.equipmentID || ""];
-        if (lookup?.isDisposable) {
-          return;
-        }
+        const lookup = equipmentLookup[item.equipmentID || ""] || {};
         const values = returnAssessments[key] || [];
-        const totalPieces = qty || 0;
-        const iterator = Array.from({ length: totalPieces });
-        iterator.forEach((_, pieceIdx) => {
-          const condition = values[pieceIdx] || "functional";
+        for (let pieceIdx = 0; pieceIdx < qty; pieceIdx++) {
+          const condition: ItemCondition =
+            lookup.isDisposable ? "consumed" : values[pieceIdx] || "functional";
           summary[condition] = (summary[condition] || 0) + 1;
           assessmentRecords.push({
             equipmentID: item.equipmentID,
             index: pieceIdx,
             condition,
           });
-          if (condition !== "functional") {
+          const needsIssueEntry =
+            !lookup.isDisposable && (condition === "damaged" || condition === "missing");
+          if (needsIssueEntry) {
             const issueKey = item.equipmentID || key;
             if (!issueMap[issueKey]) {
-              const equipmentName = lookup?.name || item.equipmentID;
+              const equipmentName = lookup.name || item.equipmentID;
               issueMap[issueKey] = {
                 equipmentID: item.equipmentID,
                 equipmentName,
@@ -322,11 +321,19 @@ const AdminDashboard: React.FC = () => {
             }
             issueMap[issueKey][condition] += 1;
           }
-        });
+        }
       });
 
       const finalCondition =
-        summary.missing > 0 ? "missing" : summary.damaged > 0 ? "damaged" : "functional";
+        summary.missing > 0
+          ? "missing"
+          : summary.damaged > 0
+          ? "damaged"
+          : summary.functional > 0
+          ? "functional"
+          : summary.consumed > 0
+          ? "consumed"
+          : "functional";
 
       await updateDoc(doc(db, "requests", request.id), {
         status: "cleared",
@@ -368,7 +375,7 @@ const AdminDashboard: React.FC = () => {
       );
       setAlertMessage(
         issues.length === 0
-          ? "Return cleared as functional."
+          ? "Return cleared."
           : "Return issues recorded and accountability created."
       );
       setReturnAssessments({});
@@ -716,6 +723,7 @@ const AdminDashboard: React.FC = () => {
                         <span>Functional: {viewRequest.returnConditionSummary.functional}</span>
                         <span>Damaged: {viewRequest.returnConditionSummary.damaged}</span>
                         <span>Missing: {viewRequest.returnConditionSummary.missing}</span>
+                        <span>Consumed: {viewRequest.returnConditionSummary.consumed}</span>
                       </div>
                     )}
                     <div className="overflow-x-auto">
@@ -726,6 +734,7 @@ const AdminDashboard: React.FC = () => {
                             <th>Functional</th>
                             <th>Damaged</th>
                             <th>Missing</th>
+                            <th>Consumed</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -740,6 +749,7 @@ const AdminDashboard: React.FC = () => {
                               <td>{entry.functional}</td>
                               <td>{entry.damaged}</td>
                               <td>{entry.missing}</td>
+                              <td>{entry.consumed}</td>
                             </tr>
                           ))}
                         </tbody>
