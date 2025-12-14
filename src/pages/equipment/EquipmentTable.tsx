@@ -29,6 +29,7 @@ export default function EquipmentTable({
 }: EquipmentTableProps) {
   const [selectedItem, setSelectedItem] = React.useState<Equipment | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [inlineEditItem, setInlineEditItem] = React.useState<Equipment | null>(null);
   const getSerialNumbers = React.useCallback((item: Equipment | null) => {
     if (!item || item.isDisposable) return [];
     if (Array.isArray(item.serialNumbers) && item.serialNumbers.length > 0) {
@@ -308,6 +309,75 @@ export default function EquipmentTable({
                 </div>
               </div>
             </div>
+            <div className="mt-6 space-y-3">
+              <p className="text-sm font-semibold text-base-content/80">Manage item</p>
+              <div className="flex flex-wrap gap-2">
+                {view === "active" && !selectedItem.isDeleted && (
+                  <>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        setInlineEditItem(selectedItem);
+                        closeDetails();
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-warning btn-sm"
+                      onClick={() => {
+                        if (!selectedItem.equipmentID) return;
+                        if (
+                          !confirm(
+                            `Archive ${selectedItem.name}? This hides it from requests but keeps history.`
+                          )
+                        )
+                          return;
+                        onArchive(selectedItem.equipmentID);
+                        closeDetails();
+                      }}
+                    >
+                      Archive
+                    </button>
+                  </>
+                )}
+                {view === "archived" && selectedItem.isDeleted && (
+                  <>
+                    <button
+                      className="btn btn-success btn-sm"
+                      onClick={() => {
+                        if (!selectedItem.equipmentID) return;
+                        onRestore(selectedItem.equipmentID);
+                        closeDetails();
+                      }}
+                    >
+                      Restore
+                    </button>
+                    <button
+                      className="btn btn-error btn-sm"
+                      onClick={() => {
+                        if (!selectedItem.equipmentID) return;
+                        if (
+                          !confirm(
+                            `Permanently delete ${selectedItem.name}? This cannot be undone.`
+                          )
+                        )
+                          return;
+                        onPurge(selectedItem);
+                        closeDetails();
+                      }}
+                    >
+                      Purge
+                    </button>
+                  </>
+                )}
+                {view === "purged" && (
+                  <div className="text-xs text-base-content/60">
+                    This record is already purged. No actions available.
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="modal-action">
               <button className="btn" onClick={closeDetails}>
                 Close
@@ -315,6 +385,14 @@ export default function EquipmentTable({
             </div>
           </div>
         </div>
+      )}
+      {inlineEditItem && (
+        <EditEquipmentDialog
+          item={inlineEditItem}
+          onEdit={onEdit}
+          openImmediately
+          onClose={() => setInlineEditItem(null)}
+        />
       )}
     </div>
   );
