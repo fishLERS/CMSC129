@@ -78,6 +78,14 @@ export default function Accountabilities(){
     return <span className="badge badge-neutral">{status}</span>;
   };
 
+  const formatDetails = (details: string) => {
+    return details
+      .split(/\n+/)
+      .map((part) => part.trim())
+      .filter((part) => part && !/^return inspection for request/i.test(part))
+      .join(", ");
+  };
+
   return (
     <div className="p-6 space-y-6">
       {alertMessage && (
@@ -206,7 +214,7 @@ export default function Accountabilities(){
                               </td>
                               <td>
                                 <div className="max-w-md">
-                                  <p className="text-sm">{r.details || 'No details provided'}</p>
+                                  <p className="text-sm">{formatDetails(r.details) || 'No details provided'}</p>
                                 </div>
                               </td>
                               <td>{getStatusBadge(r.status)}</td>
@@ -258,7 +266,9 @@ export default function Accountabilities(){
                       </div>
                       <div className="form-control">
                         <label className="label"><span className="label-text text-xs">Details</span></label>
-                        <div className="bg-base-300 p-2 rounded text-sm whitespace-pre-wrap">{showModal.details || 'No details provided'}</div>
+                        <div className="bg-base-300 p-2 rounded text-sm whitespace-pre-wrap">
+                          {formatDetails(showModal.details) || 'No details provided'}
+                        </div>
                       </div>
                       <div className="form-control">
                         <label className="label"><span className="label-text text-xs">Status</span></label>

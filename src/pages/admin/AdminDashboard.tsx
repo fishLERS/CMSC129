@@ -373,10 +373,7 @@ const AdminDashboard: React.FC = () => {
           const label = entry.equipmentName || entry.equipmentID || "Item";
           return `${label}: ${parts.join(", ")}`;
         });
-        const details = [
-          `Return inspection for request ${request.id} found issues:`,
-          ...issueDescriptions,
-        ].join("\n");
+        const details = issueDescriptions.join("\n");
         await addDoc(collection(db, "accountabilities"), {
           requestId: request.id,
           createdBy: request.createdBy,

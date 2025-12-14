@@ -1,6 +1,6 @@
 import React from 'react'
 import { db } from '../../firebase'
-import { collection, query, orderBy, onSnapshot, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore'
 import { FileWarning, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react'
 
 const AdminAccountabilities: React.FC = () => {
@@ -15,6 +15,7 @@ const AdminAccountabilities: React.FC = () => {
   const [selectedStudentName, setSelectedStudentName] = React.useState('')
   const [detailsField, setDetailsField] = React.useState('')
   const [studentNameByNumber, setStudentNameByNumber] = React.useState<Record<string,string>>({})
+  const [userInfoById, setUserInfoById] = React.useState<Record<string, { displayName?: string; studentNumber?: string }>>({})
   const [toast, setToast] = React.useState<{type: 'success' | 'error'; message: string} | null>(null)
 
   React.useEffect(() => {
@@ -31,7 +32,7 @@ const AdminAccountabilities: React.FC = () => {
           studentNumber: data.studentNumber || '',
           studentName: data.studentName || '',
           createdByName: data.createdByName || '',
-          createdByNumber: data.studentNumber || data.createdBy || '',
+          createdBy: data.createdBy || '',
           amount: data.amount || null,
           createdAt: data.createdAt
         })
@@ -71,6 +72,34 @@ const AdminAccountabilities: React.FC = () => {
     return () => { cancelled = true }
   }, [])
 
+  React.useEffect(() => {
+    const missingUids = Array.from(
+      new Set(
+        rows
+          .map(r => (r.studentNumber ? null : r.createdBy || null))
+          .filter((uid): uid is string => !!uid && !userInfoById[uid])
+      )
+    )
+    if (!missingUids.length) return
+    missingUids.forEach(async (uid) => {
+      try {
+        const snap = await getDoc(doc(db, 'users', uid))
+        if (snap.exists()) {
+          const data: any = snap.data()
+          setUserInfoById(prev => ({
+            ...prev,
+            [uid]: {
+              displayName: data.displayName || data.email || uid,
+              studentNumber: data.studentNumber || '',
+            }
+          }))
+        }
+      } catch (e) {
+        console.warn('Failed to load user info', e)
+      }
+    })
+  }, [rows, userInfoById])
+
   // Filter rows
   let filtered = rows.filter(r => {
     if (tab === 'all') return true
@@ -94,6 +123,14 @@ const AdminAccountabilities: React.FC = () => {
     if (s === 'pending') return <span className="badge badge-warning">Pending</span>
     if (s === 'overdue') return <span className="badge badge-error">Overdue</span>
     return <span className="badge badge-neutral">{status}</span>
+  }
+
+  const formatDetails = (details: string) => {
+    return details
+      .split(/[\n,]+/)
+      .map(part => part.trim())
+      .filter(part => part && !/^return inspection for request/i.test(part))
+      .join(', ')
   }
 
   return (
@@ -183,13 +220,24 @@ const AdminAccountabilities: React.FC = () => {
                         <div className="font-medium">{r.due || 'No date set'}</div>
                       </td>
                       <td>
-                        <div className="font-medium">{studentNameByNumber[r.studentNumber] || r.studentName || 'Unknown'}</div>
-                        <div className="text-xs font-mono text-base-content/70">{r.studentNumber || r.createdByNumber || '-'}</div>
+                        <div className="font-medium">
+                          {studentNameByNumber[r.studentNumber] ||
+                            r.studentName ||
+                            r.createdByName ||
+                            (r.createdBy ? userInfoById[r.createdBy]?.displayName : undefined) ||
+                            r.createdBy ||
+                            'Unknown'}
+                        </div>
+                        <div className="text-xs font-mono text-base-content/70">
+                          {r.studentNumber ||
+                            (r.createdBy ? userInfoById[r.createdBy]?.studentNumber : undefined) ||
+                            'No student number'}
+                        </div>
                       </td>
                       <td>
                         <div className="max-w-md space-y-1">
                           <p className="text-sm font-semibold">Items involved</p>
-                          <p className="text-sm">{r.details || 'No details provided'}</p>
+                          <p className="text-sm">{formatDetails(r.details) || 'No details provided'}</p>
                         </div>
                       </td>
                       <td>{getStatusBadge(r.status)}</td>
@@ -229,8 +277,19 @@ const AdminAccountabilities: React.FC = () => {
               <div className="form-control">
                 <label className="label"><span className="label-text text-xs">Student</span></label>
                 <div className="bg-base-300 p-2 rounded text-sm">
-                  <div className="font-medium">{studentNameByNumber[showModal.studentNumber] || showModal.studentName || 'Unknown'}</div>
-                  <div className="text-xs font-mono text-base-content/70">{showModal.studentNumber || showModal.createdByNumber || '-'}</div>
+                  <div className="font-medium">
+                    {studentNameByNumber[showModal.studentNumber] ||
+                      showModal.studentName ||
+                      showModal.createdByName ||
+                      (showModal.createdBy ? userInfoById[showModal.createdBy]?.displayName : undefined) ||
+                      showModal.createdBy ||
+                      'Unknown'}
+                  </div>
+                  <div className="text-xs font-mono text-base-content/70">
+                    {showModal.studentNumber ||
+                      (showModal.createdBy ? userInfoById[showModal.createdBy]?.studentNumber : undefined) ||
+                      'No student number'}
+                  </div>
                 </div>
               </div>
             </div>
