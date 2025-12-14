@@ -5,6 +5,8 @@ import { logicEquipment } from "../equipment/logicEquipment";
 import { Eye } from "lucide-react";
 import LoadingOverlay from "../../components/LoadingOverlay";
 
+type ItemCondition = "functional" | "damaged" | "missing";
+
 interface RequestItem {
   equipmentID: string;
   qty: number;
@@ -28,8 +30,10 @@ interface Request {
   approvedAt?: any;
   cancelledAt?: any;
   returnedAt?: any;
-  returnCondition?: "functional" | "damaged" | "missing";
   clearedAt?: any;
+  returnCondition?: ItemCondition;
+  returnConditionSummary?: { functional: number; damaged: number; missing: number };
+  returnAssessment?: Array<{ equipmentID?: string; index: number; condition: ItemCondition }>;
 }
 
 const AdminDashboard: React.FC = () => {
@@ -44,6 +48,57 @@ const AdminDashboard: React.FC = () => {
   const [viewRequest, setViewRequest] = useState<Request | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [isFinalizingReturn, setIsFinalizingReturn] = useState(false);
+  const [returnAssessments, setReturnAssessments] = useState<Record<string, ItemCondition[]>>({});
+
+  const getItemKey = (item: RequestItem, index: number) =>
+    `${item.equipmentID || "item"}-${index}`;
+
+  const equipmentNameById = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    equipmentList.forEach((item) => {
+      if (item.equipmentID) {
+        map[item.equipmentID] = item.name;
+      }
+    });
+    return map;
+  }, [equipmentList]);
+
+  const groupedReturnAssessments = React.useMemo(() => {
+    if (!viewRequest?.returnAssessment) return null;
+    const groups: Record<
+      string,
+      { equipmentID?: string; name?: string; functional: number; damaged: number; missing: number }
+    > = {};
+
+    viewRequest.returnAssessment.forEach((entry) => {
+      const key = entry.equipmentID || "unknown";
+      if (!groups[key]) {
+        groups[key] = {
+          equipmentID: entry.equipmentID,
+          name: entry.equipmentID ? equipmentNameById[entry.equipmentID] : "Unknown item",
+          functional: 0,
+          damaged: 0,
+          missing: 0,
+        };
+      }
+      groups[key][entry.condition] = (groups[key][entry.condition] || 0) + 1;
+    });
+
+    return Object.values(groups);
+  }, [viewRequest, equipmentNameById]);
+
+  const normalizedViewStatus = (viewRequest?.status || "").toString().toLowerCase();
+  const requiresReturnAssessment = !!viewRequest && normalizedViewStatus === "returned";
+  const showApprovalActions =
+    !!viewRequest && !["cancelled", "approved", "returned", "cleared"].includes(normalizedViewStatus);
+  const assessmentsReady =
+    !requiresReturnAssessment ||
+    (viewRequest?.items || []).every((item, idx) => {
+      const key = getItemKey(item, idx);
+      const qty = Math.max(0, Number(item.qty) || 0);
+      const values = returnAssessments[key] || [];
+      return values.length >= qty;
+    });
 
   // format a time string like "13:00" into "1:00 PM"; handle existing AM/PM
   const formatTime = (t: any) => {
@@ -109,6 +164,35 @@ const AdminDashboard: React.FC = () => {
     fetchRequests();
   }, []);
 
+  useEffect(() => {
+    if (!viewRequest || (viewRequest.status || "").toLowerCase() !== "returned") {
+      setReturnAssessments({});
+      return;
+    }
+    setReturnAssessments((prev) => {
+      const next: Record<string, ItemCondition[]> = {};
+      (viewRequest.items || []).forEach((item, idx) => {
+        const key = getItemKey(item, idx);
+        const qty = Math.max(0, Number(item.qty) || 0);
+        const existing = prev[key] || [];
+        next[key] = Array.from({ length: qty }, (_, pieceIdx) => existing[pieceIdx] || "functional");
+      });
+      return next;
+    });
+  }, [viewRequest]);
+
+  const handleAssessmentChange = (
+    key: string,
+    index: number,
+    condition: ItemCondition
+  ) => {
+    setReturnAssessments((prev) => {
+      const entry = prev[key] ? [...prev[key]] : [];
+      entry[index] = condition;
+      return { ...prev, [key]: entry };
+    });
+  };
+
   const pendingCount = requests.filter(
     (r) => (r.status || "").toLowerCase() === "pending"
   ).length;
@@ -173,31 +257,69 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
-  const finalizeReturnCondition = async (
-    request: Request,
-    condition: "functional" | "damaged" | "missing"
-  ) => {
+  const finalizeReturnAssessment = async (request: Request) => {
     if (!request?.id) return;
     try {
       setIsFinalizingReturn(true);
+      const summary = { functional: 0, damaged: 0, missing: 0 };
+      const assessmentRecords: NonNullable<Request["returnAssessment"]> = [];
+      const issueMap: Record<
+        string,
+        { equipmentID?: string; equipmentName?: string; damaged: number; missing: number }
+      > = {};
+
+      (request.items || []).forEach((item, idx) => {
+        const key = getItemKey(item, idx);
+        const qty = Math.max(0, Number(item.qty) || 0);
+        const values = returnAssessments[key] || [];
+        for (let pieceIdx = 0; pieceIdx < qty; pieceIdx++) {
+          const condition = values[pieceIdx] || "functional";
+          summary[condition] = (summary[condition] || 0) + 1;
+          assessmentRecords.push({
+            equipmentID: item.equipmentID,
+            index: pieceIdx,
+            condition,
+          });
+          if (condition !== "functional") {
+            const issueKey = item.equipmentID || key;
+            if (!issueMap[issueKey]) {
+              const equipmentName =
+                equipmentList.find((eq) => eq.equipmentID === item.equipmentID)?.name ||
+                item.equipmentID;
+              issueMap[issueKey] = {
+                equipmentID: item.equipmentID,
+                equipmentName,
+                damaged: 0,
+                missing: 0,
+              };
+            }
+            issueMap[issueKey][condition] += 1;
+          }
+        }
+      });
+
+      const finalCondition =
+        summary.missing > 0 ? "missing" : summary.damaged > 0 ? "damaged" : "functional";
+
       await updateDoc(doc(db, "requests", request.id), {
         status: "cleared",
-        returnCondition: condition,
+        returnCondition: finalCondition,
+        returnConditionSummary: summary,
+        returnAssessment: assessmentRecords,
         clearedAt: serverTimestamp(),
       });
 
-      if (condition !== "functional") {
+      const issues = Object.values(issueMap).filter(
+        (entry) => entry.damaged > 0 || entry.missing > 0
+      );
+      if (issues.length > 0) {
         await addDoc(collection(db, "accountabilities"), {
           requestId: request.id,
           createdBy: request.createdBy,
           createdByName: request.createdByName || request.createdBy,
-          items: request.items || [],
+          issues,
           status: "pending",
-          reason:
-            condition === "missing"
-              ? "Item(s) reported missing upon return"
-              : "Item(s) returned damaged",
-          condition,
+          reason: "Return inspection issues",
           dueDate: new Date().toISOString(),
           createdAt: serverTimestamp(),
         });
@@ -209,19 +331,20 @@ const AdminDashboard: React.FC = () => {
             ? {
                 ...r,
                 status: "cleared",
-                returnCondition: condition,
+                returnCondition: finalCondition,
+                returnConditionSummary: summary,
+                returnAssessment: assessmentRecords,
                 clearedAt: new Date(),
               }
             : r
         )
       );
       setAlertMessage(
-        condition === "functional"
+        issues.length === 0
           ? "Return cleared as functional."
-          : condition === "damaged"
-          ? "Return recorded as damaged. Accountability created."
-          : "Return recorded as missing. Accountability created."
+          : "Return issues recorded and accountability created."
       );
+      setReturnAssessments({});
       setViewOpen(false);
       setViewRequest(null);
     } catch (e) {
@@ -283,14 +406,6 @@ const AdminDashboard: React.FC = () => {
       return tb.localeCompare(ta)
     })
   }
-
-  const normalizedViewStatus = (viewRequest?.status || "").toString().toLowerCase();
-  const requiresReturnAssessment = normalizedViewStatus === "returned";
-  const showApprovalActions =
-    !!viewRequest &&
-    !["cancelled", "approved", "returned", "cleared"].includes(
-      normalizedViewStatus
-    );
 
   return (
     <>
@@ -468,17 +583,147 @@ const AdminDashboard: React.FC = () => {
                 <div className="font-medium">{viewRequest.endDate} {formatTime(viewRequest.end)}</div>
               </div>
 
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 space-y-2">
                 <div className="text-xs text-base-content/60">Items</div>
-                <ul className="list-disc list-inside mt-1">
-                  {viewRequest.items?.map((item) => {
-                    const equipment = equipmentList.find(e => e.equipmentID === item.equipmentID)
-                    return (
-                      <li key={item.equipmentID} className="text-sm">{equipment?.name || item.equipmentID} — {item.qty} pcs</li>
-                    )
-                  })}
-                </ul>
-                <div className="text-xs text-base-content/60 mt-2">Total Qty: <span className="font-medium">{(viewRequest.items || []).reduce((acc, i) => acc + (i.qty || 0), 0)}</span></div>
+                {requiresReturnAssessment ? (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="table w-full text-sm">
+                        <thead>
+                          <tr>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Condition per piece</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {viewRequest.items?.map((item, idx) => {
+                            const key = getItemKey(item, idx);
+                            const qty = Math.max(0, Number(item.qty) || 0);
+                            return (
+                              <tr key={key}>
+                                <td>
+                                  <div className="font-medium">
+                                    {equipmentList.find((eq) => eq.equipmentID === item.equipmentID)?.name ||
+                                      item.equipmentID}
+                                  </div>
+                                  <div className="text-xs text-base-content/60">
+                                    ID: {item.equipmentID || "—"}
+                                  </div>
+                                </td>
+                                <td>{qty}</td>
+                                <td>
+                                  <div className="flex flex-wrap gap-2">
+                                    {Array.from({ length: qty }).map((_, pieceIdx) => {
+                                      const value = (returnAssessments[key] || [])[pieceIdx] || "functional";
+                                      const buttonClass = (condition: ItemCondition) =>
+                                        `btn btn-xs ${
+                                          value === condition
+                                            ? condition === "functional"
+                                              ? "btn-success"
+                                              : condition === "damaged"
+                                              ? "btn-warning"
+                                              : "btn-error"
+                                            : "btn-ghost"
+                                        }`;
+                                      return (
+                                        <div key={`${key}-${pieceIdx}`} className="flex items-center gap-1">
+                                          <span className="text-xs">#{pieceIdx + 1}</span>
+                                          <div className="btn-group">
+                                            <button
+                                              type="button"
+                                              className={buttonClass("functional")}
+                                              onClick={() => handleAssessmentChange(key, pieceIdx, "functional")}
+                                            >
+                                              OK
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className={buttonClass("damaged")}
+                                              onClick={() => handleAssessmentChange(key, pieceIdx, "damaged")}
+                                            >
+                                              Damaged
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className={buttonClass("missing")}
+                                              onClick={() => handleAssessmentChange(key, pieceIdx, "missing")}
+                                            >
+                                              Missing
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="text-xs text-base-content/60">
+                      Set the condition for each piece before finalizing the return.
+                    </p>
+                  </>
+                ) : groupedReturnAssessments && groupedReturnAssessments.length > 0 ? (
+                  <>
+                    {viewRequest.returnConditionSummary && (
+                      <div className="text-xs text-base-content/70 flex flex-wrap gap-3">
+                        <span>Functional: {viewRequest.returnConditionSummary.functional}</span>
+                        <span>Damaged: {viewRequest.returnConditionSummary.damaged}</span>
+                        <span>Missing: {viewRequest.returnConditionSummary.missing}</span>
+                      </div>
+                    )}
+                    <div className="overflow-x-auto">
+                      <table className="table w-full text-sm">
+                        <thead>
+                          <tr>
+                            <th>Item</th>
+                            <th>Functional</th>
+                            <th>Damaged</th>
+                            <th>Missing</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {groupedReturnAssessments.map((entry) => (
+                            <tr key={entry.equipmentID || entry.name}>
+                              <td>
+                                <div className="font-medium">{entry.name || entry.equipmentID || "Unknown item"}</div>
+                                <div className="text-xs text-base-content/60">
+                                  ID: {entry.equipmentID || "—"}
+                                </div>
+                              </td>
+                              <td>{entry.functional}</td>
+                              <td>{entry.damaged}</td>
+                              <td>{entry.missing}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <ul className="list-disc list-inside text-sm">
+                      {viewRequest.items?.map((item) => {
+                        const equipment = equipmentList.find((e) => e.equipmentID === item.equipmentID);
+                        return (
+                          <li key={item.equipmentID}>
+                            {equipment?.name || item.equipmentID} — {item.qty} pcs
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <div className="text-xs text-base-content/60">
+                      Total Qty:{" "}
+                      <span className="font-medium">
+                        {(viewRequest.items || []).reduce((acc, i) => acc + (i.qty || 0), 0)}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="md:col-span-2">
@@ -488,33 +733,17 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="flex flex-col gap-3">
               {requiresReturnAssessment ? (
-                <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm text-base-content/70">
-                    Confirm the condition of the returned items to clear this request.
+                    Review each item and finalize the assessment to clear this return.
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      className="btn btn-success"
-                      disabled={isFinalizingReturn}
-                      onClick={() => finalizeReturnCondition(viewRequest, "functional")}
-                    >
-                      {isFinalizingReturn ? "Saving..." : "Functional"}
-                    </button>
-                    <button
-                      className="btn btn-warning"
-                      disabled={isFinalizingReturn}
-                      onClick={() => finalizeReturnCondition(viewRequest, "damaged")}
-                    >
-                      {isFinalizingReturn ? "Saving..." : "Damaged"}
-                    </button>
-                    <button
-                      className="btn btn-error"
-                      disabled={isFinalizingReturn}
-                      onClick={() => finalizeReturnCondition(viewRequest, "missing")}
-                    >
-                      {isFinalizingReturn ? "Saving..." : "Missing"}
-                    </button>
-                  </div>
+                  <button
+                    className="btn btn-primary"
+                    disabled={isFinalizingReturn || !assessmentsReady}
+                    onClick={() => finalizeReturnAssessment(viewRequest)}
+                  >
+                    {isFinalizingReturn ? "Finalizing..." : "Finalize assessment"}
+                  </button>
                 </div>
               ) : showApprovalActions ? (
                 <div className="flex flex-wrap gap-2">
