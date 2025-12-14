@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import { isOngoing } from "../utils/requestTime"
 import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Bell, X, Eye, XCircle, RotateCcw } from 'lucide-react';
+import LoadingOverlay from '../components/LoadingOverlay';
 
 function formatDate(d: Date) {
   return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -191,7 +192,7 @@ export default function HomeStudent() {
 
   const [busyId, setBusyId] = React.useState<string | null>(null)
   const [showModalRequest, setShowModalRequest] = React.useState<any | null>(null)
-  const { equipmentList } = logicEquipment();
+  const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment();
 
   // reuse admin-style time formatter so modal matches admin modal formatting
   const formatTime = (t: any) => {
@@ -288,7 +289,9 @@ export default function HomeStudent() {
 
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <LoadingOverlay show={isEquipmentLoading} message="Loading equipment data..." />
+      <div className="p-6 space-y-6">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -589,5 +592,6 @@ export default function HomeStudent() {
         </dialog>
       )}
     </div>
+    </>
   );
 }

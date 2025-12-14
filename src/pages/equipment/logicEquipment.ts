@@ -5,9 +5,13 @@ import { addEquipment, listenerEquipment, updateEquipment, deleteEquipment } fro
 
 export function logicEquipment() {
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = listenerEquipment(setEquipmentList)
+    const unsubscribe = listenerEquipment((items) => {
+      setEquipmentList(items)
+      setIsLoading(false)
+    })
     return () => unsubscribe()
   }, [])
 
@@ -26,7 +30,7 @@ export function logicEquipment() {
     await deleteEquipment(equipmentID)
   }
 
-  return { equipmentList, handleAdd, handleEdit, handleDelete }
+  return { equipmentList, handleAdd, handleEdit, handleDelete, isLoading }
 }
 
 /**

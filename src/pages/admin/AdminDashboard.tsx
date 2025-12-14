@@ -3,6 +3,7 @@ import { db } from "../../firebase";
 import { collection, getDocs, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { logicEquipment } from "../equipment/logicEquipment";
 import { Eye } from "lucide-react";
+import LoadingOverlay from "../../components/LoadingOverlay";
 
 interface RequestItem {
   equipmentID: string;
@@ -32,7 +33,7 @@ const AdminDashboard: React.FC = () => {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'all'|'pending'|'approved'|'declined'|'cancelled'>('all');
-  const { equipmentList } = logicEquipment();
+  const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment();
   const [declineOpen, setDeclineOpen] = useState(false);
   const [declineId, setDeclineId] = useState<string | null>(null);
   const [declineRemarks, setDeclineRemarks] = useState('');
@@ -148,8 +149,6 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
-  if (loading) return <div className="flex justify-center items-center h-96"><span className="loading loading-spinner loading-lg text-primary"></span></div>;
-
   const visibleRequests = requests.filter((req) => {
     if (tab === 'all') return true;
     const s = (req.status || '').toString().toLowerCase();
@@ -199,7 +198,9 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <LoadingOverlay show={loading || isEquipmentLoading} message="Loading requests..." />
+      <div className="p-6 space-y-6">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -419,7 +420,8 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
-  </div>
+    </div>
+    </>
   );
 };
 

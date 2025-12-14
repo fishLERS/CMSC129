@@ -6,6 +6,7 @@ import { collection, addDoc, serverTimestamp, getDoc } from "firebase/firestore"
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Clock, User, FileText, Package, Plus, Minus, Search, Send } from 'lucide-react';
 import { AvailableEquipmentItem } from "../../db";
+import LoadingOverlay from "../../components/LoadingOverlay";
 
 // Import Cally calendar components
 import 'cally';
@@ -34,7 +35,7 @@ const removeStepper = `
 `;
 
 export const RequestForm: React.FC = () => {
-  const { equipmentList } = logicEquipment();
+  const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment();
   const { user } = useAuth()
 
   const navigate = useNavigate()
@@ -262,6 +263,8 @@ export const RequestForm: React.FC = () => {
     <div className="p-6">
       {/* Inject CSS to remove number arrows */}
       <style>{removeStepper}</style>
+
+      <LoadingOverlay show={isEquipmentLoading} message="Loading equipment inventory..." />
 
       {/* Page Header */}
       <div className="mb-6">

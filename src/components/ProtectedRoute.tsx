@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import LoadingOverlay from './LoadingOverlay';
 
 type Props = { children: JSX.Element; requireAdmin?: boolean; forbidAdmin?: boolean };
 
@@ -36,7 +37,7 @@ export default function ProtectedRoute({ children, requireAdmin, forbidAdmin }: 
     return () => { mounted = false; };
   }, [requireAdmin, forbidAdmin, user]);
 
-  if (loading || checking) return <div style={{ padding: 24 }}>loading…</div>;
+  if (loading || checking) return <LoadingOverlay show message="Checking your session..." />;
   if (!user) return <Navigate to="/login" replace state={{ from: loc }} />;
   if (requireAdmin && !isAdmin) return <Navigate to="/student" replace />;
   if (forbidAdmin && isAdmin) return <Navigate to="/admindashboard" replace />;

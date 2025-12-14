@@ -5,11 +5,12 @@ import { logicEquipment } from "./logicEquipment";
 import AddEquipmentDialog from "./AddEquipmentDialog";
 import EquipmentTable from "./EquipmentTable";
 import { CATEGORY_OPTIONS } from "./EquipmentForm";
+import LoadingOverlay from "../../components/LoadingOverlay";
 
 const LOW_STOCK_THRESHOLD = 5;
 
 export default function Dashboard() {
-  const { equipmentList, handleAdd, handleEdit, handleDelete } = logicEquipment();
+  const { equipmentList, handleAdd, handleEdit, handleDelete, isLoading } = logicEquipment();
   const [searchTerm, setSearchTerm] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("all");
   const [typeFilter, setTypeFilter] = React.useState<"all" | "disposable" | "durable">("all");
@@ -93,7 +94,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <LoadingOverlay show={isLoading} message="Loading equipment inventory..." />
+      <div className="p-6 space-y-6">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Equipment Inventory</h1>
@@ -218,5 +221,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -10,6 +10,9 @@
     "set-claim": "node ./scripts/set-claim.cjs"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.6",
     "cally": "^0.8.0",
     "firebase": "^12.5.0",
     "lucide-react": "^0.553.0",
