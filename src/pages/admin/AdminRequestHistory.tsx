@@ -384,7 +384,7 @@ const AdminRequestHistory: React.FC = () => {
               <div className="card bg-base-100 border border-base-300 shadow">
                 <div className="card-body p-0">
                   <div className="overflow-x-auto">
-                    <table className="table table-zebra w-full">
+                    <table className="table w-full">
                       <thead>
                         <tr>
                           <th>Request</th>
@@ -392,7 +392,6 @@ const AdminRequestHistory: React.FC = () => {
                           <th>Schedule</th>
                           <th>Items</th>
                           <th>Status</th>
-                          <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -403,9 +402,12 @@ const AdminRequestHistory: React.FC = () => {
                           const submittedOn = req.createdAt
                             ? req.createdAt.toLocaleString()
                             : req.createdAtClient || "Unknown";
-
                           return (
-                            <tr key={req.id}>
+                            <tr
+                              key={req.id}
+                              className="hover:bg-primary/10 cursor-pointer transition-colors"
+                              onClick={() => setSelectedRequest(req)}
+                            >
                               <td>
                                 <div className="font-semibold">{req.purpose || "Untitled Request"}</div>
                                 <div className="text-xs text-base-content/60">
@@ -437,14 +439,6 @@ const AdminRequestHistory: React.FC = () => {
                                 <span className={`badge ${getStatusBadgeClass(req.status || "")}`}>
                                   {req.status || "Pending"}
                                 </span>
-                              </td>
-                              <td>
-                                <button
-                                  className="btn btn-sm"
-                                  onClick={() => setSelectedRequest(req)}
-                                >
-                                  View details
-                                </button>
                               </td>
                             </tr>
                           );
