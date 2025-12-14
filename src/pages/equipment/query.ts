@@ -1,6 +1,6 @@
 import { db } from "../../firebase";
 import { Equipment} from "../../db";
-import { doc, collection, addDoc, updateDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { doc, collection, addDoc, updateDoc, deleteDoc, onSnapshot, query, where, getDocs, Firestore } from "firebase/firestore";
 
 const COLLECTION = "equipment";
 
@@ -40,3 +40,38 @@ export function listenerEquipment(callback: (items: Equipment[]) => void) {
     callback(items);
   });
 }
+
+//retrieve approved equipments on certain durations
+
+export const getReservedEquipments = async (Request_start: string, Request_end: string): Promise<{[equipmentID: string]: number}> => {
+  const q = query(
+    collection(db, "requests"),
+    where("status", "in", ["approved"]),
+    where("startDate", "<=", Request_end) 
+    );
+
+    try {
+      const snapshot = await getDocs(q);
+      const reservedItems: {[equipmentID: string]: number} = {};
+
+      snapshot.forEach((doc) => {
+        const request = doc.data() as any; 
+
+        if (request.endDate >= Request_start) {
+
+          request.items.forEach((item: { equipmentID: string, qty: number }) => {
+          const id = item.equipmentID;
+          reservedItems[id] = (reservedItems[id] || 0) + item.qty;
+          });
+        }
+      });
+
+    console.log("Reserved result:", reservedItems);
+
+    return reservedItems;
+
+    } catch (error) {
+        console.error("Error fetching reserved equipment:", error);
+      return {}; 
+    }
+};
