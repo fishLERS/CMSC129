@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { collection, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Clock, User, FileText, Package, Plus, Minus, Search, Send } from 'lucide-react';
+import { AvailableEquipmentItem } from "../../db";
 
 // Import Cally calendar components
 import 'cally';
@@ -44,6 +45,8 @@ export const RequestForm: React.FC = () => {
   const [filterText, setFilterText] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const dateCalendarRef = React.useRef<HTMLDivElement>(null);
+  const [previewItem, setPreviewItem] = React.useState<AvailableEquipmentItem | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
 
   // Close calendar when clicking outside
   React.useEffect(() => {
@@ -65,7 +68,7 @@ export const RequestForm: React.FC = () => {
     purpose: "",
   });
 
-  const { availableEquipment, isFetching} = useFetchAvailableItems(
+  const { availableEquipment } = useFetchAvailableItems(
     equipmentList,
     formData.startDate,
     formData.endDate
@@ -151,7 +154,7 @@ export const RequestForm: React.FC = () => {
       .filter(([_, qty]) => qty > 0)
       .map(([equipmentID, qty]) => ({ equipmentID, qty }));
     for (const { equipmentID, qty } of itemsArray) {
-      const item = availableEquipment.find((e: typeof availableEquipment[number]) => e.equipmentID === equipmentID);
+      const item = availableEquipment.find((e: AvailableEquipmentItem) => e.equipmentID === equipmentID);
       if (!item) continue;
       if (qty > item.available) {
         alert(`"${item.name}" exceeds available stock (${item.available}).`);
@@ -211,8 +214,8 @@ export const RequestForm: React.FC = () => {
 
   // Filter equipment list
   const filteredEquipment = availableEquipment
-    .filter((item: typeof availableEquipment[number]) => item.available > 0)
-    .filter((item: typeof availableEquipment[number]) => 
+    .filter((item: AvailableEquipmentItem) => item.available > 0)
+    .filter((item: AvailableEquipmentItem) => 
       item.name?.toLowerCase().includes(filterText.toLowerCase()) ||
       item.category?.toLowerCase().includes(filterText.toLowerCase())
     );
@@ -220,6 +223,21 @@ export const RequestForm: React.FC = () => {
   // Calculate totals
   const totalItems = Object.values(requestedItems).reduce((a, b) => a + b, 0);
   const selectedItems = Object.entries(requestedItems).filter(([_, qty]) => qty > 0);
+  const previewDetails = React.useMemo(() => {
+    if (!previewItem) return null;
+    const detailed = equipmentList.find((eq) => eq.equipmentID === previewItem.equipmentID);
+    return detailed ? { ...previewItem, ...detailed } : previewItem;
+  }, [previewItem, equipmentList]);
+
+  const openPreview = (item: AvailableEquipmentItem) => {
+    setPreviewItem(item);
+    setIsPreviewOpen(true);
+  };
+
+  const closePreview = () => {
+    setIsPreviewOpen(false);
+    setPreviewItem(null);
+  };
 
   return (
     <div className="p-6">
@@ -265,12 +283,13 @@ export const RequestForm: React.FC = () => {
                   </div>
                 ) : (
                   <div className="divide-y divide-base-200">
-                    {filteredEquipment.map((item: typeof availableEquipment[number]) => (
+                    {filteredEquipment.map((item: AvailableEquipmentItem) => (
                       <div
                         key={item.equipmentID}
-                        className={`flex justify-between items-center p-3 hover:bg-base-200/50 transition-colors ${
-                          (requestedItems[item.equipmentID!] || 0) > 0 ? 'bg-primary/5' : ''
+                        className={`flex justify-between items-center p-3 transition-colors cursor-pointer ${
+                          (requestedItems[item.equipmentID!] || 0) > 0 ? 'bg-primary/5' : 'hover:bg-primary/10'
                         }`}
+                        onClick={() => openPreview(item)}
                       >
                         {/* Item Info */}
                         <div className="flex-1">
@@ -287,47 +306,63 @@ export const RequestForm: React.FC = () => {
                           </div>
                         </div>
 
-                        {/* Quantity Stepper */}
-                        <div className="join">
+                        {/* Thumbnail + Quantity Stepper */}
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="w-12 h-12 flex items-center justify-center bg-base-200 rounded-lg overflow-hidden">
+                            {item.imageLink ? (
+                              <img
+                                src={item.imageLink}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <Package className="w-5 h-5 text-base-content/60" />
+                            )}
+                          </div>
+                          <div className="join">
                           <button
-                            type="button"
-                            className="btn btn-sm join-item"
-                            onClick={() =>
-                              setRequestedItems((prev) => ({
-                                ...prev,
-                                [item.equipmentID!]: Math.max((prev[item.equipmentID!] || 0) - 1, 0),
-                              }))
-                            }
-                            disabled={(requestedItems[item.equipmentID!] || 0) <= 0}
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <input
-                            type="number"
-                            min={0}
-                            max={item.available}
-                            value={requestedItems[item.equipmentID!] || 0}
-                            onChange={(e) =>
-                              setRequestedItems((prev) => ({
-                                ...prev,
-                                [item.equipmentID!]: Math.max(0, Math.min(Number(e.target.value), item.available)),
-                              }))
-                            }
-                            className="input input-sm input-bordered join-item w-14 text-center"
-                          />
-                          <button
-                            type="button"
-                            className="btn btn-sm join-item"
-                            onClick={() =>
-                              setRequestedItems((prev) => ({
-                                ...prev,
-                                [item.equipmentID!]: (prev[item.equipmentID!] || 0) + 1,
-                              }))
-                            }
-                            disabled={(requestedItems[item.equipmentID!] || 0) >= item.available}
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
+                              type="button"
+                              className="btn btn-sm join-item"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRequestedItems((prev) => ({
+                                  ...prev,
+                                  [item.equipmentID!]: Math.max((prev[item.equipmentID!] || 0) - 1, 0),
+                                }));
+                              }}
+                              disabled={(requestedItems[item.equipmentID!] || 0) <= 0}
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <input
+                              type="number"
+                              min={0}
+                              max={item.available}
+                              value={requestedItems[item.equipmentID!] || 0}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) =>
+                                setRequestedItems((prev) => ({
+                                  ...prev,
+                                  [item.equipmentID!]: Math.max(0, Math.min(Number(e.target.value), item.available)),
+                                }))
+                              }
+                              className="input input-sm input-bordered join-item w-14 text-center"
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-sm join-item"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRequestedItems((prev) => ({
+                                  ...prev,
+                                  [item.equipmentID!]: (prev[item.equipmentID!] || 0) + 1,
+                                }));
+                              }}
+                              disabled={(requestedItems[item.equipmentID!] || 0) >= item.available}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -560,6 +595,96 @@ export const RequestForm: React.FC = () => {
           </div>
         </div>
       </div>
+      {isPreviewOpen && previewDetails && (
+        <div
+          className="modal modal-open modal-bottom sm:modal-middle"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closePreview();
+          }}
+        >
+          <div className="modal-box w-full max-w-2xl p-6">
+            <button
+              type="button"
+              className="btn btn-sm btn-circle btn-ghost absolute right-4 top-4"
+              onClick={(e) => {
+                e.stopPropagation();
+                closePreview();
+              }}
+            >
+              X
+            </button>
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-sm text-base-content/60">Equipment Preview</p>
+                <h3 className="text-2xl font-bold leading-tight">{previewDetails.name}</h3>
+                {previewDetails.equipmentID && (
+                  <p className="text-sm text-base-content/60 mt-1">
+                    ID: {previewDetails.equipmentID}
+                  </p>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-base-200 rounded-xl p-4 flex items-center justify-center">
+                  {previewDetails.imageLink ? (
+                    <img
+                      src={previewDetails.imageLink}
+                      alt={previewDetails.name}
+                      className="w-full max-h-80 object-contain rounded-lg"
+                    />
+                  ) : (
+                    <div className="text-base-content/60 text-center py-12">
+                      No image available
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-base-content/60 uppercase tracking-wide">Category</p>
+                    <p className="text-lg font-semibold">
+                      {previewDetails.category?.trim() || "Uncategorized"}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-base-content/60 uppercase tracking-wide">
+                        Available
+                      </p>
+                      <p className="text-lg font-semibold">{previewDetails.available ?? 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-base-content/60 uppercase tracking-wide">Type</p>
+                      <p className="text-lg font-semibold">
+                        {previewDetails.isDisposable ? "Disposable" : "Durable"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-base-content/60 uppercase tracking-wide">Reserved</p>
+                      <p className="text-lg font-semibold">{previewDetails.reserved ?? 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-base-content/60 uppercase tracking-wide">Status</p>
+                      <p className="text-lg font-semibold">
+                        {(previewDetails.available ?? 0) > 0 ? "In stock" : "Unavailable"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-action">
+              <button
+                className="btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closePreview();
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
