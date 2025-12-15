@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
 import { isOngoing } from "../utils/requestTime"
-import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Bell, X, Eye, XCircle, RotateCcw } from 'lucide-react';
 import LoadingOverlay from '../components/LoadingOverlay';
 
@@ -25,12 +25,14 @@ function formatDateTime(v: any) {
 export default function HomeStudent() {
   const { user } = useAuth();
   const [requests, setRequests] = React.useState<any[]>([]);
-  const [tab, setTab] = React.useState<'all'|'pending'| 'ongoing' | 'approved' |'completed'|'rejected'|'cancelled'>('all');
+  const [tab, setTab] = React.useState<'all'|'pending'| 'ongoing' | 'approved' |'completed'|'rejected'|'cancelled'|'accountability'>('all');
   const [notifOpen, setNotifOpen] = React.useState(false)
   const [notifAllOpen, setNotifAllOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<Array<any>>([])
   const [recentNotifications, setRecentNotifications] = React.useState<Array<any>>([])
   const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
+  const [accountabilities, setAccountabilities] = React.useState<any[]>([])
+  const [accountabilityRequestInfo, setAccountabilityRequestInfo] = React.useState<Record<string, { purpose?: string; createdAt?: any }>>({})
 
   React.useEffect(() => {
     if (!user) {
@@ -153,7 +155,7 @@ export default function HomeStudent() {
     return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
   }, [user]);
 
-  let filtered = requests.filter(r => {
+  let filteredRequests = requests.filter(r => {
     const s = (r.status || '').toLowerCase()
 
     if (tab === 'all') return true
@@ -180,7 +182,7 @@ export default function HomeStudent() {
       return 5;
     }
 
-    filtered = filtered.slice().sort((a,b) => {
+    filteredRequests = filteredRequests.slice().sort((a,b) => {
       const pa = priority((a.status || 'ongoing').toString());
       const pb = priority((b.status || 'ongoing').toString());
       if (pa !== pb) return pa - pb;
@@ -193,7 +195,9 @@ export default function HomeStudent() {
 
   const [busyId, setBusyId] = React.useState<string | null>(null)
   const [showModalRequest, setShowModalRequest] = React.useState<any | null>(null)
+  const [showAccountabilityModal, setShowAccountabilityModal] = React.useState<any | null>(null)
   const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment();
+  const isAccountabilityTab = tab === 'accountability'
 
   // reuse admin-style time formatter so modal matches admin modal formatting
   const formatTime = (t: any) => {
@@ -287,6 +291,107 @@ export default function HomeStudent() {
   };
 
   const ongoingCount = requests.filter( r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
+  const parseAccountabilityDetails = (details: string) => {
+    return (details || '')
+      .split(/[\n,]+/)
+      .map(part => part.trim())
+      .filter(Boolean)
+  }
+
+  const formatAccountabilityDetails = (details: string) => parseAccountabilityDetails(details).join(', ')
+
+  const getAccountabilityBadge = (status: string) => {
+    const s = (status || 'pending').toLowerCase()
+    if (s === 'resolved' || s === 'completed') return <span className="badge badge-success">Resolved</span>
+    if (s === 'overdue') return <span className="badge badge-error">Overdue</span>
+    return <span className="badge badge-warning capitalize">{status || 'Pending'}</span>
+  }
+
+  const getAccountabilityPurpose = (acc: any) => {
+    if (!acc) return 'Accountability'
+    const info = acc.requestId ? accountabilityRequestInfo[acc.requestId] : null
+    return acc.purpose || info?.purpose || acc.reason || 'Accountability'
+  }
+
+  const getAccountabilityRequestedAt = (acc: any) => {
+    if (!acc) return ''
+    const info = acc.requestId ? accountabilityRequestInfo[acc.requestId] : null
+    return formatDateTime(info?.createdAt || acc.createdAt) || (acc.due ? `Due ${acc.due}` : '')
+  }
+
+  React.useEffect(() => {
+    if (!user) {
+      setAccountabilities([])
+      setAccountabilityRequestInfo({})
+      return
+    }
+    const processSnapshot = (snap: any) => {
+      const list: any[] = []
+      snap.forEach((d: any) => {
+        const data = d.data()
+        const dueDate = data.dueDate?.toDate ? data.dueDate.toDate() : (data.dueDate ? new Date(data.dueDate) : null)
+        list.push({
+          id: d.id,
+          due: dueDate ? dueDate.toLocaleDateString() : 'No date set',
+          details: data.details || '',
+          status: data.status || 'pending',
+          reason: data.reason || '',
+          createdAt: data.createdAt,
+          requestId: data.requestId || null,
+          purpose: data.purpose || '',
+        })
+      })
+      setAccountabilities(list)
+    }
+    let unsubMain: (() => void) | null = null
+    let unsubFallback: (() => void) | null = null
+    try {
+      const q = query(collection(db, 'accountabilities'), where('createdBy', '==', user.uid), orderBy('dueDate', 'asc'))
+      unsubMain = onSnapshot(q, (snap) => processSnapshot(snap), (err) => {
+        console.error('Student accountabilities snapshot error', err)
+        try {
+          const qf = query(collection(db, 'accountabilities'), where('createdBy', '==', user.uid))
+          unsubFallback = onSnapshot(qf, (snap) => processSnapshot(snap), (err2) => console.error('Student accountabilities fallback error', err2))
+        } catch (e) {
+          console.error('Failed to subscribe accountabilities fallback', e)
+        }
+      })
+    } catch (e) {
+      console.error('Failed to subscribe accountabilities main', e)
+      const qf = query(collection(db, 'accountabilities'), where('createdBy', '==', user.uid))
+      unsubFallback = onSnapshot(qf, (snap) => processSnapshot(snap), (err2) => console.error('Student accountabilities fallback error', err2))
+    }
+    return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
+  }, [user])
+
+  React.useEffect(() => {
+    const missingIds = accountabilities
+      .map(acc => acc.requestId)
+      .filter((id): id is string => !!id && !accountabilityRequestInfo[id])
+    if (!missingIds.length) return
+    missingIds.forEach(async (requestId) => {
+      try {
+        const snap = await getDoc(docRef(db, 'requests', requestId))
+        if (snap.exists()) {
+          const data: any = snap.data()
+          setAccountabilityRequestInfo(prev => ({
+            ...prev,
+            [requestId]: {
+              purpose: data.purpose || '',
+              createdAt: data.createdAt || data.createdAtClient || null,
+            }
+          }))
+        } else {
+          setAccountabilityRequestInfo(prev => ({
+            ...prev,
+            [requestId]: { purpose: '', createdAt: null }
+          }))
+        }
+      } catch (e) {
+        console.warn('Failed to load accountability request info', e)
+      }
+    })
+  }, [accountabilities, accountabilityRequestInfo])
 
 
   return (
@@ -410,6 +515,7 @@ export default function HomeStudent() {
               <a role="tab" className={`tab ${tab === 'completed' ? 'tab-active' : ''}`} onClick={() => setTab('completed')}>Completed</a>
               <a role="tab" className={`tab ${tab === 'rejected' ? 'tab-active' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
               <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
+              <a role="tab" className={`tab ${tab === 'accountability' ? 'tab-active' : ''}`} onClick={() => setTab('accountability')}>Accountability</a>
             </div>
           </div>
 
@@ -426,14 +532,31 @@ export default function HomeStudent() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
+                {(isAccountabilityTab ? accountabilities.length === 0 : filteredRequests.length === 0) ? (
                   <tr>
                     <td colSpan={5} className="text-center py-8 text-base-content/60">
-                      No requests found
+                      {isAccountabilityTab ? 'No accountabilities found' : 'No requests found'}
                     </td>
                   </tr>
+                ) : isAccountabilityTab ? (
+                  accountabilities.map((acc) => (
+                    <tr key={acc.id} className="hover">
+                      <td>
+                        <div className="font-medium">{getAccountabilityPurpose(acc)}</div>
+                        <div className="text-xs text-base-content/60">{getAccountabilityRequestedAt(acc)}</div>
+                      </td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td>
+                        <button className="btn btn-ghost btn-sm btn-circle" onClick={() => setShowAccountabilityModal(acc)}>
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
                 ) : (
-                  filtered.map((r) => (
+                  filteredRequests.map((r) => (
                     <tr key={r.id} className="hover">
                       <td>
                         <div className="font-medium">{r.purpose || 'Item Request'}</div>
@@ -557,6 +680,52 @@ export default function HomeStudent() {
           </div>
           <form method="dialog" className="modal-backdrop">
             <button onClick={() => setShowModalRequest(null)}>close</button>
+          </form>
+        </dialog>
+      )}
+
+      {/* Accountability Details Modal */}
+      {showAccountabilityModal && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-lg">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => setShowAccountabilityModal(null)}>
+              <X className="w-4 h-4" />
+            </button>
+            <h3 className="font-bold text-lg mb-4">Accountability Details</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Purpose</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{getAccountabilityPurpose(showAccountabilityModal)}</div>
+              </div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Reason / Notes</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{showAccountabilityModal.reason || 'Accountability'}</div>
+              </div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Requested</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{getAccountabilityRequestedAt(showAccountabilityModal) || '—'}</div>
+              </div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Due Date</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{showAccountabilityModal.due}</div>
+              </div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Details</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm whitespace-pre-wrap">
+                  {formatAccountabilityDetails(showAccountabilityModal.details) || 'No details provided'}
+                </div>
+              </div>
+              <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Status</span></label>
+                <div className="bg-base-300 p-2 rounded text-sm">{getAccountabilityBadge(showAccountabilityModal.status)}</div>
+              </div>
+            </div>
+            <div className="modal-action">
+              <button className="btn" onClick={() => setShowAccountabilityModal(null)}>Close</button>
+            </div>
+          </div>
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => setShowAccountabilityModal(null)}>close</button>
           </form>
         </dialog>
       )}

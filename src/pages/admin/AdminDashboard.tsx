@@ -378,6 +378,7 @@ const AdminDashboard: React.FC = () => {
           requestId: request.id,
           createdBy: request.createdBy,
           createdByName: request.createdByName || request.createdBy,
+          purpose: request.purpose || '',
           issues,
           details,
           status: "pending",
