@@ -8,7 +8,6 @@ export default function Accountabilities(){
   const { user } = useAuth()
   const [rows, setRows] = React.useState<any[]>([])
   const [tab, setTab] = React.useState<'all'|'pending'|'resolved'|'overdue'>('all');
-  const [busyId, setBusyId] = React.useState<string | null>(null);
   const [showModal, setShowModal] = React.useState<any | null>(null);
   const [alertMessage, setAlertMessage] = React.useState<string | null>(null);
 
@@ -220,20 +219,6 @@ export default function Accountabilities(){
                               <td>{getStatusBadge(r.status)}</td>
                               <td>
                                 <button className="btn btn-ghost btn-sm" onClick={() => setShowModal(r)}>View</button>
-                                {r.status?.toLowerCase() === 'pending' && (
-                                  <button className="btn btn-success btn-sm ml-2" disabled={busyId === r.id} onClick={async () => {
-                                    setBusyId(r.id);
-                                    try {
-                                      await import('firebase/firestore').then(({ updateDoc, doc }) =>
-                                        updateDoc(doc(db, 'accountabilities', r.id), { status: 'resolved' })
-                                      );
-                                    } catch (e) {
-                                      console.error(e);
-                                      setAlertMessage('Failed to mark resolved. Please try again.');
-                                    }
-                                    setBusyId(null);
-                                  }}>Mark as Resolved</button>
-                                )}
                               </td>
                             </tr>
                           ))
@@ -277,20 +262,6 @@ export default function Accountabilities(){
                     </div>
                     <div className="modal-action">
                       <button className="btn" onClick={() => setShowModal(null)}>Close</button>
-                      {showModal.status?.toLowerCase() === 'pending' && (
-                        <button className="btn btn-success" disabled={busyId === showModal.id} onClick={async () => {
-                          setBusyId(showModal.id);
-                          try {
-                            await import('firebase/firestore').then(({ updateDoc, doc }) =>
-                              updateDoc(doc(db, 'accountabilities', showModal.id), { status: 'resolved' })
-                            );
-                          } catch (e) {
-                            console.error(e);
-                            setAlertMessage('Failed to mark resolved. Please try again.');
-                          }
-                          setBusyId(null); setShowModal(null);
-                        }}>Mark as Resolved</button>
-                      )}
                     </div>
                   </div>
                   <form method="dialog" className="modal-backdrop">
