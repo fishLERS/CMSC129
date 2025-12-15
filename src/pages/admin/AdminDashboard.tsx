@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { db } from "../../firebase";
-import { collection, getDocs, updateDoc, doc, getDoc, serverTimestamp, addDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, updateDoc, doc, getDoc, serverTimestamp, addDoc } from "firebase/firestore";
+import { Bell, Eye, X } from "lucide-react";
 import { logicEquipment } from "../equipment/logicEquipment";
-import { Eye } from "lucide-react";
 import LoadingOverlay from "../../components/LoadingOverlay";
 
 type ItemCondition = "functional" | "damaged" | "missing" | "consumed";
@@ -51,6 +51,12 @@ const AdminDashboard: React.FC = () => {
   const [returnAssessments, setReturnAssessments] = useState<
     Record<string, (ItemCondition | null)[]>
   >({});
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifAllOpen, setNotifAllOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Array<any>>([]);
+  const [recentNotifications, setRecentNotifications] = useState<Array<any>>([]);
+  const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
+  const highlightTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const closeRequestModal = useCallback(() => {
     if (isFinalizingReturn) return;
@@ -152,41 +158,62 @@ const AdminDashboard: React.FC = () => {
     return String(t);
   }
 
-  const fetchRequests = async () => {
+  const formatDateTime = (value: any) => {
+    if (!value) return '';
     try {
-      const querySnapshot = await getDocs(collection(db, "requests"));
-      const data = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Request[];
-
-      // Resolve requester display names from users collection (if present)
-      const uids = Array.from(new Set(data.map((d: any) => d.createdBy).filter(Boolean)));
-      const userNameByUid: Record<string, string> = {};
-      await Promise.all(uids.map(async (uid) => {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', uid));
-          if (userDoc.exists()) {
-            const ud = userDoc.data() as any;
-            userNameByUid[uid] = ud.displayName || ud.email || uid;
-          }
-        } catch (e) {
-          console.warn('Failed to load user', uid, e);
-        }
-      }));
-
-      const enriched = data.map(d => ({ ...d, createdByName: (d as any).createdBy ? (userNameByUid[(d as any).createdBy] || (d as any).createdBy) : undefined }));
-      setRequests(enriched as Request[]);
-      // setRequests(enriched as Request[]);
-    } catch (error) {
-      console.error("Error fetching requests:", error);
-    } finally {
-      setLoading(false);
+      if (typeof value?.toDate === 'function') return value.toDate().toLocaleString();
+      if (typeof value === 'string' || typeof value === 'number') return new Date(value).toLocaleString();
+      if (value instanceof Date) return value.toLocaleString();
+    } catch (e) {
+      // ignore
     }
-  };
+    return '';
+  }
 
   useEffect(() => {
-    fetchRequests();
+    setLoading(true);
+    const q = query(collection(db, "requests"), orderBy("createdAt", "desc"), limit(50));
+    const unsub = onSnapshot(q, async (snap) => {
+      try {
+        const data = snap.docs.map((docSnap) => ({
+          id: docSnap.id,
+          ...docSnap.data(),
+        })) as Request[];
+
+        const uids = Array.from(new Set(data.map((d: any) => d.createdBy).filter(Boolean)));
+        const userNameByUid: Record<string, string> = {};
+        await Promise.all(
+          uids.map(async (uid) => {
+            try {
+              const userDoc = await getDoc(doc(db, "users", uid));
+              if (userDoc.exists()) {
+                const ud = userDoc.data() as any;
+                userNameByUid[uid] = ud.displayName || ud.email || uid;
+              }
+            } catch (e) {
+              console.warn("Failed to load user", uid, e);
+            }
+          })
+        );
+
+        const enriched = data.map((d) => ({
+          ...d,
+          createdByName: (d as any).createdBy
+            ? userNameByUid[(d as any).createdBy] || (d as any).createdBy
+            : undefined,
+        }));
+        setRequests(enriched as Request[]);
+      } catch (error) {
+        console.error("Error processing requests snapshot:", error);
+      } finally {
+        setLoading(false);
+      }
+    }, (error) => {
+      console.error("AdminDashboard requests snapshot error", error);
+      setLoading(false);
+    });
+
+    return () => unsub();
   }, []);
 
   useEffect(() => {
@@ -222,6 +249,108 @@ const AdminDashboard: React.FC = () => {
       return next;
     });
   }, [viewRequest, equipmentLookup, hasDurableItems]);
+
+  useEffect(() => {
+    if (!requests.length) {
+      setRecentNotifications([]);
+      setNotifications([]);
+      return;
+    }
+    try {
+      const storedRaw = localStorage.getItem("adminSeenRequestStatuses");
+      const makeEntry = (req: Request, type: "new" | "returned") => {
+        const purpose = req.purpose || "Equipment request";
+        const requester = req.createdByName || req.createdBy || "Student";
+        const actionAt =
+          type === "returned"
+            ? formatDateTime(req.returnedAt)
+            : formatDateTime(req.createdAt);
+        return { id: req.id, type, purpose, requester, actionAt };
+      };
+
+      if (!storedRaw) {
+        const initialMap: Record<string, string> = {};
+        requests.forEach((req) => {
+          initialMap[req.id] = (req.status || "pending").toString();
+        });
+        localStorage.setItem("adminSeenRequestStatuses", JSON.stringify(initialMap));
+        setRecentNotifications([]);
+        const returnedEntries = requests
+          .filter((req) => (req.status || "").toLowerCase() === "returned")
+          .map((req) => makeEntry(req, "returned"));
+        setNotifications(returnedEntries);
+        return;
+      }
+
+      const stored: Record<string, string> = JSON.parse(storedRaw || "{}");
+      const changes: Array<any> = [];
+      requests.forEach((req) => {
+        const now = (req.status || "pending").toString();
+        const prev = stored[req.id];
+        if (typeof prev === "undefined") {
+          changes.push(makeEntry(req, "new"));
+        } else if (prev !== now && now.toLowerCase() === "returned") {
+          changes.push(makeEntry(req, "returned"));
+        }
+      });
+
+      const returnedEntries = requests
+        .filter((req) => (req.status || "").toLowerCase() === "returned")
+        .map((req) => makeEntry(req, "returned"));
+
+      const combinedMap = new Map<string, any>();
+      [...changes, ...returnedEntries].forEach((entry) => {
+        const key = `${entry.type}-${entry.id}`;
+        if (!combinedMap.has(key)) combinedMap.set(key, entry);
+      });
+
+      setRecentNotifications(changes);
+      setNotifications(Array.from(combinedMap.values()));
+    } catch (e) {
+      console.warn("Failed to process admin notifications", e);
+      setRecentNotifications([]);
+      setNotifications([]);
+    }
+  }, [requests]);
+
+  const markNotificationsSeen = React.useCallback(() => {
+    try {
+      const map: Record<string, string> = {};
+      requests.forEach((req) => {
+        map[req.id] = (req.status || "pending").toString();
+      });
+      localStorage.setItem("adminSeenRequestStatuses", JSON.stringify(map));
+      setRecentNotifications([]);
+    } catch (e) {
+      console.warn("Failed to mark admin notifications seen", e);
+    }
+  }, [requests]);
+
+  const toggleNotif = () => {
+    const next = !notifOpen;
+    setNotifOpen(next);
+    if (next) markNotificationsSeen();
+  };
+
+  const focusRequestRow = React.useCallback((requestId: string) => {
+    if (!requestId) return;
+    setTab('all');
+    setHighlightRequestId(requestId);
+    if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    highlightTimeoutRef.current = setTimeout(() => setHighlightRequestId(null), 1200);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`request-row-${requestId}`);
+      if (el?.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+    };
+  }, []);
 
   const handleAssessmentChange = (
     key: string,
@@ -486,6 +615,85 @@ const AdminDashboard: React.FC = () => {
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <p className="text-base-content/70">Manage and review equipment requests.</p>
         </div>
+        <div className="relative">
+          <button className="btn btn-ghost btn-circle" onClick={toggleNotif}>
+            <div className="indicator">
+              <Bell className="w-5 h-5" />
+              {recentNotifications.length > 0 && (
+                <span className="indicator-item badge badge-error badge-xs" />
+              )}
+            </div>
+          </button>
+          {notifOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)}></div>
+              <div className="absolute right-0 mt-2 bg-base-100 border border-base-300 rounded-box w-80 shadow-2xl z-50">
+                <div className="p-3 border-b border-base-300 bg-primary/10 flex items-center justify-between rounded-t-box">
+                  <span className="font-semibold text-primary">Notifications</span>
+                  <button className="btn btn-ghost btn-xs btn-circle" onClick={() => setNotifOpen(false)}>
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="max-h-64 overflow-auto divide-y divide-base-200">
+                  {recentNotifications.length === 0 ? (
+                    notifications.length === 0 ? (
+                      <div className="p-4 text-center text-base-content/60">No notifications</div>
+                    ) : (
+                    notifications
+                      .filter((_, idx) => idx < 4)
+                      .map((n) => (
+                        <div
+                          key={`${n.type}-${n.id}`}
+                          className="p-3 hover:bg-primary/5 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setNotifOpen(false);
+                            focusRequestRow(n.id);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`badge badge-xs ${n.type === 'new' ? 'badge-primary' : 'badge-info'}`}>
+                              {n.type === 'new' ? 'New' : 'Returned'}
+                            </span>
+                            <span className="font-medium text-sm">{n.purpose}</span>
+                          </div>
+                          <div className="text-xs text-base-content/70 mt-1">
+                            {n.type === 'new' ? `Submitted by ${n.requester}` : `Marked returned by ${n.requester}`}
+                            {n.actionAt ? ` • ${n.actionAt}` : ''}
+                          </div>
+                        </div>
+                      ))
+                    )
+                  ) : (
+                    recentNotifications.slice(0, 4).map((n) => (
+                      <div
+                        key={`${n.type}-${n.id}`}
+                        className="p-3 hover:bg-primary/5 transition-colors bg-warning/5 cursor-pointer"
+                        onClick={() => {
+                          setNotifOpen(false);
+                          focusRequestRow(n.id);
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="badge badge-warning badge-xs">New</span>
+                          <span className="font-medium text-sm">{n.purpose}</span>
+                        </div>
+                        <div className="text-xs text-base-content/70 mt-1">
+                          {n.type === 'new' ? `Submitted by ${n.requester}` : `Marked returned by ${n.requester}`}
+                          {n.actionAt ? ` • ${n.actionAt}` : ''}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="p-2 border-t border-base-300 bg-base-200/50 rounded-b-box">
+                  <button className="btn btn-primary btn-sm btn-block" onClick={() => { setNotifOpen(false); setNotifAllOpen(true); }}>
+                    View all notifications
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -564,7 +772,11 @@ const AdminDashboard: React.FC = () => {
                   </tr>
                 ) : (
                   visible.map((req) => (
-                    <tr key={req.id} className="hover">
+                    <tr
+                      key={req.id}
+                      id={`request-row-${req.id}`}
+                      className={`hover ${highlightRequestId === req.id ? 'bg-primary/10 ring-2 ring-primary/40' : ''}`}
+                    >
                       <td>{req.createdByName || req.createdBy || req.id}</td>
                       <td className="max-w-xs truncate">{req.purpose}</td>
                       <td>{req.startDate} → {req.endDate}</td>
@@ -904,6 +1116,51 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Notifications Modal */}
+      {notifAllOpen && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-2xl">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => setNotifAllOpen(false)}>
+              <X className="w-4 h-4" />
+            </button>
+            <h3 className="font-bold text-lg mb-4">All Notifications</h3>
+            <div className="divide-y divide-base-300 max-h-96 overflow-auto">
+              {notifications.length === 0 ? (
+                <div className="py-8 text-center text-base-content/60">No notifications</div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={`${n.type}-${n.id}`}
+                    className="py-3 cursor-pointer hover:bg-base-200 rounded"
+                    onClick={() => {
+                      setNotifAllOpen(false);
+                      focusRequestRow(n.id);
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`badge ${n.type === 'new' ? 'badge-primary' : 'badge-info'} badge-sm`}>
+                        {n.type === 'new' ? 'New Request' : 'Returned'}
+                      </span>
+                      <span className="font-medium">{n.purpose}</span>
+                    </div>
+                    <div className="text-sm text-base-content/70 mt-1">
+                      {n.type === 'new' ? `Submitted by ${n.requester}` : `Marked returned by ${n.requester}`}
+                      {n.actionAt ? ` • ${n.actionAt}` : ''}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="modal-action">
+              <button className="btn" onClick={() => setNotifAllOpen(false)}>Close</button>
+            </div>
+          </div>
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => setNotifAllOpen(false)}>close</button>
+          </form>
+        </dialog>
       )}
       {/* Decline remarks modal */}
       {declineOpen && (
