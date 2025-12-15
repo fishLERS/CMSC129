@@ -1,0 +1,64 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+	themes: night --default, light;
+}
+
+@layer base {
+	html, body, #root {
+		height: 100%;
+	}
+
+	body {
+		@apply bg-base-100 text-base-content antialiased;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		line-height: 1.5;
+	}
+
+	/* utility container used across pages */
+	.app-container {
+		@apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+	}
+}
+
+/* Small helpers */
+.sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+/* Wave animation for Login page */
+@keyframes wave {
+	0%, 100% {
+		transform: translateX(0);
+	}
+	50% {
+		transform: translateX(-25%);
+	}
+}
+
+/* Override night theme to use purple instead of cyan */
+[data-theme="night"] {
+	--p: 112 67 184 !important; /* primary: purple */
+	--pf: 94 53 160 !important; /* primary-focus: darker purple */
+	--s: 140 92 210 !important; /* secondary: lighter purple */
+	--sf: 120 75 190 !important; /* secondary-focus */
+	--a: 168 120 230 !important; /* accent: lavender */
+	--af: 148 100 210 !important; /* accent-focus */
+	--in: 139 92 246 !important; /* info: violet-500 */
+	--inf: 124 58 237 !important; /* info-focus: violet-600 */
+}
+
+/* Force dark mode primary to match light mode purple */
+html[data-theme="night"], :root[data-theme="night"] {
+  --p: 112 67 184 !important; /* primary: purple from light mode */
+  --pf: 94 53 160 !important; /* primary-focus: darker purple */
+  --pc: 255 255 255 !important; /* primary-content: white */
+}
