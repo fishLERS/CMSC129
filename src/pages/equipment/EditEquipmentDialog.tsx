@@ -5,9 +5,18 @@ import { Equipment } from "../../db";
 interface EditEquipmentDialogProps {
   item: Equipment;
   onEdit: (id: string, info: Partial<Omit<Equipment, "equipmentID">>) => void;
+  renderTrigger?: (open: () => void) => React.ReactNode;
+  openImmediately?: boolean;
+  onClose?: () => void;
 }
 
-export default function EditEquipmentDialog({ item, onEdit }: EditEquipmentDialogProps) {
+export default function EditEquipmentDialog({
+  item,
+  onEdit,
+  renderTrigger,
+  openImmediately,
+  onClose,
+}: EditEquipmentDialogProps) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(item);
 
@@ -15,39 +24,73 @@ export default function EditEquipmentDialog({ item, onEdit }: EditEquipmentDialo
     setForm(item);
   }, [item]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, type, value } = e.target;
+  useEffect(() => {
+    if (openImmediately) {
+      setOpen(true);
+    }
+  }, [openImmediately]);
 
-    let newValue: string | number | boolean = value;
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const target = e.target;
+    const { name } = target;
 
-    if (type === "number") {
-      newValue = Number(value);
-    } else if (type === "checkbox" && e.target instanceof HTMLInputElement) {
-      newValue = e.target.checked;
+    let newValue: string | number | boolean = target.value;
+
+    if (target instanceof HTMLInputElement) {
+      if (target.type === "number") {
+        newValue = Number(target.value);
+      } else if (target.type === "checkbox") {
+        newValue = target.checked;
+      }
     }
 
-    setForm({
-      ...form,
+    setForm((prev) => ({
+      ...prev,
       [name]: newValue,
-    });
+    }));
+  };
+
+  const closeModal = () => {
+    setOpen(false);
+    onClose?.();
   };
 
   const handleEdit = async () => {
     try {
-      const { equipmentID, ...updateData } = form;
-      await onEdit(equipmentID!, updateData);
-      setOpen(false);
+      const {
+        equipmentID,
+        name,
+        totalInventory,
+        category,
+        isDisposable,
+        imageLink,
+      } = form;
+      await onEdit(equipmentID!, {
+        name,
+        totalInventory,
+        category,
+        isDisposable,
+        imageLink,
+      });
+      closeModal();
     } catch (err) {
       console.error("Failed to save equipment:", err);
     }
   };
 
+  const openDialog = () => setOpen(true);
+
   return (
     <>
-      <button className="btn btn-xs btn-secondary" onClick={() => setOpen(true)}>
-        Edit
-      </button>
-
+      {renderTrigger ? (
+        renderTrigger(openDialog)
+      ) : !openImmediately ? (
+        <button className="btn btn-xs btn-secondary" onClick={openDialog}>
+          Edit
+        </button>
+      ) : null}
 
       {open && (
         <div className="modal modal-open">
@@ -60,7 +103,7 @@ export default function EditEquipmentDialog({ item, onEdit }: EditEquipmentDialo
               <button className="btn btn-primary" onClick={handleEdit}>
                 Save
               </button>
-              <button className="btn" onClick={() => setOpen(false)}>
+              <button className="btn" onClick={closeModal}>
                 Cancel
               </button>
             </div>

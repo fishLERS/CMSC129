@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --open /login",
+    "dev": "vite --open /landing",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "set-claim": "node ./scripts/set-claim.cjs"
@@ -14,6 +14,10 @@
     "@fortawesome/free-regular-svg-icons": "^7.1.0",
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.1",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.6",
+    "cally": "^0.8.0",
     "firebase": "^12.5.0",
     "lucide-react": "^0.553.0",
     "react": "^18.2.0",

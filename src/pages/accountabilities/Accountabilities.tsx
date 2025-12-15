@@ -4,10 +4,14 @@ import '/src/index.css'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
+import { AlertCircle, CheckCircle, Clock, FileWarning } from 'lucide-react'
 
 export default function Accountabilities(){
   const { user } = useAuth()
   const [rows, setRows] = React.useState<any[]>([])
+  const [tab, setTab] = React.useState<'all'|'pending'|'resolved'|'overdue'>('all');
+  const [showModal, setShowModal] = React.useState<any | null>(null);
+  const [alertMessage, setAlertMessage] = React.useState<string | null>(null);
 
   React.useEffect(()=>{
     if(!user) return
@@ -17,7 +21,14 @@ export default function Accountabilities(){
       snap.forEach((d: any) => {
         const data: any = d.data()
         const due = data.dueDate?.toDate ? data.dueDate.toDate().toLocaleDateString() : (data.dueDate ? new Date(data.dueDate).toLocaleDateString() : '')
-        list.push({ id: d.id, due, details: data.details || '', status: data.status || '' })
+        list.push({
+          id: d.id,
+          due,
+          details: data.details || '',
+          status: data.status || 'pending',
+          studentName: data.studentName || data.createdByName || user?.displayName || user?.email || 'Student',
+          studentNumber: data.studentNumber || data.createdByNumber || data.studentNo || ''
+        })
       })
       setRows(list)
     }
@@ -43,6 +54,38 @@ export default function Accountabilities(){
 
     return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
   },[user])
+
+  // Filter rows
+  let filtered = rows.filter(r => {
+    if (tab === 'all') return true;
+    const s = (r.status || 'pending').toLowerCase();
+    if (tab === 'pending') return s === 'pending';
+    if (tab === 'resolved') return s === 'resolved' || s === 'completed';
+    if (tab === 'overdue') return s === 'overdue';
+    return false;
+  });
+
+  // Count stats
+  const pendingCount = rows.filter(r => (r.status || '').toLowerCase() === 'pending').length;
+  const resolvedCount = rows.filter(r => ['resolved','completed'].includes((r.status || '').toLowerCase())).length;
+  const overdueCount = rows.filter(r => (r.status || '').toLowerCase() === 'overdue').length;
+
+  // Status badge helper
+  const getStatusBadge = (status: string) => {
+    const s = (status || 'pending').toLowerCase();
+    if (s === 'resolved' || s === 'completed') return <span className="badge badge-success">Resolved</span>;
+    if (s === 'pending') return <span className="badge badge-warning">Pending</span>;
+    if (s === 'overdue') return <span className="badge badge-error">Overdue</span>;
+    return <span className="badge badge-neutral">{status}</span>;
+  };
+
+  const formatDetails = (details: string) => {
+    return details
+      .split(/\n+/)
+      .map((part) => part.trim())
+      .filter((part) => part && !/^return inspection for request/i.test(part))
+      .join(", ");
+  };
 
   return (
     <div className="relative accountabilities-page min-h-screen overflow-hidden">
@@ -98,8 +141,8 @@ export default function Accountabilities(){
                 </tbody>
               </table>
             </div>
-          </section>
-        </main>
+          </div>
+        </div>
       </div>
     </div>
   )

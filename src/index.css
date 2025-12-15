@@ -51,3 +51,32 @@
 	white-space: nowrap !important;
 	border: 0 !important;
 }
+
+/* Wave animation for Login page */
+@keyframes wave {
+	0%, 100% {
+		transform: translateX(0);
+	}
+	50% {
+		transform: translateX(-25%);
+	}
+}
+
+/* Override night theme to use purple instead of cyan */
+[data-theme="night"] {
+	--p: 112 67 184 !important; /* primary: purple */
+	--pf: 94 53 160 !important; /* primary-focus: darker purple */
+	--s: 140 92 210 !important; /* secondary: lighter purple */
+	--sf: 120 75 190 !important; /* secondary-focus */
+	--a: 168 120 230 !important; /* accent: lavender */
+	--af: 148 100 210 !important; /* accent-focus */
+	--in: 139 92 246 !important; /* info: violet-500 */
+	--inf: 124 58 237 !important; /* info-focus: violet-600 */
+}
+
+/* Force dark mode primary to match light mode purple */
+html[data-theme="night"], :root[data-theme="night"] {
+  --p: 112 67 184 !important; /* primary: purple from light mode */
+  --pf: 94 53 160 !important; /* primary-focus: darker purple */
+  --pc: 255 255 255 !important; /* primary-content: white */
+}

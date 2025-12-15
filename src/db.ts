@@ -5,6 +5,16 @@ export interface Equipment {
     totalInventory: number;
     category?: string;
     isDisposable: boolean;
+    isDeleted?: boolean;
+    deletedAt?: string;
+    purgedAt?: string;
+    serialNumbers?: string[];
+}
+
+export interface AvailableEquipmentItem extends Equipment {
+    available: number;
+    reserved: number;
+    isAvailable: boolean;
 }
 
 export interface EquipmentIssue {

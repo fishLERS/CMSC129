@@ -1,4 +1,4 @@
-import { MoreVertical, ChevronLast, ChevronFirst, Home, FilePlus, ClipboardList, MapPin, User, LogOut } from "lucide-react"
+import { ChevronLast, ChevronFirst, Home, FilePlus, ClipboardList, MapPin, User, LogOut } from "lucide-react"
 import React, { useContext, createContext, useState, type ReactNode } from "react"
 import { useNavigate, useLocation } from 'react-router-dom'
 import { signOut } from 'firebase/auth'
@@ -34,48 +34,49 @@ export default function Sidebar({ children }: { children?: ReactNode }) {
   }, [expanded])
   
   return (
-    <aside className={`fixed left-0 top-0 h-screen bg-main-1 z-20 opacity-95 ${expanded ? 'w-64' : 'w-16'}`}>
-      <nav className="h-full flex flex-col text-slate-200">
-        <div className="p-4 pb-2 flex justify-between items-center">
+    <aside className={`fixed left-0 top-0 h-screen z-20 transition-all duration-200 ${expanded ? 'w-64' : 'w-16'} themed-sidebar`}>
+      <nav className="h-full flex flex-col bg-base-200 border-r border-base-300">
+        {/* Header with toggle button */}
+        <div className={`p-3 flex items-center ${expanded ? 'justify-between' : 'justify-center'}`}>
           <img
             // src="https://img.logoipsum.com/243.svg"
             className={`overflow-hidden transition-all ${
-              expanded ? "w-32" : "w-0"
+              expanded ? "w-32" : "w-0 hidden"
             }`}
             alt=""
           />
           <button
             onClick={() => setExpanded((curr) => !curr)}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700"
+            className="btn btn-sm btn-ghost btn-square"
           >
-            {expanded ? <ChevronFirst /> : <ChevronLast />}
+            {expanded ? <ChevronFirst size={20} /> : <ChevronLast size={20} />}
           </button>
         </div>
 
         <SidebarContext.Provider value={{ expanded }}>
-          <ul className="flex-1 px-3">
+          <ul className={`menu flex-1 gap-1 ${expanded ? 'px-3' : 'px-2'}`}>
             {hasChildren ? children : (
               <>
                 <SidebarItem
-                  icon={<Home />}
+                  icon={<Home size={20} />}
                   text="Dashboard"
                   active={location.pathname === '/' || location.pathname.startsWith('/student')}
                   onClick={() => navigate('/student')}
                 />
                 <SidebarItem
-                  icon={<FilePlus />}
+                  icon={<FilePlus size={20} />}
                   text="Request Form"
                   active={location.pathname.startsWith('/request') || location.pathname.startsWith('/requestpage')}
                   onClick={() => navigate('/requestpage')}
                 />
                 <SidebarItem
-                  icon={<ClipboardList />}
+                  icon={<ClipboardList size={20} />}
                   text="Accountabilities"
                   active={location.pathname.startsWith('/accountabilities')}
                   onClick={() => navigate('/accountabilities')}
                 />
                 <SidebarItem
-                  icon={<MapPin />}
+                  icon={<MapPin size={20} />}
                   text="Tracking"
                   active={location.pathname.startsWith('/tracking')}
                   onClick={() => navigate('/tracking')}
@@ -87,47 +88,59 @@ export default function Sidebar({ children }: { children?: ReactNode }) {
         </SidebarContext.Provider>
 
         {/* logout button placed directly above the user info so it's visible when collapsed or expanded */}
-        <div className="px-3 py-2">
-          <button onClick={handleLogout} className="relative flex items-center justify-start w-full py-2 px-3 font-medium rounded-md cursor-pointer transition-colors hover:bg-slate-800 text-slate-300">
-            <LogOut />
-            <span className={`overflow-hidden transition-all text-left ${expanded ? "w-52 ml-3" : "w-0"}`}>
+        <div 
+          className={`py-2 flex ${expanded ? 'px-3' : 'justify-center'} tooltip tooltip-right`}
+          data-tip={expanded ? undefined : "Logout"}
+        >
+          <button 
+            onClick={handleLogout} 
+            className={`btn btn-ghost ${expanded ? 'w-full justify-start gap-3' : 'btn-square'}`}
+          >
+            <LogOut size={20} />
+            <span className={`overflow-hidden transition-all text-left whitespace-nowrap ${expanded ? "flex-1" : "w-0 hidden"}`}>
               Logout
             </span>
           </button>
         </div>
 
-        <button
-          onClick={() => navigate('/profile')}
-          className={`border-t flex p-3 items-center w-full text-left bg-transparent border-0 hover:bg-slate-800 hover:outline-2 hover:outline-purple-500 rounded-md cursor-pointer transition-colors`}
-          title="View profile"
+        <div 
+          className="tooltip tooltip-right"
+          data-tip={expanded ? undefined : "View profile"}
         >
-          <img
-            src={
-              user?.photoURL
-                ? user.photoURL
-                : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    user?.displayName || user?.email?.split('@')[0] || 'User'
-                  )}&background=c7d2fe&color=3730a3&bold=true`
-            }
-            alt={user?.displayName ?? user?.email ?? 'User'}
-            className="w-10 h-10 rounded-md"
-          />
-          <div
-            className={`
-              flex justify-between items-center
-              overflow-hidden transition-all ${expanded ? "w-52 ml-3" : "w-0"}
-          `}
+          <button
+            onClick={() => navigate('/profile')}
+            className={`border-t border-base-300 flex items-center w-full text-left hover:bg-base-300 cursor-pointer transition-colors ${expanded ? 'p-3 gap-3' : 'p-2 justify-center'}`}
+            title="View profile"
           >
-            <div className="leading-4">
-              <div className="flex items-center gap-2">
-                <h4 className="font-semibold">{user?.displayName ?? (user?.email ? user.email.split('@')[0] : 'User')}</h4>
-                <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded">Student</span>
+            <div className="avatar">
+              <div className="w-10 rounded-lg">
+                <img
+                  src={
+                    user?.photoURL
+                      ? user.photoURL
+                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          user?.displayName || user?.email?.split('@')[0] || 'User'
+                        )}&background=c7d2fe&color=3730a3&bold=true`
+                  }
+                  alt={user?.displayName ?? user?.email ?? 'User'}
+                />
               </div>
-              <span className="text-xs text-slate-400">{user?.email ?? ''}</span>
             </div>
-            <MoreVertical size={20} />
-          </div>
-        </button>
+            <div
+              className={`
+                flex-1 overflow-hidden transition-all ${expanded ? "" : "w-0 hidden"}
+            `}
+            >
+              <div className="leading-4 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold truncate">{user?.displayName ?? (user?.email ? user.email.split('@')[0] : 'User')}</h4>
+                  <span className="badge badge-primary badge-sm shrink-0">Student</span>
+                </div>
+                <span className="text-xs text-base-content/60 truncate block">{user?.email ?? ''}</span>
+              </div>
+            </div>
+          </button>
+        </div>
       </nav>
     </aside>
   )
@@ -138,26 +151,25 @@ export function SidebarItem({ icon, text, active, alert, onClick }: { icon: Reac
   
   return (
     <li
-    className={`relative flex items-center py-2 px-3 my-1 font-medium rounded-md cursor-pointer transition-colors group ${active ? 'bg-slate-700 text-white' : 'hover:bg-slate-800 text-slate-300'}`}
-    onClick={onClick}
+      className={`tooltip tooltip-right ${!expanded ? 'flex justify-center' : ''}`}
+      data-tip={expanded ? undefined : text}
     >
-      {icon}
-      <span
-        className={`overflow-hidden transition-all ${
-          expanded ? "w-52 ml-3" : "w-0"
-        }`}
+      <a
+        className={`flex items-center ${active ? 'active' : ''} ${expanded ? 'gap-3' : 'px-3 py-3'}`}
+        onClick={onClick}
       >
-        {text}
-      </span>
-      {alert && (
-        <div className={`absolute right-2 w-2 h-2 rounded bg-rose-500 ${expanded ? '' : 'top-2'}`} />
-      )}
-
-      {!expanded && (
-        <div className={`absolute left-full rounded-md px-2 py-1 ml-6 bg-slate-800 text-slate-200 text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0`}>
+        {icon}
+        <span
+          className={`overflow-hidden transition-all whitespace-nowrap ${
+            expanded ? "flex-1" : "w-0 hidden"
+          }`}
+        >
           {text}
-        </div>
-      )}
+        </span>
+        {alert && (
+          <span className="badge badge-error badge-xs"></span>
+        )}
+      </a>
     </li>
   )
 }

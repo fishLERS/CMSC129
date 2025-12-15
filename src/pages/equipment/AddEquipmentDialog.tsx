@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { Equipment } from "../../db";
-import EquipmentForm from "./EquipmentForm";
+import EquipmentForm, { CATEGORY_OPTIONS } from "./EquipmentForm";
 
 interface AddEquipmentDialogConfig {
   onAdd: (equipment: Omit<Equipment, "equipmentID">) => Promise<void>;
@@ -9,7 +10,7 @@ interface AddEquipmentDialogConfig {
 const initialForm: Omit<Equipment, "equipmentID"> = {
   name: "",
   totalInventory: 1,
-  category: "",
+  category: CATEGORY_OPTIONS[0],
   isDisposable: false,
   imageLink: "",
 };
@@ -18,15 +19,20 @@ export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Omit<Equipment, "equipmentID">>(initialForm);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    const { name, type, value } = e.target;
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
+    const target = e.target;
+    const { name } = target;
 
-    let newValue: string | number | boolean = value;
+    let newValue: string | number | boolean = target.value;
 
-    if (type === "number") {
-      newValue = Number(value);
-    } else if (type === "checkbox" && e.target instanceof HTMLInputElement) {
-      newValue = e.target.checked;
+    if (target instanceof HTMLInputElement) {
+      if (target.type === "number") {
+        newValue = Number(target.value);
+      } else if (target.type === "checkbox") {
+        newValue = target.checked;
+      }
     }
 
     setForm((prev) => ({ ...prev, [name]: newValue }));
@@ -50,8 +56,9 @@ export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) 
 
   return (
     <>
-      <button className="btn btn-outline rounded-full px-4 py-2" onClick={() => setOpen(true)}>
-        Add New Equipment <span className="ml-2">+</span>
+      <button className="btn btn-primary btn-sm gap-2" onClick={() => setOpen(true)}>
+        <Plus className="w-4 h-4" />
+        <span>Add New Equipment</span>
       </button>
 
       {open && (

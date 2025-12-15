@@ -1,7 +1,6 @@
 import React from 'react'
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
+import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
-import AdminSidebar from '../../adminSidebar'
 
 interface UserData {
   uid: string
@@ -17,63 +16,62 @@ export default function AdminUsers() {
   const [loading, setLoading] = React.useState(true)
   const [updating, setUpdating] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState('')
+  const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
 
   React.useEffect(() => {
-    loadUsers()
-  }, [])
+    const usersRef = collection(db, 'users')
+    const unsubscribe = onSnapshot(
+      usersRef,
+      (snapshot) => {
+        const list: UserData[] = []
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data()
+          if (data.role === 'admin' || data.requestedAdmin) {
+            list.push({
+              uid: docSnap.id,
+              displayName: data.displayName || '',
+              email: data.email || '',
+              role: data.role || 'student',
+              createdAt: data.createdAt,
+              requestedAdmin: !!data.requestedAdmin,
+            })
+          }
+        })
+        list.sort((a, b) => {
+          if (a.role === 'admin' && b.role !== 'admin') return -1
+          if (a.role !== 'admin' && b.role === 'admin') return 1
+          return (a.email || '').localeCompare(b.email || '')
+        })
+        setUsers(list)
+        setLoading(false)
+      },
+      (error) => {
+        console.error('Failed to load users', error)
+        setLoading(false)
+      }
+    )
 
-  async function loadUsers() {
-    try {
-      setLoading(true)
-      const usersRef = collection(db, 'users')
-      const snapshot = await getDocs(usersRef)
-      const usersList: UserData[] = []
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data()
-        // Only include admins and users who requested admin
-        if (data.role === 'admin' || data.requestedAdmin === true) {
-          usersList.push({
-            uid: docSnap.id,
-            displayName: data.displayName || '',
-            email: data.email || '',
-            role: data.role || 'student',
-            createdAt: data.createdAt,
-            requestedAdmin: data.requestedAdmin || false,
-          })
-        }
-      })
-      // Sort: admins first, then by email
-      usersList.sort((a, b) => {
-        if (a.role === 'admin' && b.role !== 'admin') return -1
-        if (a.role !== 'admin' && b.role === 'admin') return 1
-        return (a.email || '').localeCompare(b.email || '')
-      })
-      setUsers(usersList)
-    } catch (e) {
-      console.error('Failed to load users', e)
-    } finally {
-      setLoading(false)
-    }
-  }
+    return () => unsubscribe()
+  }, [])
 
   async function toggleAdmin(user: UserData) {
     const newRole = user.role === 'admin' ? 'student' : 'admin'
-    const confirmMsg = newRole === 'admin'
-      ? `Grant admin privileges to ${user.email}?`
-      : `Revoke admin privileges from ${user.email}?`
-    
+    const confirmMsg =
+      newRole === 'admin'
+        ? `Grant admin privileges to ${user.email || user.displayName || user.uid}?`
+        : `Revoke admin privileges from ${user.email || user.displayName || user.uid}?`
+
     if (!confirm(confirmMsg)) return
 
     try {
       setUpdating(user.uid)
-      const userRef = doc(db, 'users', user.uid)
-      await updateDoc(userRef, { role: newRole })
+      await updateDoc(doc(db, 'users', user.uid), { role: newRole, requestedAdmin: false })
       setUsers((prev) =>
-        prev.map((u) => (u.uid === user.uid ? { ...u, role: newRole } : u))
+        prev.map((u) => (u.uid === user.uid ? { ...u, role: newRole, requestedAdmin: false } : u))
       )
-    } catch (e) {
-      console.error('Failed to update user role', e)
-      alert('Failed to update user role. See console for details.')
+    } catch (error) {
+      console.error('Failed to update user role', error)
+      setAlertMessage('Failed to update user role. Please try again.')
     } finally {
       setUpdating(null)
     }
@@ -85,18 +83,19 @@ export default function AdminUsers() {
       if (typeof ts.toDate === 'function') return ts.toDate().toLocaleDateString()
       if (typeof ts === 'string' || typeof ts === 'number') return new Date(ts).toLocaleDateString()
       if (ts instanceof Date) return ts.toLocaleDateString()
-      return ''
     } catch {
       return ''
     }
+    return ''
   }
 
-  const filteredUsers = users.filter((u) => {
-    const term = searchTerm.toLowerCase()
+  const filteredUsers = users.filter((user) => {
+    const term = searchTerm.trim().toLowerCase()
+    if (!term) return true
     return (
-      (u.email?.toLowerCase().includes(term) || '') ||
-      (u.displayName?.toLowerCase().includes(term) || '') ||
-      (u.uid.toLowerCase().includes(term))
+      (user.email || '').toLowerCase().includes(term) ||
+      (user.displayName || '').toLowerCase().includes(term) ||
+      user.uid.toLowerCase().includes(term)
     )
   })
 
@@ -104,122 +103,146 @@ export default function AdminUsers() {
   const pendingCount = users.filter((u) => u.role !== 'admin' && u.requestedAdmin).length
 
   return (
-    <div>
-      <AdminSidebar />
-      <div style={{ marginLeft: 'var(--sidebar-width)' }} className="min-h-screen bg-transparent text-slate-200 p-4">
-        <h1 className="text-2xl font-semibold mb-4">Admin Management</h1>
+    <div className="p-6 space-y-6">
+      {alertMessage && (
+        <div className="alert alert-error">
+          <span>{alertMessage}</span>
+          <button className="btn btn-sm" onClick={() => setAlertMessage(null)}>Close</button>
+        </div>
+      )}
+      <div>
+        <h1 className="text-2xl font-bold">Admin Management</h1>
+        <p className="text-base-content/70">Review admin accounts and pending requests using daisyUI cards.</p>
+      </div>
 
-        <div className="max-w-6xl mx-auto">
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-base-100 rounded-lg p-4 text-base-content">
-              <div className="text-sm text-base-content/60">Total</div>
-              <div className="text-2xl font-bold">{users.length}</div>
-            </div>
-            <div className="bg-base-100 rounded-lg p-4 text-base-content">
-              <div className="text-sm text-base-content/60">Current Admins</div>
-              <div className="text-2xl font-bold text-purple-500">{adminCount}</div>
-            </div>
-            <div className="bg-base-100 rounded-lg p-4 text-base-content">
-              <div className="text-sm text-base-content/60">Pending Requests</div>
-              <div className="text-2xl font-bold text-yellow-500">{pendingCount}</div>
-            </div>
+      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+        <div className="stat">
+          <div className="stat-title">Total Accounts</div>
+          <div className="stat-value">{users.length}</div>
+          <div className="stat-desc">Admins & requests</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Current Admins</div>
+          <div className="stat-value text-secondary">{adminCount}</div>
+          <div className="stat-desc">Elevated users</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Pending Requests</div>
+          <div className="stat-value text-warning">{pendingCount}</div>
+          <div className="stat-desc">Awaiting approval</div>
+        </div>
+      </div>
+
+      <div className="card bg-base-200 shadow-xl">
+        <div className="card-body flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="card-title text-lg mb-0">Search</h2>
+            <p className="text-xs text-base-content/60">Filter by email, name, or user ID.</p>
           </div>
-
-          {/* Search */}
-          <div className="mb-4">
+          <label className="form-control w-full md:w-80">
             <input
               type="text"
+              className="input input-bordered w-full"
               placeholder="Search by email, name, or user ID..."
-              className="w-full md:w-96 rounded-md bg-base-100 border-0 p-3 text-sm text-base-content focus:ring-primary"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
+          </label>
+        </div>
+      </div>
 
-          {/* Users Table */}
-          <div className="bg-base-100 rounded-lg overflow-hidden text-base-content">
-            {loading ? (
-              <div className="p-8 text-center">Loading users...</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="table table-zebra w-full">
-                  <thead>
+      <div className="card bg-base-200 shadow-xl">
+        <div className="card-body p-0">
+          {loading ? (
+            <div className="p-8 text-center">
+              <span className="loading loading-spinner loading-lg text-primary" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table table-zebra w-full">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.length === 0 ? (
                     <tr>
-                      <th>User</th>
-                      <th>Email</th>
-                      <th>Role</th>
-                      <th>Joined</th>
-                      <th>Actions</th>
+                      <td colSpan={5} className="text-center py-8 text-base-content/60">
+                        {searchTerm ? 'No users match your search.' : 'No eligible users found.'}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {filteredUsers.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="text-center py-8 text-base-content/60">
-                          {searchTerm ? 'No users match your search.' : 'No users found.'}
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredUsers.map((user) => (
-                        <tr key={user.uid}>
-                          <td>
-                            <div className="flex items-center gap-3">
-                              <img
-                                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'U')}&background=${user.role === 'admin' ? 'c7d2fe' : '60a5fa'}&color=${user.role === 'admin' ? '3730a3' : '1e3a8a'}&bold=true`}
-                                alt=""
-                                className="w-10 h-10 rounded-md"
-                              />
-                              <div>
-                                <div className="font-medium">{user.displayName || '(No name)'}</div>
-                                <div className="text-xs text-base-content/60 font-mono">{user.uid.slice(0, 12)}...</div>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <tr key={user.uid}>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <div className="avatar">
+                              <div className="w-10 rounded-xl">
+                                <img
+                                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                    user.displayName || user.email || 'User'
+                                  )}&background=${user.role === 'admin' ? 'c7d2fe' : 'a5b4fc'}&color=${
+                                    user.role === 'admin' ? '3730a3' : '312e81'
+                                  }&bold=true`}
+                                  alt={user.displayName || user.email || 'User'}
+                                />
                               </div>
                             </div>
-                          </td>
-                          <td>{user.email}</td>
-                          <td>
-                            {user.role === 'admin' ? (
-                              <span className="text-xs bg-purple-600 text-white px-2 py-1 rounded">Admin</span>
-                            ) : (
-                              <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">Student</span>
-                            )}
-                            {user.requestedAdmin && user.role !== 'admin' && (
-                              <span className="ml-2 text-xs bg-yellow-600 text-white px-2 py-1 rounded">Requested Admin</span>
-                            )}
-                          </td>
-                          <td className="text-sm">{formatDate(user.createdAt)}</td>
-                          <td>
-                            <button
-                              className={`btn btn-sm ${user.role === 'admin' ? 'btn-error' : 'btn-primary'}`}
-                              onClick={() => toggleAdmin(user)}
-                              disabled={updating === user.uid}
-                            >
-                              {updating === user.uid
-                                ? 'Updating...'
-                                : user.role === 'admin'
-                                ? 'Revoke Admin'
-                                : 'Grant Admin'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+                            <div>
+                              <div className="font-medium">{user.displayName || '(No name)'}</div>
+                              <div className="text-xs text-base-content/60 font-mono">{user.uid.slice(0, 12)}...</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>{user.email || '—'}</td>
+                        <td>
+                          <span
+                            className={`badge ${user.role === 'admin' ? 'badge-secondary' : 'badge-primary'} badge-sm`}
+                          >
+                            {user.role === 'admin' ? 'Admin' : 'Student'}
+                          </span>
+                          {user.requestedAdmin && user.role !== 'admin' ? (
+                            <span className="badge badge-warning badge-sm ml-2">Requested</span>
+                          ) : null}
+                        </td>
+                        <td className="text-sm">{formatDate(user.createdAt) || '—'}</td>
+                        <td>
+                          <button
+                            className={`btn btn-sm ${user.role === 'admin' ? 'btn-error' : 'btn-primary'}`}
+                            onClick={() => toggleAdmin(user)}
+                            disabled={updating === user.uid}
+                          >
+                            {updating === user.uid
+                              ? 'Updating...'
+                              : user.role === 'admin'
+                              ? 'Revoke Admin'
+                              : 'Grant Admin'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
-          {/* Info Note */}
-          <div className="mt-4 p-4 bg-base-100 rounded-lg text-base-content">
-            <h3 className="font-semibold text-sm mb-2">ℹ️ About Admin Management</h3>
-            <ul className="text-sm text-base-content/70 list-disc list-inside space-y-1">
-              <li>This page shows <strong>current admins</strong> and <strong>users who signed up requesting admin access</strong>.</li>
-              <li><strong>Grant Admin:</strong> Promotes a pending user to admin role.</li>
-              <li><strong>Revoke Admin:</strong> Demotes an admin back to student role.</li>
-              <li>Role changes take effect immediately. The user may need to refresh their browser.</li>
-            </ul>
-          </div>
+      <div className="card bg-base-200 shadow-xl">
+        <div className="card-body space-y-3">
+          <h3 className="card-title text-lg">About Admin Management</h3>
+          <ul className="text-sm text-base-content/70 list-disc list-inside space-y-1">
+            <li>This list shows current admins plus users who requested elevated access.</li>
+            <li>Granting access promotes the user and clears their pending flag.</li>
+            <li>Revoking access demotes the user back to student immediately.</li>
+            <li>All changes are applied in real time via Firestore snapshots.</li>
+          </ul>
         </div>
       </div>
     </div>

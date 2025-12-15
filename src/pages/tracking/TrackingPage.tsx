@@ -3,16 +3,19 @@ import Sidebar from '../../sidebar'
 import '/src/index.css'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
+import { isOngoing } from "../../utils/requestTime"
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
-// import equipment logic not needed for aggregated tracking view
+import { MapPin, Clock, CheckCircle, XCircle, AlertCircle, FileText, X, Eye, Copy, RotateCcw } from 'lucide-react'
 
 export default function TrackingPage(){
   const { user } = useAuth()
   const [rows, setRows] = React.useState<Array<any>>([])
+  const [filter, setFilter] = React.useState<'all' | 'pending'| 'ongoing' | 'completed' | 'approved' | 'declined'>('all')
   
   const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
   const [showRemarksText, setShowRemarksText] = React.useState('')
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null)
+  const [copiedId, setCopiedId] = React.useState<string | null>(null)
 
   React.useEffect(()=>{
     if(!user) return
@@ -61,7 +64,7 @@ export default function TrackingPage(){
         else if (data && data.createdAt) {
           try { sortKey = new Date(data.createdAt).toISOString() } catch { sortKey = '' }
         }
-        docs.push({ purpose, requestId, status, remarks, sortKey, duration })
+        docs.push({ purpose, requestId, status, remarks, sortKey, startDate: data.startDate, start: data.start, endDate: data.endDate, end: data.end,duration })
       })
       // sort by sortKey desc (newest first); if no keys present, keep server ordering
       docs.sort((a,b) => (b.sortKey || '').localeCompare(a.sortKey || ''))
@@ -128,6 +131,45 @@ export default function TrackingPage(){
     }
   }, [rows])
 
+  // Filter rows
+  const filteredRows = rows.filter(r => {
+    const s = (r.status || '').toLowerCase()
+    if (filter === 'all') return true
+    if (filter === 'pending') return s === 'pending'
+    if (filter === 'ongoing') return s === 'approved' && isOngoing(r)
+    if (filter === 'approved') return s === 'approved' && !isOngoing(r)
+    if (filter === 'declined') return s === 'declined' || s === 'rejected'
+    return true
+  })
+
+  // Stats
+  const pendingCount = rows.filter(r => r.status?.toLowerCase() === 'pending').length
+  
+  const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
+  const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && !isOngoing(r)).length
+  const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
+  const completedCount = rows.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length
+
+  // Status badge helper
+  const getStatusBadge = (r: any) => {
+    const s = (r.status || '').toLowerCase()
+
+    if (s === 'approved' && isOngoing(r)) return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Ongoing</span>
+    if (s === 'approved' && !isOngoing(r)) return <span className="badge badge-success gap-1"><CheckCircle className="w-3 h-3" />Approved</span>
+    if (s === 'pending') return <span className="badge badge-warning gap-1"><Clock className="w-3 h-3" />Pending</span>
+    if (s === 'declined' || s === 'rejected') return <span className="badge badge-error gap-1"><XCircle className="w-3 h-3" />Declined</span>
+    if (s === 'returned' || s === 'completed') return <span className="badge badge-info gap-1"><RotateCcw className="w-3 h-3" />Returned</span>
+    if (s === 'cancelled') return <span className="badge badge-neutral gap-1">Cancelled</span>
+    return <span className="badge badge-ghost">{r.status}</span>
+  }
+
+  // Copy to clipboard
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(text)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
+
   return (
     <div className="relative tracking-page min-h-screen overflow-hidden">
       <svg
@@ -178,40 +220,84 @@ export default function TrackingPage(){
                     <tr
                       key={r.requestId || idx}
                       id={`req-${r.requestId}`}
-                      className={highlightedId === r.requestId ? 'bg-accent transition-colors' : ''}
+                      className={`hover ${highlightedId === r.requestId ? 'bg-primary/20 animate-pulse' : ''}`}
                     >
                       <td className="max-w-md">
-                        <div className="font-semibold">{r.purpose}</div>
-                        {r.duration && <div className="text-sm text-base-content/60 mt-1">Duration: {r.duration}</div>}
+                        <div className="font-medium">{r.purpose || 'Untitled Request'}</div>
+                        {r.duration && (
+                          <div className="text-xs text-base-content/60 mt-1 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {r.duration}
+                          </div>
+                        )}
                       </td>
-                      <td>{r.requestId}</td>
-                      <td>{r.status}</td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs bg-base-300 px-2 py-1 rounded font-mono">
+                            {r.requestId?.slice(0, 8)}...
+                          </code>
+                          <button
+                            className="btn btn-ghost btn-xs btn-circle tooltip"
+                            data-tip={copiedId === r.requestId ? 'Copied!' : 'Copy ID'}
+                            onClick={() => copyToClipboard(r.requestId)}
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </td>
+                      <td>{getStatusBadge(r)}</td>
                       <td>
                         {r.remarks ? (
-                          <button className="btn btn-xs btn-primary" onClick={() => { setShowRemarksText(r.remarks); setShowRemarksOpen(true); }}>Show</button>
+                          <button 
+                            className="btn btn-ghost btn-sm gap-1" 
+                            onClick={() => { setShowRemarksText(r.remarks); setShowRemarksOpen(true); }}
+                          >
+                            <Eye className="w-4 h-4" />
+                            View
+                          </button>
                         ) : (
-                          <span className="text-sm text-base-content/60">—</span>
+                          <span className="text-sm text-base-content/40">—</span>
                         )}
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-          {showRemarksOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-              <div className="bg-base-100 p-4 rounded shadow max-w-lg w-full mx-4">
-                <h3 className="text-lg font-semibold">Remarks</h3>
-                <div className="whitespace-pre-wrap my-3 text-sm">{showRemarksText}</div>
-                <div className="flex justify-end">
-                  <button className="btn" onClick={() => { setShowRemarksOpen(false); setShowRemarksText(''); }}>Close</button>
-                </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Remarks Modal */}
+      {showRemarksOpen && (
+        <dialog className="modal modal-open">
+          <div className="modal-box">
+            <button 
+              className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" 
+              onClick={() => { setShowRemarksOpen(false); setShowRemarksText(''); }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-warning" />
+              Admin Remarks
+            </h3>
+            <div className="py-4">
+              <div className="bg-base-200 p-4 rounded-lg whitespace-pre-wrap text-sm">
+                {showRemarksText}
               </div>
             </div>
-          )}
-        </main>
-      </div>
+            <div className="modal-action">
+              <button className="btn" onClick={() => { setShowRemarksOpen(false); setShowRemarksText(''); }}>
+                Close
+              </button>
+            </div>
+          </div>
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => { setShowRemarksOpen(false); setShowRemarksText(''); }}>close</button>
+          </form>
+        </dialog>
+      )}
     </div>
   )
 }
