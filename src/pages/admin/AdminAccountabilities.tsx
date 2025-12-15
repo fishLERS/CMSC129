@@ -1,7 +1,18 @@
 import React from 'react'
 import { db } from '../../firebase'
-import { collection, query, orderBy, onSnapshot, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, getDocs, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { FileWarning, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react'
+
+type IssueCondition = 'damaged' | 'missing' | 'detail'
+
+interface ModalIssueEntry {
+  key: string
+  label: string
+  condition: IssueCondition
+  instanceNumber: number
+  totalCount: number
+  conditionLabel: string
+}
 
 const AdminAccountabilities: React.FC = () => {
   const [rows, setRows] = React.useState<any[]>([])
@@ -18,6 +29,7 @@ const AdminAccountabilities: React.FC = () => {
   const [studentNameByNumber, setStudentNameByNumber] = React.useState<Record<string,string>>({})
   const [userInfoById, setUserInfoById] = React.useState<Record<string, { displayName?: string; studentNumber?: string }>>({})
   const [toast, setToast] = React.useState<{type: 'success' | 'error'; message: string} | null>(null)
+  const [modalItemStates, setModalItemStates] = React.useState<Record<string, boolean>>({})
 
   React.useEffect(() => {
     const processSnapshot = (snap: any) => {
@@ -35,7 +47,10 @@ const AdminAccountabilities: React.FC = () => {
           createdByName: data.createdByName || '',
           createdBy: data.createdBy || '',
           amount: data.amount || null,
-          createdAt: data.createdAt
+          createdAt: data.createdAt,
+          issues: Array.isArray(data.issues) ? data.issues : [],
+          itemResolutions: Array.isArray(data.itemResolutions) ? data.itemResolutions : [],
+          legacyItemActions: Array.isArray(data.itemActions) ? data.itemActions : []
         })
       })
       setRows(list)
@@ -132,13 +147,129 @@ const AdminAccountabilities: React.FC = () => {
     return <span className="badge badge-neutral">{status}</span>
   }
 
-  const formatDetails = (details: string) => {
+  const getItemList = (details: string) => {
     return details
       .split(/[\n,]+/)
       .map(part => part.trim())
       .filter(part => part && !/^return inspection for request/i.test(part))
-      .join(', ')
   }
+
+  const formatDetails = (details: string) => getItemList(details).join(', ')
+
+  const modalIssueEntries = React.useMemo<ModalIssueEntry[]>(() => {
+    if (!showModal) return []
+    const result: ModalIssueEntry[] = []
+    const issues = Array.isArray(showModal.issues) ? showModal.issues : []
+    if (issues.length) {
+      issues.forEach((issue: any, issueIdx: number) => {
+        const name = issue?.equipmentName || issue?.equipmentID || `Item ${issueIdx + 1}`
+        const baseKey = issue?.equipmentID || issue?.equipmentName || `issue-${issueIdx}`
+        ;(['damaged','missing'] as const).forEach(condition => {
+          const qty = Math.max(0, Number(issue?.[condition]) || 0)
+          for (let i = 0; i < qty; i++) {
+            result.push({
+              key: `${baseKey}-${condition}-${i}`,
+              label: name,
+              condition,
+              instanceNumber: i + 1,
+              totalCount: qty,
+              conditionLabel: condition === 'damaged' ? 'Damaged' : 'Missing'
+            })
+          }
+        })
+      })
+    }
+    if (!result.length) {
+      getItemList(showModal.details || '').forEach((text, idx) => {
+        result.push({
+          key: `detail-${idx}`,
+          label: text,
+          condition: 'detail',
+          instanceNumber: 1,
+          totalCount: 1,
+          conditionLabel: 'Issue'
+        })
+      })
+    }
+    return result
+  }, [showModal])
+
+  React.useEffect(() => {
+    if (!showModal) {
+      setModalItemStates({})
+      return
+    }
+    const storedResolutions = Array.isArray(showModal.itemResolutions)
+      ? showModal.itemResolutions
+      : Array.isArray(showModal.legacyItemActions)
+      ? showModal.legacyItemActions
+      : []
+    const valueByKey: Record<string, boolean> = {}
+    const valueByLabel: Record<string, boolean> = {}
+    storedResolutions.forEach((entry: any, idx: number) => {
+      if (!entry) return
+      const resolvedValue =
+        typeof entry.resolved === 'boolean'
+          ? entry.resolved
+          : typeof entry.action === 'string'
+          ? entry.action.trim().length > 0
+          : false
+      const entryKey = entry.key || entry.itemKey
+      if (entryKey) valueByKey[entryKey] = resolvedValue
+      if (entry.item) valueByLabel[entry.item] = resolvedValue
+      if (!entryKey && !entry.item) {
+        valueByKey[`legacy-${idx}`] = resolvedValue
+      }
+    })
+    const nextMap: Record<string, boolean> = {}
+    modalIssueEntries.forEach((entry, idx) => {
+      if (typeof valueByKey[entry.key] === 'boolean') {
+        nextMap[entry.key] = valueByKey[entry.key]
+      } else if (typeof valueByLabel[entry.label] === 'boolean') {
+        nextMap[entry.key] = valueByLabel[entry.label]
+      } else {
+        nextMap[entry.key] = false
+      }
+    })
+    setModalItemStates(nextMap)
+  }, [showModal, modalIssueEntries])
+
+  const buildResolutionPayload = React.useCallback((stateMap: Record<string, boolean>) => {
+    return modalIssueEntries.map(entry => ({
+      key: entry.key,
+      item: entry.label,
+      condition: entry.condition,
+      instance: entry.instanceNumber,
+      total: entry.totalCount,
+      resolved: !!stateMap[entry.key]
+    }))
+  }, [modalIssueEntries])
+
+  const persistItemResolutions = React.useCallback(async (stateMap: Record<string, boolean>) => {
+    if (!showModal || !showModal.id) return
+    const payload = buildResolutionPayload(stateMap)
+    setShowModal(prev => (prev && prev.id === showModal.id ? { ...prev, itemResolutions: payload } : prev))
+    try {
+      await updateDoc(doc(db, 'accountabilities', showModal.id), { itemResolutions: payload })
+    } catch (e) {
+      console.error('Failed to update item resolutions', e)
+      setToast({ type: 'error', message: 'Failed to update item action. Please try again.' })
+      setTimeout(() => setToast(null), 3500)
+    }
+  }, [showModal, buildResolutionPayload])
+
+  const modalStatus = (showModal?.status || '').toLowerCase()
+  const modalEditable = modalStatus !== 'resolved' && modalStatus !== 'completed'
+  const modalItemsIncomplete = modalIssueEntries.length > 0 && modalIssueEntries.some(entry => !modalItemStates[entry.key])
+
+  const toggleItemResolution = React.useCallback((key: string) => {
+    if (!modalEditable) return
+    setModalItemStates(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      persistItemResolutions(next)
+      return next
+    })
+  }, [modalEditable, persistItemResolutions])
 
   return (
     <div className="p-6 space-y-6">
@@ -292,6 +423,41 @@ const AdminAccountabilities: React.FC = () => {
                 <div className="bg-base-300 p-2 rounded text-sm whitespace-pre-wrap">{showModal.details || 'No details provided'}</div>
               </div>
               <div className="form-control">
+                <label className="label"><span className="label-text text-xs">Actions Per Item</span></label>
+                {modalIssueEntries.length === 0 ? (
+                  <div className="bg-base-300 p-2 rounded text-sm text-base-content/70">No individual items detected.</div>
+                ) : (
+                  <div className="bg-base-300 p-3 rounded space-y-3">
+                    <p className="text-xs text-base-content/70">Resolve each item/quantity individually before closing the entire accountability.</p>
+                    {modalIssueEntries.map((entry) => {
+                      const resolved = !!modalItemStates[entry.key]
+                      return (
+                        <div key={entry.key} className="flex flex-col gap-2 border border-base-200 rounded-lg bg-base-100/60 p-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <div className="text-sm font-semibold">{entry.label}</div>
+                            <div className="text-xs text-base-content/70">
+                              {entry.conditionLabel}
+                              {entry.totalCount > 1 ? ` • Item ${entry.instanceNumber} of ${entry.totalCount}` : ''}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${resolved ? 'btn-success' : 'btn-outline'}`}
+                            disabled={!modalEditable}
+                            onClick={() => toggleItemResolution(entry.key)}
+                          >
+                            {resolved ? 'Resolved' : 'Mark Resolved'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                    {modalEditable && (
+                      <p className="text-xs text-base-content/70">You can toggle these buttons while the request is still unresolved.</p>
+                    )}
+                    </div>
+                )}
+              </div>
+              <div className="form-control">
                 <label className="label"><span className="label-text text-xs">Status</span></label>
                 <div className="bg-base-300 p-2 rounded text-sm flex items-center gap-2">{getStatusBadge(showModal.status)}</div>
               </div>
@@ -316,13 +482,21 @@ const AdminAccountabilities: React.FC = () => {
             </div>
             <div className="modal-action">
               <button className="btn" onClick={() => setShowModal(null)}>Close</button>
-              {showModal.status?.toLowerCase() === 'pending' && (
-                <button className="btn btn-success" disabled={busyId === showModal.id} onClick={async () => {
+              {modalEditable && (
+                <button className="btn btn-success" disabled={busyId === showModal.id || modalItemsIncomplete} onClick={async () => {
+                  if (modalItemsIncomplete) {
+                    setToast({ type: 'error', message: 'Resolve every item before completing this accountability.' })
+                    setTimeout(() => setToast(null), 3500)
+                    return
+                  }
                   setBusyId(showModal.id)
                   try {
-                    await import('firebase/firestore').then(({ updateDoc, doc }) =>
-                      updateDoc(doc(db, 'accountabilities', showModal.id), { status: 'resolved' })
-                    )
+                    const payload = buildResolutionPayload(modalItemStates)
+                    await updateDoc(doc(db, 'accountabilities', showModal.id), {
+                      status: 'resolved',
+                      itemResolutions: payload,
+                      resolvedAt: serverTimestamp()
+                    })
                   } catch (e) {
                     console.error(e)
                     setToast({ type: 'error', message: 'Failed to mark resolved' })
