@@ -18,8 +18,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const App: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-base-200">
-      <main className="flex-1 p-4">
+    <div className="min-h-screen flex flex-col bg-main-5">
+      <main className="flex-1">
         <Routes>
           {/* Default route → redirect based on role in localStorage */}
           <Route

@@ -1,6 +1,6 @@
 import React from 'react'
 import Sidebar from '../../sidebar'
-import './TrackingPage.css'
+import '/src/index.css'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
@@ -129,18 +129,40 @@ export default function TrackingPage(){
   }, [rows])
 
   return (
-    <div className="tracking-page min-h-screen">
+    <div className="relative tracking-page min-h-screen overflow-hidden">
+      <svg
+        className="absolute"
+        viewBox="0 0 1440 705"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill="#74AAF0"
+          fillOpacity="1"
+          d="M 0 0 L 0 294 C 16 417 42 258 143 381 C 176 427 249 288 319 324 C 380 355 430 441 610 460 C 840 475 926 428 1036 437 C 1130 444 1211 503 1259 448 C 1309 395 1316 525 1440 411 L 1440 0 00Z"
+        ></path>
+      </svg> 
+    <svg
+        className="absolute"
+        viewBox="0 0 1440 705"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill="#5091E5"
+          fillOpacity="1"
+          d="M 0 0 L 0 106 C 14 174 62 154 102 196 C 146 233 212 256 287 273 C 383 290 672 292 762 249 C 843 204 989 143 1053 206 C 1114 269 1336 360 1440 324 L 1440 0 00Z"
+        ></path>
+      </svg> 
       <Sidebar />
-      <div className="flex-1" style={{ marginLeft: 'var(--sidebar-width)' }}>
+      <div className="relative flex-1 z-90" style={{ marginLeft: 'var(--sidebar-width)' }}>
 
         <main className="p-6">
-          <h1 className="text-xl font-semibold mb-4">Tracking</h1>
+          <h1 className="text-2xl font-semibold mb-4">Tracking</h1>
 
-          <section className="border border-base-300 rounded-md bg-base-100 p-4">
+          <section className="bg-white rounded-xl p-4 opacity-80">
             {/* debug UI removed: last created / load last request */}
             <div className="overflow-x-auto">
               <table className="table w-full">
-                <thead>
+                <thead className='text-black'>
                   <tr>
                     <th>Purpose</th>
                     <th>Request ID</th>
@@ -148,7 +170,7 @@ export default function TrackingPage(){
                     <th>Remarks</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className='text-black'>
                   {rows.length===0 && (
                     <tr><td colSpan={4} className="text-center text-base-content/60 py-6">No requests yet</td></tr>
                   )}
@@ -156,7 +178,7 @@ export default function TrackingPage(){
                     <tr
                       key={r.requestId || idx}
                       id={`req-${r.requestId}`}
-                      className={highlightedId === r.requestId ? 'bg-purple-300/30 transition-colors' : ''}
+                      className={highlightedId === r.requestId ? 'bg-accent transition-colors' : ''}
                     >
                       <td className="max-w-md">
                         <div className="font-semibold">{r.purpose}</div>

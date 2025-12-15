@@ -1,6 +1,6 @@
 import React from "react";
 import Sidebar from '../../sidebar'
-import './RequestPage.css'
+import '/src/index.css'
 import { logicEquipment } from "../equipment/logicEquipment";
 
 import { db, auth } from "../../firebase";
@@ -97,9 +97,31 @@ export const RequestForm: React.FC = () => {
   };
 
   return (
-  <div className="request-page min-h-screen">
-      <Sidebar />
-      <div className="flex-1" style={{ marginLeft: 'var(--sidebar-width)' }}>
+  <div className="relative request-page min-h-screen over overflow-hidden">
+    <svg
+        className="absolute z-0"
+        viewBox="0 0 1440 705"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill="#74AAF0"
+          fillOpacity="1"
+          d="M 0 0 L 0 294 C 16 417 42 258 143 381 C 176 427 249 288 319 324 C 380 355 430 441 610 460 C 840 475 926 428 1036 437 C 1130 444 1211 503 1259 448 C 1309 395 1316 525 1440 411 L 1440 0 00Z"
+        ></path>
+    </svg> 
+    <svg
+        className="absolute z-0"
+        viewBox="0 0 1440 705"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill="#5091E5"
+          fillOpacity="1"
+          d="M 0 0 L 0 106 C 14 174 62 154 102 196 C 146 233 212 256 287 273 C 383 290 672 292 762 249 C 843 204 989 143 1053 206 C 1114 269 1336 360 1440 324 L 1440 0 00Z"
+        ></path>
+    </svg> 
+    <Sidebar />
+    <div className="flex-1" style={{ marginLeft: 'var(--sidebar-width)' }}>
 
       {/* Inject CSS to remove number arrows */}
       <style>{removeStepper}</style>
@@ -108,36 +130,34 @@ export const RequestForm: React.FC = () => {
       <header className="w-full bg-base-200 border-b border-base-300 px-4 py-2"></header>
 
       {/* MAIN */}
-      <div className="mt-4 px-6 flex gap-6 items-start">
+      <div className="mt-4 px-6 flex gap-6 items-start z-90">
 
         {/* LEFT PANEL */}
-        <section className="flex-1 space-y-3">
-
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold">Available Lab Equipment</h1>
-            <input
-              type="text"
-              placeholder="Filter equipment"
-              className="input input-sm input-bordered"
-            />
-          </div>
+        <section className="flex-1 space-y-3 z-90">
 
           {/* EQUIPMENT LIST */}
-          <div className="border border-base-300 rounded-md bg-base-100 h-[418px] overflow-y-auto p-3">
-
+          <div className="flex flex-row items-center justify-start h-15 bg-main-4 m-0 px-4 rounded-t-xl opacity-80">
+              <h1 className="text-lg text-black font-bold">Available Lab Equipment</h1>
+              <input
+                type="text"
+                placeholder="Filter equipment"
+                className="input input-sm input-bordered ml-auto rounded-lg bg-white text-black focus:outline-none focus:ring-1 focus:ring-dark"
+              />
+          </div>
+          <div className="rounded-b-xl bg-white h-[550px] overflow-y-auto px-3 opacity-80 ">
             {equipmentList.map((item) => (
               <div
                 key={item.equipmentID}
-                className="flex justify-between items-center border-b py-2"
+                className="flex justify-between items-center border-b py-2 "
               >
                 {/* Item Info */}
                 <div>
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="text-sm text-base-content/70">
+                  <p className="font-semibold text-black">{item.name}</p>
+                  <p className="text-sm t text-black">
                     Quantity Available: {item.totalInventory}
                   </p>
                   {item.category && (
-                    <p className="text-xs text-base-content/60">
+                    <p className="text-xs  text-black">
                       Category: {item.category}
                     </p>
                   )}
@@ -146,7 +166,7 @@ export const RequestForm: React.FC = () => {
                 {/* STEPPER NO ARROWS */}
                 <div className="flex items-center gap-2">
                   <button
-                    className="btn btn-xs"
+                    className="btn btn-xs bg-main-1 border-0"
                     onClick={() =>
                       setRequestedItems((prev) => ({
                         ...prev,
@@ -167,11 +187,11 @@ export const RequestForm: React.FC = () => {
                         [item.equipmentID!]: Number(e.target.value),
                       }))
                     }
-                    className="input input-bordered input-xs w-12 text-center"
+                    className="input input-bordered input-xs w-12 text-center bg-main-5 text-black"
                   />
 
                   <button
-                    className="btn btn-xs"
+                    className="btn btn-xs bg-main-1 border-0"
                     onClick={() =>
                       setRequestedItems((prev) => ({
                         ...prev,
@@ -187,8 +207,8 @@ export const RequestForm: React.FC = () => {
           </div>
 
           {/* TOTAL SELECTED */}
-          <div className="border border-base-300 rounded-md bg-base-100 px-3 py-2">
-            <h2 className="font-medium">
+          <div className="rounded-xl bg-white px-3 py-2 z-90 opacity-80">
+            <h2 className="font-medium text-black">
               Total No. of Items:{" "}
               {Object.values(requestedItems).reduce((a, b) => a + b, 0)}
             </h2>
@@ -196,44 +216,43 @@ export const RequestForm: React.FC = () => {
         </section>
 
         {/* RIGHT PANEL */}
-        <section className="w-[355px]">
+        <section className="w-[355px] z-90">
 
-          <h1 className="text-lg font-semibold mb-3 text-center">
-            NEW REQUEST FORM
-          </h1>
-
-          <form onSubmit={handleSubmit}>
-            <div className="border border-base-300 rounded-md bg-base-100 p-4 h-[500px] flex flex-col justify-between">
+          <form onSubmit={handleSubmit} className="bg-main-4 opacity-80 rounded-xl">
+            <div className="p-4 h-[565px] flex flex-col gap-1">
+              <h1 className="text-lg font-extrabold mb-2 text-black">
+                NEW REQUEST FORM
+              </h1>
 
               <div className="space-y-3">
 
                 {/* DATE RANGE */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Date of Usage</span>
+                    <span className="label-text font-bold text-black">Date of Usage</span>
                   </label>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="label">
-                        <span className="label-text text-xs">Start Date</span>
+                        <span className="label-text text-xs text-black">Start Date</span>
                       </label>
                       <input
                         type="date"
                         name="startDate"
-                        className="input input-bordered input-sm w-full"
+                        className="input input-bordered input-sm w-full bg-white text-black [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 focus:outline-none focus:ring-1 focus:ring-dark"
                         onChange={handleInput}
                       />
                     </div>
 
                     <div>
                       <label className="label">
-                        <span className="label-text text-xs">Return Date</span>
+                        <span className="label-text text-xs text-black">Return Date</span>
                       </label>
                       <input
                         type="date"
                         name="endDate"
-                        className="input input-bordered input-sm w-full"
+                        className="input input-bordered input-sm w-full bg-white text-black [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 focus:outline-none focus:ring-1 focus:ring-dark"
                         onChange={handleInput}
                       />
                     </div>
@@ -244,24 +263,24 @@ export const RequestForm: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-medium">Start Time</span>
+                      <span className="label-text text-xs text-black">Start Time</span>
                     </label>
                     <input
                       type="time"
                       name="start"
-                      className="input input-bordered input-sm w-full"
+                      className="input input-bordered input-sm w-full bg-white text-black [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 focus:outline-none focus:ring-1 focus:ring-dark"
                       onChange={handleInput}
                     />
                   </div>
 
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text font-medium">Return Time</span>
+                      <span className="label-text text-xs text-black">Return Time</span>
                     </label>
                     <input
                       type="time"
                       name="end"
-                      className="input input-bordered input-sm w-full"
+                      className="input input-bordered input-sm w-full bg-white text-black [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-100 focus:outline-none focus:ring-1 focus:ring-dark"
                       onChange={handleInput}
                     />
                   </div>
@@ -270,12 +289,12 @@ export const RequestForm: React.FC = () => {
                 {/* ADVISER */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Adviser / Project Leader</span>
+                    <span className="label-text font-bold text-black">Adviser / Project Leader</span>
                   </label>
                   <input
                     type="text"
                     name="adviser"
-                    className="input input-bordered input-sm w-full"
+                    className="input input-bordered input-sm w-full bg-white rounded-lg text-black focus:outline-none focus:ring-1 focus:ring-dark"
                     placeholder="Enter Adviser/Project Leader"
                     onChange={handleInput}
                   />
@@ -284,12 +303,12 @@ export const RequestForm: React.FC = () => {
                 {/* PURPOSE */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Purpose</span>
+                    <span className="label-text font-bold text-black">Purpose</span>
                   </label>
                   <input
                     type="text"
                     name="purpose"
-                    className="input input-bordered input-sm w-full"
+                    className="input input-bordered input-sm w-full bg-white rounded-lg text-black focus:outline-none focus:ring-1 focus:ring-dark"
                     placeholder="Enter Purpose of Usage"
                     onChange={handleInput}
                   />
@@ -298,24 +317,24 @@ export const RequestForm: React.FC = () => {
                 {/* REQUEST SUMMARY */}
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text font-medium">Request Summary</span>
+                    <span className="label-text font-bold text-black">Request Summary</span>
                   </label>
 
-                  <div className="border border-base-300 rounded-md bg-base-100 h-[100px] px-3 py-2 overflow-y-auto">
+                  <div className="bg-white rounded-lg h-[100px] px-3 py-2 overflow-y-auto">
                     {Object.entries(requestedItems)
                       .filter(([_, qty]) => qty > 0)
                       .map(([id, qty]) => {
                         const item = equipmentList.find((e) => e.equipmentID === id);
                         if (!item) return null;
                         return (
-                          <p key={id} className="text-sm">
+                          <p key={id} className="text-sm text-black">
                             {item.name} — {qty} pcs
                           </p>
                         );
                       })}
 
                     {Object.values(requestedItems).every((q) => q === 0) && (
-                      <p className="text-sm text-base-content/70">No items selected</p>
+                      <p className="text-sm text-black">No items selected</p>
                     )}
                   </div>
                 </div>
@@ -323,8 +342,8 @@ export const RequestForm: React.FC = () => {
               </div>
 
               {/* SUBMIT BUTTON */}
-              <button className="btn btn-primary btn-block mt-4" type="submit">
-                Request
+              <button className="btn mt-4 border-none bg-main-1 rounded-xl font-bold hover:bg-main-2" type="submit">
+                Complete Request
               </button>
             </div>
           </form>

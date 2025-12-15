@@ -1,8 +1,24 @@
 @import "tailwindcss";
 @plugin "daisyui";
+
+@theme {
+	--color-main-1: #2F76D2;
+    --color-main-2: #5091E5;
+    --color-main-3: #74AAF0;
+    --color-main-4: #9EC5F7;
+    --color-main-5: #D4E6FD;
+	--color-main: var(--color-main-3);
+	--color-dark: #000F21;
+	--color-dark-hover: #001F45;
+	--color-accent: #6A59E8;
+}
+
+
 @layer base {
 	html, body, #root {
 		height: 100%;
+		font-family: "Mulish", sans-serif;
+		font-optical-sizing: auto;
 	}
 
 	body {
@@ -12,17 +28,17 @@
 		line-height: 1.5;
 	}
 
-	/* sensible defaults for inputs/buttons */
+	/* sensible defaults for inputs */
 	input, textarea, select, button {
-		@apply rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary;
+		@apply rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary;
 	}
+
 
 	/* utility container used across pages */
 	.app-container {
 		@apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
 	}
 }
-
 /* Small helpers */
 .sr-only {
 	position: absolute !important;

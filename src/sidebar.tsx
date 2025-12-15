@@ -34,8 +34,8 @@ export default function Sidebar({ children }: { children?: ReactNode }) {
   }, [expanded])
   
   return (
-    <aside className={`fixed left-0 top-0 h-screen z-20 ${expanded ? 'w-64' : 'w-16'} themed-sidebar`}>
-      <nav className="h-full flex flex-col bg-slate-900 border-r border-slate-700 text-slate-200">
+    <aside className={`fixed left-0 top-0 h-screen bg-main-1 z-20 opacity-95 ${expanded ? 'w-64' : 'w-16'}`}>
+      <nav className="h-full flex flex-col text-slate-200">
         <div className="p-4 pb-2 flex justify-between items-center">
           <img
             // src="https://img.logoipsum.com/243.svg"

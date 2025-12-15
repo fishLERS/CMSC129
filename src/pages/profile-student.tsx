@@ -5,6 +5,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import { auth } from '../firebase'
 import Sidebar from '../sidebar'
+import '/src/index.css'
 
 function formatDate(ts: any) {
   try {
@@ -123,47 +124,53 @@ export default function ProfileStudent() {
   if (!user) return <div className="min-h-screen grid place-items-center">Please login</div>
 
   return (
-    <div>
+    <div className='relative overflow-hidden'>
+      <svg
+        className="absolute"
+        viewBox="0 0 1440 705"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill="#74AAF0"
+          fillOpacity="1"
+          d="M 0 0 L 0 294 C 16 417 42 258 143 381 C 176 427 249 288 319 324 C 380 355 430 441 610 460 C 840 475 926 428 1036 437 C 1130 444 1211 503 1259 448 C 1309 395 1316 525 1440 411 L 1440 0 00Z"
+        ></path>
+      </svg> 
+      <svg
+        className="absolute"
+        viewBox="0 0 1440 705"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill="#5091E5"
+          fillOpacity="1"
+          d="M 0 0 L 0 106 C 14 174 62 154 102 196 C 146 233 212 256 287 273 C 383 290 672 292 762 249 C 843 204 989 143 1053 206 C 1114 269 1336 360 1440 324 L 1440 0 00Z"
+        ></path>
+      </svg> 
       <Sidebar />
-      <div style={{ marginLeft: 'var(--sidebar-width)' }} className="min-h-screen bg-transparent text-slate-200 p-4">
-        <h1 className="text-2xl font-semibold mb-4">My Profile</h1>
+      <div style={{ marginLeft: 'var(--sidebar-width)' }} className="relative min-h-screen text-black p-4 z-90">
         {loading ? (
           <div>Loading...</div>
         ) : (
           <div className="max-w-6xl mx-auto">
-            <div className="rounded-lg overflow-hidden bg-base-100 text-base-content">
-              {/* banner - static to blend with card/page */}
-              <div className="h-12 bg-base-100" />
-
-              <div className="p-6 -mt-10">
-                <div className="bg-base-100 rounded-lg p-6 shadow">
+              <div className="px-6 py-1 pb-10 bg-gradient-to-b from-main-4 via-main-4 to-main-5 rounded-xl opacity-80">
+                <h1 className="text-2xl font-bold my-8">My Profile</h1>
                   <div className="flex flex-col md:flex-row items-start gap-6">
                     <div className="flex-shrink-0">
                       <img
                         src={user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName||user?.email||'User')}&background=ffffff&color=111827&bold=true`}
                         alt="avatar"
-                        className="w-28 h-28 rounded-full border-4 border-base-100 shadow"
+                        className="w-28 h-28 rounded-full border-4 border-dark shadow"
                       />
-                      {/* buttons moved to top-right of details pane */}
                     </div>
 
                     <div className="flex-1 w-full">
-                      <div className="flex justify-end mb-2">
-                        {!editing ? (
-                          <button className="btn btn-primary" onClick={() => setEditing(true)}>Edit</button>
-                        ) : (
-                          <div className="flex gap-2">
-                            <button className="btn" onClick={() => { setEditing(false); setDisplayName(profile?.displayName || user.displayName || ''); setStudentNumber(profile?.studentNumber || '') }}>Cancel</button>
-                            <button className="btn btn-primary" onClick={save}>Save</button>
-                          </div>
-                        )}
-                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <label className="text-xs text-base-content/60">Full Name</label>
+                          <label className="text-xs">Full Name</label>
                           <input
                             id="displayName"
-                            className={`mt-2 w-full rounded-md bg-base-200 border-0 p-3 text-sm ${editing ? 'focus:ring-primary' : 'focus:ring-0 focus:outline-none'}`}
+                            className={`w-full rounded-lg bg-white shadow-lg p-3 text-sm ${editing ? 'focus:ring-main-1' : 'focus:ring-0 focus:outline-none'}`}
                             placeholder="Your Full Name"
                             value={editing ? displayName : (profile?.displayName || user.displayName || '')}
                             onChange={(e) => setDisplayName(e.target.value)}
@@ -173,9 +180,9 @@ export default function ProfileStudent() {
                         </div>
 
                         <div>
-                          <label className="text-xs text-base-content/60">Student Number</label>
+                          <label className="text-xs">Student Number</label>
                           <input
-                            className={`mt-2 w-full rounded-md bg-base-200 border-0 p-3 text-sm ${editing ? 'focus:ring-primary' : 'focus:ring-0 focus:outline-none'}`}
+                            className={`w-full rounded-lg bg-white shadow-lg p-3 text-sm ${editing ? 'focus:ring-main-1' : 'focus:ring-0 focus:outline-none'}`}
                             placeholder="20XX-XXXXX"
                             value={editing ? studentNumber : (profile?.studentNumber || '')}
                             onChange={(e) => setStudentNumber(e.target.value)}
@@ -185,9 +192,9 @@ export default function ProfileStudent() {
                         </div>
 
                         <div>
-                          <label className="text-xs text-base-content/60">Email</label>
+                          <label className="text-xs">Email</label>
                           <input
-                            className={`mt-2 w-full rounded-md border-0 p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
+                            className={`w-full rounded-lg bg-white shadow-lg p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
                             value={profile?.email || user.email}
                             readOnly
                             tabIndex={-1}
@@ -195,9 +202,9 @@ export default function ProfileStudent() {
                         </div>
 
                         <div>
-                          <label className="text-xs text-base-content/60">Role</label>
+                          <label className="text-xs">Role</label>
                           <input
-                            className={`mt-2 w-full rounded-md border-0 p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
+                            className={`w-full rounded-lg bg-white shadow-lg p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
                             value={profile?.role || 'student'}
                             readOnly
                             tabIndex={-1}
@@ -205,45 +212,53 @@ export default function ProfileStudent() {
                         </div>
 
                         <div>
-                          <label className="text-xs text-base-content/60">User ID</label>
+                          <label className="text-xs">User ID</label>
                           <input
-                            className={`mt-2 w-full rounded-md border-0 p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
+                            className={`w-full rounded-lg bg-white shadow-lg p-3 text-sm ${editing ? 'bg-base-300 opacity-80' : 'bg-base-200'} focus:ring-0 focus:outline-none`}
                             value={profile?.uid || user.uid}
                             readOnly
                             tabIndex={-1}
                           />
                         </div>
                       </div>
+                      {!editing ? (
+                          <button className="btn border-0 rounded-xl bg-main-1 mt-3 hover:bg-main-2" onClick={() => setEditing(true)}>Edit Profile</button>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button className="btn bg-main-1 border-0 rounded-xl mt-3 hover:bg-main-2" onClick={save}>Save</button>
+                            <button className="btn bg-dark border-0 rounded-xl mt-3 hover:bg-dark-hover" onClick={() => { setEditing(false); setDisplayName(profile?.displayName || user.displayName || ''); setStudentNumber(profile?.studentNumber || '') }}>Cancel</button>
+                          </div>
+                        )}
 
                       {/* Change Password Section */}
                       <div className="mt-8">
                         <h3 className="text-sm font-semibold">Change Password</h3>
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
-                            <label className="text-xs text-base-content/60">Current Password</label>
+                            <label className="text-xs">Current Password</label>
                             <input
                               type="password"
-                              className="mt-2 w-full rounded-md bg-base-200 border-0 p-3 text-sm focus:ring-primary"
+                              className="w-full rounded-lg bg-white shadow-lg p-3 text-sm focus:ring-main-1"
                               placeholder="Current password"
                               value={currentPassword}
                               onChange={(e) => setCurrentPassword(e.target.value)}
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-base-content/60">New Password</label>
+                            <label className="text-xs">New Password</label>
                             <input
                               type="password"
-                              className="mt-2 w-full rounded-md bg-base-200 border-0 p-3 text-sm focus:ring-primary"
+                              className="w-full rounded-lg bg-white shadow-lg p-3 text-sm focus:ring-main-1"
                               placeholder="New password"
                               value={newPassword}
                               onChange={(e) => setNewPassword(e.target.value)}
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-base-content/60">Confirm Password</label>
+                            <label className="text-xs">Confirm Password</label>
                             <input
                               type="password"
-                              className="mt-2 w-full rounded-md bg-base-200 border-0 p-3 text-sm focus:ring-primary"
+                              className="w-full rounded-lg bg-white shadow-lg p-3 text-sm focus:ring-main-1"
                               placeholder="Confirm password"
                               value={confirmPassword}
                               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -252,10 +267,10 @@ export default function ProfileStudent() {
                         </div>
                         {passwordError && <div className="mt-2 text-sm text-error">{passwordError}</div>}
                         {passwordSuccess && <div className="mt-2 text-sm text-success">{passwordSuccess}</div>}
-                        <button className="btn btn-primary mt-4" onClick={changePassword}>Update Password</button>
+                        <button className="btn rounded-xl bg-main-1 border-0 mt-4 hover:bg-main-2" onClick={changePassword}>Update Password</button>
                       </div>
 
-                      {/* My Email Address Section */}
+                      {/* My Email Address Section
                       <div className="mt-8">
                         <h3 className="text-sm font-semibold">My Email Address</h3>
                         <div className="mt-4 bg-base-200 rounded-md p-4 flex items-center justify-between">
@@ -267,13 +282,11 @@ export default function ProfileStudent() {
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
         )}
       </div>
     </div>

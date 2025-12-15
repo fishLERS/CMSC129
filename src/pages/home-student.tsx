@@ -1,11 +1,15 @@
 import React from 'react';
-import './home-student.css';
 import Sidebar from '../sidebar';
 import { logicEquipment } from './equipment/logicEquipment';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp } from 'firebase/firestore';
+import '/src/index.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faUser, faBell, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { X } from 'lucide-react';
+
 
 function formatDate(d: Date) {
   return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -268,35 +272,59 @@ export default function HomeStudent() {
   const nav = useNavigate();
 
   return (
-    <div className="home-student min-h-screen bg-slate-900 text-slate-200">
+  <div className="relative min-h-screen text-white flex overflow-hidden">
+    <svg
+        className="absolute"
+        viewBox="0 0 1440 705"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill="#74AAF0"
+          fillOpacity="1"
+          d="M 0 0 L 0 294 C 16 417 42 258 143 381 C 176 427 249 288 319 324 C 380 355 430 441 610 460 C 840 475 926 428 1036 437 C 1130 444 1211 503 1259 448 C 1309 395 1316 525 1440 411 L 1440 0 00Z"
+        ></path>
+    </svg> 
+    <svg
+        className="absolute"
+        viewBox="0 0 1440 705"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill="#5091E5"
+          fillOpacity="1"
+          d="M 0 0 L 0 106 C 14 174 62 154 102 196 C 146 233 212 256 287 273 C 383 290 672 292 762 249 C 843 204 989 143 1053 206 C 1114 269 1336 360 1440 324 L 1440 0 00Z"
+        ></path>
+      </svg> 
+
       <Sidebar />
-  <div className="flex-1" style={{ marginLeft: 'var(--sidebar-width)' }}>
-  <header className="hs-topbar w-full bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between">
+    <div className="flex-1 ml-[var(--sidebar-width)]">
+      <header className="relative hs-topbar w-full px-6 py-4 flex items-center justify-between ">
         <div className="flex items-center gap-4">
           <div>
-            <p className="text-sm text-base-content/70">Welcome, {user?.displayName ?? user?.email?.split('@')[0] ?? 'Student'}! Today is {formatDate(new Date())}</p>
             <h1 className="text-2xl font-semibold mt-1">Student Home</h1>
+            <p className="text-sm font-medium text-white">Welcome, {user?.displayName ?? user?.email?.split('@')[0] ?? 'Student'}! Today is {formatDate(new Date())}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3 relative">
           <div className="relative">
-            <button className="btn btn-ghost btn-square btn-sm" onClick={toggleNotif} aria-haspopup="true" aria-expanded={notifOpen}>🔔</button>
+            <button className="btn btn-ghost btn-circle btn-md" onClick={toggleNotif} aria-haspopup="true" aria-expanded={notifOpen}><FontAwesomeIcon icon={faBell} className='text-2xl text-white'/></button>
             {recentNotifications.length > 0 && (
               <span className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-red-500 rounded-full ring-1 ring-white"></span>
             )}
 
             {/* dropdown with up to 4 recent notifications */}
             {notifOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-base-100 border border-base-300 rounded shadow z-50">
-                <div className="p-2">
-                  <div className="font-semibold">Notifications</div>
+              <div className="absolute right-0 mt-2 p-2 w-80 bg-white rounded-xl shadow z-50">
+                <div className="p-2 flex items-center justify-between">
+                  <div className="font-semibold text-black">Notifications</div>
+                  <button className="btn btn-ghost btn-sm rounded-2xl border-none h-6 w-6 text-main-1 hover:bg-main-2 hover:text-white" onClick={() => { setNotifOpen(false); }}><FontAwesomeIcon icon={faXmark} className='text-md'/></button>
                 </div>
                 <div className="max-h-60 overflow-auto">
                   {recentNotifications.length === 0 ? (
                     // when there are no recent notifications, show up to 4 historic/combined notifications in compact "Purpose | Status" form
                     (notifications.length === 0) ? (
-                      <div className="p-3 text-sm text-base-content/60">No new notifications</div>
+                      <div className="p-3 text-sm text-black">No new notifications</div>
                     ) : (
                       notifications.slice(0,4).map(n => (
                         <div
@@ -308,7 +336,7 @@ export default function HomeStudent() {
                           onKeyDown={(e) => { if (e.key === 'Enter') { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') } }}
                         >
                           <div className="font-medium">{n.purpose || 'Request update'}</div>
-                          <div className="text-xs text-base-content/60">{n.status}</div>
+                          <div className="text-xs textblack">{n.status}</div>
                         </div>
                       ))
                     )
@@ -323,17 +351,17 @@ export default function HomeStudent() {
                         onKeyDown={(e) => { if (e.key === 'Enter') { try { localStorage.setItem('lastRequestId', n.id) } catch {} setNotifOpen(false); nav('/tracking') } }}
                       >
                         <div className="font-medium">{n.purpose || 'Request update'}</div>
-                        <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
+                        <div className="text-xs text-white">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
                         {n.adminRemarks && (
-                          <div className="text-xs mt-1 text-base-content/60">Remarks: {n.adminRemarks}</div>
+                          <div className="text-xs mt-1 text-white">Remarks: {n.adminRemarks}</div>
                         )}
                       </div>
                     ))
                   )}
                 </div>
-                <div className="p-2 border-t border-base-200 flex items-center justify-between">
-                  <button className="btn btn-link btn-sm" onClick={() => { setNotifOpen(false); setNotifAllOpen(true); }}>View all</button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setNotifOpen(false); }}>Close</button>
+                <div className="flex items-center justify-between">
+                  <button className="btn btn-link btn-sm text-main-1" onClick={() => { setNotifOpen(false); setNotifAllOpen(true); }}>View all</button>
+                  
                 </div>
               </div>
             )}
@@ -341,23 +369,23 @@ export default function HomeStudent() {
         </div>
       </header>
 
-      <main className="p-0">
-        <div className="w-full">
-          <section className="card requests-card border border-base-300 rounded-md bg-base-100 flex flex-col">
-            <div className="p-3 border-b border-base-300 flex items-center justify-between">
-              <h2 className="font-medium">Requests</h2>
+      <main className="p-0 text-black">
+        <div className="m-2">
+          <section className="card requests-card rounded-xl bg-white flex flex-col opacity-80">
+            <div className="pl-4 h-15 flex items-center rounded-t-xl bg-main-3 justify-between">
+              <h2 className="font-semibold text-xl">Requests</h2>
               <div className="tabs tabs-boxed">
-                <a className={`tab ${tab==='all'?'tab-active':''}`} onClick={() => setTab('all')}>All</a>
-                <a className={`tab ${tab==='ongoing'?'tab-active':''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
-                <a className={`tab ${tab==='completed'?'tab-active':''}`} onClick={() => setTab('completed')}>Completed</a>
-                <a className={`tab ${tab==='rejected'?'tab-active':''}`} onClick={() => setTab('rejected')}>Rejected</a>
-                <a className={`tab ${tab==='cancelled'?'tab-active':''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
+                <a className={`tab text-black h-15 ${tab==='all'?'tab-active font-bold bg-main-1 h-15 text-white':''}`} onClick={() => setTab('all')}>All</a>
+                <a className={`tab text-black h-15 ${tab==='ongoing'?'tab-active font-bold bg-main-1 h-15 text-white':''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
+                <a className={`tab text-black h-15 ${tab==='completed'?'tab-active font-bold bg-main-1 h-15 text-white':''}`} onClick={() => setTab('completed')}>Completed</a>
+                <a className={`tab text-black h-15 ${tab==='rejected'?'tab-active font-bold bg-main-1 h-15 text-white':''}`} onClick={() => setTab('rejected')}>Rejected</a>
+                <a className={`tab text-black h-15 ${tab==='cancelled'?'tab-active font-bold bg-main-1 h-15 rounded-tr-xl text-white':''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
               </div>
             </div>
             <div className="card-body p-0 flex-1 min-h-0">
               <div className="overflow-x-auto w-full table-scroll">
                 <table className="table w-full">
-                  <thead>
+                  <thead className='text-black'>
                     <tr>
                         <th>Purpose</th>
                         <th>Quantity</th>
@@ -369,14 +397,14 @@ export default function HomeStudent() {
                   <tbody>
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="empty-state text-center text-base-content/60">No requests yet</td>
+                        <td colSpan={5} className="empty-state text-center text-black">No requests yet</td>
                       </tr>
                     )}
                     {filtered.map((r) => (
                       <tr key={r.id} className="align-top">
                         <td>
                           <div className="font-semibold">{r.purpose || 'Item Request'}</div>
-                          <div className="text-xs text-base-content/60">Date Requested: {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : (r.createdAt ? new Date(r.createdAt).toLocaleString() : '')}</div>
+                          <div className="text-xs text-black">Date Requested: {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : (r.createdAt ? new Date(r.createdAt).toLocaleString() : '')}</div>
                         </td>
                         <td>{Array.isArray(r.items) ? r.items.reduce((s:any,i:any)=>s+(i.qty||0),0) : '-'}</td>
                         <td>{(r.status || 'ongoing')}</td>
@@ -407,43 +435,43 @@ export default function HomeStudent() {
           <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold">Request Details</h3>
             {/* show request id for easier reference */}
-            <div className="text-xs text-base-content/60 mt-2">Request ID</div>
+            <div className="text-xs text-black mt-2">Request ID</div>
             <div className="font-mono font-medium text-sm break-all">{showModalRequest.id}</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-3 text-sm">
               <div>
-                <div className="text-xs text-base-content/60">Requester</div>
+                <div className="text-xs text-black">Requester</div>
                 <div className="font-medium">{showModalRequest.createdByName || showModalRequest.createdBy || showModalRequest.id}</div>
               </div>
               <div>
-                <div className="text-xs text-base-content/60">Requested At</div>
+                <div className="text-xs text-black">Requested At</div>
                 <div className="font-medium">{(function formatTs(ts: any){ try { if (!ts) return ''; if (typeof ts.toDate === 'function') return ts.toDate().toLocaleString(); if (typeof ts === 'string') return new Date(ts).toLocaleString(); if (ts instanceof Date) return ts.toLocaleString(); return String(ts) } catch { return '' } })(showModalRequest.createdAt)}</div>
               </div>
 
               <div>
-                <div className="text-xs text-base-content/60">Adviser / Leader</div>
+                <div className="text-xs text-black">Adviser / Leader</div>
                 <div className="font-medium">{showModalRequest.adviser}</div>
               </div>
               <div>
-                <div className="text-xs text-base-content/60">Status</div>
+                <div className="text-xs text-black">Status</div>
                 <div className="font-medium">{showModalRequest.status || 'Pending'}</div>
               </div>
 
               <div className="md:col-span-2">
-                <div className="text-xs text-base-content/60">Purpose</div>
+                <div className="text-xs text-black">Purpose</div>
                 <div className="font-medium">{showModalRequest.purpose}</div>
               </div>
 
               <div>
-                <div className="text-xs text-base-content/60">Start</div>
+                <div className="text-xs text-black">Start</div>
                 <div className="font-medium">{showModalRequest.startDate} {formatTime(showModalRequest.start)}</div>
               </div>
               <div>
-                <div className="text-xs text-base-content/60">End</div>
+                <div className="text-xs text-black">End</div>
                 <div className="font-medium">{showModalRequest.endDate} {formatTime(showModalRequest.end)}</div>
               </div>
 
               <div className="md:col-span-2">
-                <div className="text-xs text-base-content/60">Items</div>
+                <div className="text-xs text-black">Items</div>
                 <ul className="list-disc list-inside mt-1">
                   {showModalRequest.items?.map((item: any) => {
                     const equipment = equipmentList.find((e:any) => e.equipmentID === item.equipmentID)
@@ -452,11 +480,11 @@ export default function HomeStudent() {
                     )
                   })}
                 </ul>
-                <div className="text-xs text-base-content/60 mt-2">Total Qty: <span className="font-medium">{(showModalRequest.items || []).reduce((acc:any, i:any) => acc + (i.qty || 0), 0)}</span></div>
+                <div className="text-xs text-black mt-2">Total Qty: <span className="font-medium">{(showModalRequest.items || []).reduce((acc:any, i:any) => acc + (i.qty || 0), 0)}</span></div>
               </div>
 
               <div className="md:col-span-2">
-                <div className="text-xs text-base-content/60">Admin Remarks</div>
+                <div className="text-xs text-black">Admin Remarks</div>
                 <div className="whitespace-pre-wrap font-medium">{showModalRequest.declinedRemarks || showModalRequest.remarks || '—'}</div>
               </div>
             </div>
@@ -468,7 +496,7 @@ export default function HomeStudent() {
       )}
       {/* View all notifications modal */}
       {notifAllOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-dark">
           <div className="bg-base-100 p-4 rounded shadow max-w-2xl w-full mx-4 max-h-[80vh] overflow-auto">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold">All Notifications</h3>
@@ -476,14 +504,14 @@ export default function HomeStudent() {
             </div>
             <div className="divide-y divide-base-200">
               {notifications.length === 0 && (
-                <div className="p-4 text-sm text-base-content/60">No notifications</div>
+                <div className="p-4 text-sm text-black">No notifications</div>
               )}
               {notifications.map(n => (
                 <div key={n.id} className="p-3">
                   <div className="font-medium">{n.purpose || 'Request update'}</div>
-                  <div className="text-xs text-base-content/60">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
+                  <div className="text-xs text-black">{n.oldStatus} → {n.status}{n.actionAt ? ` · ${n.actionAt}` : ''}</div>
                   {n.adminRemarks && (
-                    <div className="text-sm mt-1">Remarks: <div className="text-sm text-base-content/70 whitespace-pre-wrap">{n.adminRemarks}</div></div>
+                    <div className="text-sm mt-1">Remarks: <div className="text-sm text-black whitespace-pre-wrap">{n.adminRemarks}</div></div>
                   )}
                 </div>
               ))}
@@ -491,7 +519,7 @@ export default function HomeStudent() {
           </div>
         </div>
       )}
-      </div>
     </div>
-  );
+  </div>
+);
 }
