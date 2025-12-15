@@ -258,6 +258,18 @@ const AdminDashboard: React.FC = () => {
     }
     try {
       const storedRaw = localStorage.getItem("adminSeenRequestStatuses");
+      const historyRaw = localStorage.getItem("adminNotificationHistory");
+      let history: any[] = [];
+      try {
+        const parsed = JSON.parse(historyRaw || "[]");
+        if (Array.isArray(parsed)) history = parsed;
+      } catch {
+        history = [];
+      }
+      const historyKeys = new Set(
+        history.map((entry) => `${entry.type}-${entry.id}`)
+      );
+
       const makeEntry = (req: Request, type: "new" | "returned") => {
         const purpose = req.purpose || "Equipment request";
         const requester = req.createdByName || req.createdBy || "Student";
@@ -265,7 +277,26 @@ const AdminDashboard: React.FC = () => {
           type === "returned"
             ? formatDateTime(req.returnedAt)
             : formatDateTime(req.createdAt);
-        return { id: req.id, type, purpose, requester, actionAt };
+        return {
+          id: req.id,
+          type,
+          purpose,
+          requester,
+          actionAt,
+          timestamp: Date.now(),
+        };
+      };
+
+      const seedHistory = () => {
+        const initialEntries = requests.map((req) => makeEntry(req, (req.status || "").toLowerCase() === "returned" ? "returned" : "new"));
+        const unique = new Map<string, any>();
+        [...history, ...initialEntries].forEach(entry => {
+          const key = `${entry.type}-${entry.id}`;
+          if (!unique.has(key)) unique.set(key, entry);
+        });
+        const combined = Array.from(unique.values()).slice(-200);
+        localStorage.setItem("adminNotificationHistory", JSON.stringify(combined));
+        return combined;
       };
 
       if (!storedRaw) {
@@ -274,38 +305,39 @@ const AdminDashboard: React.FC = () => {
           initialMap[req.id] = (req.status || "pending").toString();
         });
         localStorage.setItem("adminSeenRequestStatuses", JSON.stringify(initialMap));
+        const combined = seedHistory();
         setRecentNotifications([]);
-        const returnedEntries = requests
-          .filter((req) => (req.status || "").toLowerCase() === "returned")
-          .map((req) => makeEntry(req, "returned"));
-        setNotifications(returnedEntries);
+        setNotifications(combined.slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)));
         return;
       }
 
       const stored: Record<string, string> = JSON.parse(storedRaw || "{}");
+      if (!history.length) {
+        history = seedHistory();
+      }
       const changes: Array<any> = [];
       requests.forEach((req) => {
         const now = (req.status || "pending").toString();
         const prev = stored[req.id];
-        if (typeof prev === "undefined") {
-          changes.push(makeEntry(req, "new"));
-        } else if (prev !== now && now.toLowerCase() === "returned") {
-          changes.push(makeEntry(req, "returned"));
+        if (typeof prev === "undefined" && !historyKeys.has(`new-${req.id}`)) {
+          const entry = makeEntry(req, "new");
+          changes.push(entry);
+          historyKeys.add(`new-${req.id}`);
+        } else if (prev !== now && now.toLowerCase() === "returned" && !historyKeys.has(`returned-${req.id}`)) {
+          const entry = makeEntry(req, "returned");
+          changes.push(entry);
+          historyKeys.add(`returned-${req.id}`);
         }
       });
 
-      const returnedEntries = requests
-        .filter((req) => (req.status || "").toLowerCase() === "returned")
-        .map((req) => makeEntry(req, "returned"));
-
-      const combinedMap = new Map<string, any>();
-      [...changes, ...returnedEntries].forEach((entry) => {
-        const key = `${entry.type}-${entry.id}`;
-        if (!combinedMap.has(key)) combinedMap.set(key, entry);
-      });
+      let updatedHistory = history;
+      if (changes.length) {
+        updatedHistory = [...history, ...changes].slice(-200);
+        localStorage.setItem("adminNotificationHistory", JSON.stringify(updatedHistory));
+      }
 
       setRecentNotifications(changes);
-      setNotifications(Array.from(combinedMap.values()));
+      setNotifications(updatedHistory.slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)));
     } catch (e) {
       console.warn("Failed to process admin notifications", e);
       setRecentNotifications([]);

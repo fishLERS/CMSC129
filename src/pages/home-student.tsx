@@ -59,10 +59,19 @@ export default function HomeStudent() {
       console.info('HomeStudent requests snapshot count:', docs.length)
       setRequests(docs)
       try {
-        // compute notifications by comparing stored seen statuses to current statuses
-        const storedRaw = localStorage.getItem('studentSeenStatuses')
+        const storedStatusRaw = localStorage.getItem('studentSeenStatuses')
+        const historyRaw = localStorage.getItem('studentNotificationHistory')
+        let history: any[] = []
+        try {
+          const parsed = JSON.parse(historyRaw || '[]')
+          if (Array.isArray(parsed)) history = parsed
+        } catch {
+          history = []
+        }
+        const historyKeys = new Set(
+          history.map(entry => `${entry.id}-${(entry.oldStatus ?? 'NEW')}->${entry.status}`)
+        )
 
-        // helper to extract admin info
         const makeEntry = (d: any, prev: string | null, now: string) => {
           let adminRemarks = d.declinedRemarks || d.remarks || null
           let actionAt: string | null = null
@@ -71,50 +80,66 @@ export default function HomeStudent() {
             else if (d.approvedAt && typeof d.approvedAt.toDate === 'function') actionAt = d.approvedAt.toDate().toLocaleString()
             else if (d.returnedAt && typeof d.returnedAt.toDate === 'function') actionAt = d.returnedAt.toDate().toLocaleString()
             else if (d.cancelledAt && typeof d.cancelledAt.toDate === 'function') actionAt = d.cancelledAt.toDate().toLocaleString()
-          } catch (e) {
+          } catch {
             actionAt = null
           }
-          return { id: d.id, purpose: d.purpose, oldStatus: prev, status: now, adminRemarks, actionAt }
+          return {
+            id: d.id,
+            purpose: d.purpose,
+            oldStatus: prev,
+            status: now,
+            adminRemarks,
+            actionAt,
+            timestamp: Date.now(),
+            transitionKey: `${prev ?? 'NEW'}->${now}`
+          }
         }
 
-        // historic declined/rejected and approved (should always be visible in View All when there are no recent changes)
-        const historicDeclined = docs.filter((d:any) => {
-          const s = (d.status || '').toString().toLowerCase()
-          return s === 'declined' || s === 'rejected'
-        }).map((d:any) => makeEntry(d, (d.status || '').toString(), (d.status || '').toString()))
-        const historicApproved = docs.filter((d:any) => {
-          const s = (d.status || '').toString().toLowerCase()
-          return s === 'approved'
-        }).map((d:any) => makeEntry(d, (d.status || '').toString(), (d.status || '').toString()))
+        const seedHistoryFromDocs = () => {
+          const entries = docs.map(d => makeEntry(d, null, (d.status || 'ongoing').toString()))
+          const combined = [...history]
+          entries.forEach(entry => {
+            const key = `${entry.id}-${entry.transitionKey}`
+            if (!historyKeys.has(key)) {
+              historyKeys.add(key)
+              combined.push(entry)
+            }
+          })
+          const trimmed = combined.slice(-200)
+          localStorage.setItem('studentNotificationHistory', JSON.stringify(trimmed))
+          return trimmed
+        }
 
-        if (!storedRaw) {
-          // first run: initialize seen map so existing requests don't produce recent notifications
-          const initialMap: any = {};
+        if (!storedStatusRaw) {
+          const initialMap: any = {}
           docs.forEach(d => { initialMap[d.id] = (d.status || 'ongoing').toString() })
           localStorage.setItem('studentSeenStatuses', JSON.stringify(initialMap))
-          // show historic declined/rejected in View all but no recent notifications
+          const seeded = seedHistoryFromDocs()
           setRecentNotifications([])
-          setNotifications([...historicApproved, ...historicDeclined])
+          setNotifications(seeded.slice().sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0)))
         } else {
-          const stored: any = JSON.parse(storedRaw || '{}')
+          const stored: any = JSON.parse(storedStatusRaw || '{}')
+          if (!history.length) {
+            history = seedHistoryFromDocs()
+          }
           const changes: any[] = []
           docs.forEach(d => {
             const prev = stored[d.id]
             const now = (d.status || 'ongoing').toString()
-            // consider it a recent notification only if we knew about the request before (prev exists) and the status changed
-            if (typeof prev !== 'undefined' && prev !== now) {
-              changes.push(makeEntry(d, prev, now))
+            const transitionKey = `${prev ?? 'NEW'}->${now}`
+            if ((typeof prev === 'undefined' || prev !== now) && !historyKeys.has(`${d.id}-${transitionKey}`)) {
+              const entry = makeEntry(d, prev, now)
+              changes.push(entry)
+              historyKeys.add(`${d.id}-${transitionKey}`)
             }
           })
-          // notifications for View All = recent changes first, then historic declined/rejected that aren't already in changes
-          const byId = new Set(changes.map(c => c.id))
-          const combined = [
-            ...changes,
-            ...historicApproved.filter(h => !byId.has(h.id)),
-            ...historicDeclined.filter(h => !byId.has(h.id)),
-          ]
+          let updatedHistory = history
+          if (changes.length) {
+            updatedHistory = [...history, ...changes].slice(-200)
+            localStorage.setItem('studentNotificationHistory', JSON.stringify(updatedHistory))
+          }
           setRecentNotifications(changes)
-          setNotifications(combined)
+          setNotifications(updatedHistory.slice().sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0)))
         }
       } catch (e) {
         console.warn('Failed to compute notifications', e)
