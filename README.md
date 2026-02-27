@@ -70,22 +70,23 @@ fishlers/
 └─ vite.config.ts
 ```
 
-	The current project structure follows a single-application setup built using Vite, React, and Firebase. All major concerns including user interface components, routing, business logic, and database access are contained within one client-side codebase. The src/pages and src/components directories manage presentation layer, while logic related to authentication, equipment management, and request handling is embedded within page-level files and supporting utility modules such as logicEquipment.ts, query.ts, firebase.tsx, and db.ts. Firebase is accessed directly from the React application through the client SDK, and administrative functionality such as custom claims is handled via standalone scripts.
+The current project structure follows a single-application setup built using Vite, React, and Firebase. All major concerns including user interface components, routing, business logic, and database access are contained within one client-side codebase. The src/pages and src/components directories manage presentation layer, while logic related to authentication, equipment management, and request handling is embedded within page-level files and supporting utility modules such as logicEquipment.ts, query.ts, firebase.tsx, and db.ts. Firebase is accessed directly from the React application through the client SDK, and administrative functionality such as custom claims is handled via standalone scripts.
 
-	Although the project is functional, its structure does not strictly follow a formal architectural pattern such as Model-View-Controller (MVC). Instead, it reflects a loosely organized, feature-based client structure where data access, business rules, and UI logic are interwoven. This approach is common in early-stage development but becomes problematic as system complexity increases.
+Although the project is functional, its structure does not strictly follow a formal architectural pattern such as Model-View-Controller (MVC). Instead, it reflects a loosely organized, feature-based client structure where data access, business rules, and UI logic are interwoven. This approach is common in early-stage development but becomes problematic as system complexity increases.
 
 **Limitations of the Current Structure**
-	The primary issue with the current structure is the absence of clear separation of concerns. The View layer (React components and pages) directly interacts with Firebase for data retrieval and manipulation. As a result, database queries, validation rules, and business logic are embedded within UI-related files. This creates tight coupling between the presentation layer and the data layer.
 
-	Such coupling introduces several structural risks:
-        - Reduced maintainability, as changes to business rules require modifications in UI components.
-        - Increased security exposure, since database operations are triggered directly from the    client.
-        - Limited scalability, because adding new features may require duplicating logic across multiple pages.
-        - Reduced testability, as logic cannot be easily isolated from presentation concerns.
+The primary issue with the current structure is the absence of clear separation of concerns. The View layer (React components and pages) directly interacts with Firebase for data retrieval and manipulation. As a result, database queries, validation rules, and business logic are embedded within UI-related files. This creates tight coupling between the presentation layer and the data layer.
+
+Such coupling introduces several structural risks:
+- Reduced maintainability, as changes to business rules require modifications in UI components.
+- Increased security exposure, since database operations are triggered directly from the    client.
+- Limited scalability, because adding new features may require duplicating logic across multiple pages.
+- Reduced testability, as logic cannot be easily isolated from presentation concerns.
 	
-    Furthermore, without a dedicated Controller layer, there is no centralized entry point for request handling. All data flow originates from the client, which makes it difficult to enforce consistent validation, authorization, and error handling.
+Furthermore, without a dedicated Controller layer, there is no centralized entry point for request handling. All data flow originates from the client, which makes it difficult to enforce consistent validation, authorization, and error handling.
 	
-    For these reasons, refactoring toward a formal MVC architecture is necessary.
+For these reasons, refactoring toward a formal MVC architecture is necessary.
 
 **Proposed Refactored Project Structure (FERN-MVC)**
 
@@ -163,29 +164,31 @@ cmsc129-final-project/
 └─ README.md
 ```
 
-	The refactored architecture adopts a proper FERN stack structure with a clear separation between client and server. The project will be divided into two primary applications: a React client (View layer) and an Express server (Controller and Model layers), with Firebased functioning as the database layer accessed only through the server.
+The refactored architecture adopts a proper FERN stack structure with a clear separation between client and server. The project will be divided into two primary applications: a React client (View layer) and an Express server (Controller and Model layers), with Firebased functioning as the database layer accessed only through the server.
 	
-    The refactored structure introduces the following conceptual separation:
-        1. View Layer (Client – React):
-	        Responsible strictly for rendering UI components and collecting user input. Pages, layouts, and reusable components remain within the client directory. The client communicates with the server exclusively through REST API calls.
+The refactored structure introduces the following conceptual separation:
+1. View Layer (Client – React):
+Responsible strictly for rendering UI components and collecting user input. Pages, layouts, and reusable components remain within the client directory. The client communicates with the server exclusively through REST API calls.
 
-        2. Controller Layer (Server – Express Routes and Controllers):
-            Routes define API endpoints, while controllers handle incoming HTTP requests and delegate logic to the service layer. This centralizes request processing and ensures consistent validation and response formatting.
+2. Controller Layer (Server – Express Routes and Controllers):
+Routes define API endpoints, while controllers handle incoming HTTP requests and delegate logic to the service layer. This centralizes request processing and ensures consistent validation and response formatting.
         
-        3. Model Layer (Server – Services and Models):
-	        Business logic and domain rules are isolated within service files. Domain representations (e.g., Equipment, Request, User) are formalized in model definitions. This ensures that rules such as approval workflows, role validation, and state transitions are independent of the UI.
+3. Model Layer (Server – Services and Models):
+Business logic and domain rules are isolated within service files. Domain representations (e.g., Equipment, Request, User) are formalized in model definitions. This ensures that rules such as approval workflows, role validation, and state transitions are independent of the UI.
 
-        4. Repository/Data Access Layer (Server – Firebase Admin):
-	        All Firestore queries and authentication verification are moved into repository modules that use firebase-admin. The client no longer interacts directly with Firebase for privileged operations.
+4. Repository/Data Access Layer (Server – Firebase Admin):
+All Firestore queries and authentication verification are moved into repository modules that use firebase-admin. The client no longer interacts directly with Firebase for privileged operations.
 
 **Changes in the Refactoring**
-	The most significant structural change is the removal of direct database access from the client. Previously, files such as firebase.tsx, db.ts, and logic modules executed Firestore operations within React components. After refactoring, those responsibilities are relocated to the server-side repository layer.
+
+The most significant structural change is the removal of direct database access from the client. Previously, files such as firebase.tsx, db.ts, and logic modules executed Firestore operations within React components. After refactoring, those responsibilities are relocated to the server-side repository layer.
 	
-    Business logic that was embedded in UI-related files has been extracted into service modules. This ensures that the View layer no longer contains rule-based decisions such as approval conditions or status transitions.
+Business logic that was embedded in UI-related files has been extracted into service modules. This ensures that the View layer no longer contains rule-based decisions such as approval conditions or status transitions.
 	
-    Additionally, an explicit Controller layer has been introduced through Express routes and controller files. Instead of the client manipulating the database directly, it now sends structured HTTP requests to defined API endpoints. These endpoints act as controlled gateways into the system.
+Additionally, an explicit Controller layer has been introduced through Express routes and controller files. Instead of the client manipulating the database directly, it now sends structured HTTP requests to defined API endpoints. These endpoints act as controlled gateways into the system.
 	
-    Finally, the overall project has transitioned from a single-layer client-centric structure to a layered, distributed architecture consistent with the FERN-MVC pattern. This transformation improves maintainability, enforces separation of concerns, enhances security, and increases scalability.
+Finally, the overall project has transitioned from a single-layer client-centric structure to a layered, distributed architecture consistent with the FERN-MVC pattern. This transformation improves maintainability, enforces separation of concerns, enhances security, and increases scalability.
 
 **Conclusion**
-    The original project structure was functionally adequate but architecturally informal. Its lack of separation between presentation, business logic, and data access created tight coupling and long-term scalability concerns. The refactored FERN-MV structure introduces clear boundaries between layers, centralizes control logic within the server, and formalizes the Model abstraction. As a result, the system becomes more modular, secure, maintainable, and aligned with established software architecture principles. 
+
+The original project structure was functionally adequate but architecturally informal. Its lack of separation between presentation, business logic, and data access created tight coupling and long-term scalability concerns. The refactored FERN-MV structure introduces clear boundaries between layers, centralizes control logic within the server, and formalizes the Model abstraction. As a result, the system becomes more modular, secure, maintainable, and aligned with established software architecture principles. 
