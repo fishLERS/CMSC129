@@ -2,7 +2,8 @@
 
 **Current Project Structure** 
 
-    fishlers/
+'''
+fishlers/
 ├─ public/
 │  ├─ fish.svg
 │  └─ vite.svg
@@ -67,6 +68,7 @@
 ├─ tailwind.config.js
 ├─ tsconfig.json
 └─ vite.config.ts
+'''
 
 	The current project structure follows a single-application setup built using Vite, React, and Firebase. All major concerns including user interface components, routing, business logic, and database access are contained within one client-side codebase. The src/pages and src/components directories manage presentation layer, while logic related to authentication, equipment management, and request handling is embedded within page-level files and supporting utility modules such as logicEquipment.ts, query.ts, firebase.tsx, and db.ts. Firebase is accessed directly from the React application through the client SDK, and administrative functionality such as custom claims is handled via standalone scripts.
 
@@ -87,6 +89,7 @@
 
 **Proposed Refactored Project Structure (FERN-MVC)**
 
+'''
 cmsc129-final-project/
 │
 ├─ client/                                   (VIEW LAYER – React)
@@ -158,6 +161,7 @@ cmsc129-final-project/
 │
 ├─ .env
 └─ README.md
+'''
 
 	The refactored architecture adopts a proper FERN stack structure with a clear separation between client and server. The project will be divided into two primary applications: a React client (View layer) and an Express server (Controller and Model layers), with Firebased functioning as the database layer accessed only through the server.
 	
