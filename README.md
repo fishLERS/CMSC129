@@ -1,4 +1,86 @@
-# PROJECT STRUCTURE
+# FishLERS
+Fisheries Laboratory Equipment Reservation System
+
+Project by: Bretaña, Buerom, Contreras, Verde
+
+CMSC 129
+
+## Project Overview
+FishLERS is a laboratory management system designed to streamline the tracking, management, and utilization of laboratory equipment and resources. The system primarily serves laboratory staff, researchers, and students by providing a centralized platform to monitor inventory, schedule equipment usage, and maintain records of lab activities.
+
+## Logical View Diagram
+
+<img width="1920" height="1080" alt="User (studentfaculty)" src="https://github.com/user-attachments/assets/aa8ff28b-d952-41b3-990f-7f7b3357aaff" />
+
+
+**Main Components of the System**
+- User
+  	- represents individuals who interact with the system.
+  	- Behavior:
+  	  - Submit reservation requests
+  	  - View request status
+  	  - View accountabilities
+  	 
+- Equipment
+  	- represents available laboratory equipment for reservation.
+  	- Behavior:
+  	  - It can be added, edited, or deleted by the admin.
+  	  - It can be reserved by the user by requesting.
+  	  - The admin updates an equipment's availability status.
+  	  - The condition of the equipment is being tracked.
+  	 
+- Request
+  	- represents a request made by a user to reserve equipment. 
+  	- Behavior:
+  	  - It links a user to amn equipment.
+  	  - Updates its status based on the admin's approval.
+
+- Admin
+  	- A type of user with administrative privileges.
+  	- Behavior:
+  	  - Approve or reject reservation requests
+  	  - Manage equipment inventory
+  	  - Handle accountability of users by checking the condition of the returned equipment
+
+- Accountability
+  	- Tracks responsibility for the borrowed equipment
+  	- Behavior:
+  	  - Records adjustments
+  	  - Maintains history for auditing
+
+**Relationships Between Components**
+
+The system components interact through the following relationships:
+1. User requests for an Equipment
+2. User can track the status of their Request
+3. Admin approves or declines the Requests of users
+4. Admin manages the Equipment
+5. Admin oversees and adjusts the Accountability
+6. Accountability tracks Equipment usage by Users
+
+## Software Architecture
+
+The current system resembles the **Client-Side MVC Hybrid with a Monolithic Layered Frontend Architecture**. Although the system was intended to follow the MVC principles, it does not strictly implement a formal MVC structure but rather a loosely applied MVC pattern where responsibilities overlap across layers. 
+
+On the client side, the system reflects characteristics of the MVC pattern, where:
+- The view is represented by React components that render the user interface and manage user interactions,
+- The controller logic exists within the same React components through event handling, hooks such as UseEffect, and API calls, and
+- The model is partially represented through state management and data retrieved from the backend using Firebase via the backend API.
+React components handle rendering, state management, and API communication within the same files, the separation between view and controller is not strictly enforced, making the architecture a hybrid MVC rather than purely MVC.
+
+
+The frontend allows a monolithic layered architecture, where all presentation, business, and API interaction logic are contained within a single React application, where:
+- The presentation layer is within React UI components and JSX,
+- The application logic layer is within hooks, event handlers, and business rules,
+- The data access layer is within API calls to the Express backend, and
+- The data layer is within the Firebase database accessed through the backend
+
+On the server side, Express and Node function as a unified backend service, handling routing, business logic, and communication with Firebase. This backend is deployed as a single service rather than multiple independent services, making it a monolithic backend.
+
+
+Equipment records retrieved from Firebase act as the model, React components display equipment availability and status as the view, and event handlers manage actions such as adding, updating, or borrowing equipment as controller logic.
+
+## Project Structure
 
 **Current Project Structure** 
 
