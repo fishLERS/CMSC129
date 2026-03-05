@@ -18,7 +18,16 @@ export default function Accountabilities(){
       const list: any[] = []
       snap.forEach((d: any) => {
         const data: any = d.data()
-        const due = data.dueDate?.toDate ? data.dueDate.toDate().toLocaleDateString() : (data.dueDate ? new Date(data.dueDate).toLocaleDateString() : '')
+
+        const formatDate = (date: Date) => date.toLocaleDateString("en-US", {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }
+      )
+
+        const due = data.dueDate?.toDate ? data.dueDate.formatDate (data.dueDate.toDate()) : (data.dueDate ? formatDate(new Date(data.dueDate)) : '');
+        
         list.push({
           id: d.id,
           due,
