@@ -130,46 +130,7 @@ export default function Accountabilities(){
         </div>
       </div>
 
-      {/* Table Card */}
       <div className="card bg-base-200 shadow-xl">
-        <div className="card-body p-0">
-          {/* Filter Tabs */}
-          <div className="p-4 border-b border-base-300">
-            <div className="p-6 space-y-6">
-              {/* Header Section */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl font-bold">Admin Accountabilities</h1>
-                  <p className="text-base-content/70">Track and manage all accountabilities</p>
-                </div>
-              </div>
-
-              {/* Stats Cards */}
-              <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
-                <div className="stat">
-                  <div className="stat-title">Total</div>
-                  <div className="stat-value">{rows.length}</div>
-                  <div className="stat-desc">All accountabilities</div>
-                </div>
-                <div className="stat">
-                  <div className="stat-title">Pending</div>
-                  <div className="stat-value text-warning">{pendingCount}</div>
-                  <div className="stat-desc">Needs attention</div>
-                </div>
-                <div className="stat">
-                  <div className="stat-title">Resolved</div>
-                  <div className="stat-value text-success">{resolvedCount}</div>
-                  <div className="stat-desc">Completed</div>
-                </div>
-                <div className="stat">
-                  <div className="stat-title">Overdue</div>
-                  <div className="stat-value text-error">{overdueCount}</div>
-                  <div className="stat-desc">Past due</div>
-                </div>
-              </div>
-
-              {/* Table Card */}
-              <div className="card bg-base-200 shadow-xl">
                 <div className="card-body p-0">
                   {/* Tabs Header */}
                   <div className="p-4 border-b border-base-300">
@@ -281,9 +242,5 @@ export default function Accountabilities(){
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
