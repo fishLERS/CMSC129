@@ -139,6 +139,17 @@ export default function Accountabilities(){
         </div>
       </div>
 
+      {/* Info Alert */}
+        {pendingCount > 0 && (
+          <div className="alert alert-warning mt-6">
+            <AlertCircle className="w-5 h-5" />
+              <div>
+                <h3 className="font-bold">Attention Required</h3>
+                  <div className="text-xs">You have {pendingCount} pending {pendingCount === 1 ? 'accountability' : 'accountabilities'} that need to be resolved.</div>
+              </div>
+          </div>
+        )}
+
       <div className="card bg-base-200 shadow-xl">
                 <div className="card-body p-0">
                   {/* Tabs Header */}
@@ -240,16 +251,6 @@ export default function Accountabilities(){
                 </dialog>
               )}
 
-              {/* Info Alert */}
-              {pendingCount > 0 && (
-                <div className="alert alert-warning mt-6">
-                  <AlertCircle className="w-5 h-5" />
-                  <div>
-                    <h3 className="font-bold">Attention Required</h3>
-                    <div className="text-xs">You have {pendingCount} pending {pendingCount === 1 ? 'accountability' : 'accountabilities'} that need to be resolved.</div>
-                  </div>
-                </div>
-              )}
             </div>
   )
 }

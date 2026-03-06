@@ -323,6 +323,17 @@ const AdminAccountabilities: React.FC = () => {
         </div>
       </div>
 
+      {/* Info Alert */}
+      {pendingCount > 0 && (
+        <div className="alert alert-warning mt-6">
+          <AlertCircle className="w-5 h-5" />
+          <div>
+            <h3 className="font-bold">Attention Required</h3>
+            <div className="text-xs">There are {pendingCount} pending accountabilities that need to be resolved.</div>
+          </div>
+        </div>
+      )}
+
       {/* Table Card */}
       <div className="card bg-base-200 shadow-xl">
         <div className="card-body p-0">
@@ -513,16 +524,7 @@ const AdminAccountabilities: React.FC = () => {
         </dialog>
       )}
 
-      {/* Info Alert */}
-      {pendingCount > 0 && (
-        <div className="alert alert-warning mt-6">
-          <AlertCircle className="w-5 h-5" />
-          <div>
-            <h3 className="font-bold">Attention Required</h3>
-            <div className="text-xs">There are {pendingCount} pending accountabilities that need to be resolved.</div>
-          </div>
-        </div>
-      )}
+      
       {/* Add Modal */}
       {addOpen && (
         <dialog className="modal modal-open">
