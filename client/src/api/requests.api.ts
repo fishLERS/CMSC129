@@ -1,0 +1,155 @@
+/**
+ * Requests API.
+ * HTTP wrapper for equipment reservation request endpoints.
+ *
+ * This module wraps all request API calls for reservations and tracking.
+ */
+
+import { apiGet, apiPost, apiPatch, apiDelete } from "./http";
+
+/**
+ * Request item type.
+ */
+export interface RequestItem {
+  equipmentID: string;
+  qty: number;
+  notes?: string;
+}
+
+/**
+ * Request type (equipment reservation).
+ */
+export interface Request {
+  requestID?: string;
+  userID: string;
+  items: RequestItem[];
+  status: "pending" | "approved" | "rejected" | "ongoing" | "returned" | "completed";
+  startDate: string;
+  endDate: string;
+  purpose?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  returnedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Create a new request.
+ * POST /api/requests
+ * Body: { userID, items, startDate, endDate, purpose? }
+ */
+export async function createRequest(request: Omit<Request, "requestID" | "createdAt" | "updatedAt">): Promise<Request> {
+  const data = await apiPost<Request>("/api/requests", request);
+  return data;
+}
+
+/**
+ * Get all requests (optionally filtered).
+ * GET /api/requests?status=pending|approved|ongoing|returned|completed
+ */
+export async function listRequests(status?: string): Promise<Request[]> {
+  const endpoint = status ? `/api/requests?status=${status}` : "/api/requests";
+  const data = await apiGet<Request[]>(endpoint);
+  return data;
+}
+
+/**
+ * Get pending requests (awaiting approval).
+ * GET /api/requests/pending
+ */
+export async function getPendingRequests(): Promise<Request[]> {
+  const data = await apiGet<Request[]>("/api/requests/pending");
+  return data;
+}
+
+/**
+ * Get all requests from a specific user.
+ * GET /api/requests/user/:uid
+ */
+export async function getRequestsByUser(uid: string): Promise<Request[]> {
+  const data = await apiGet<Request[]>(`/api/requests/user/${uid}`);
+  return data;
+}
+
+/**
+ * Get a single request by ID.
+ * GET /api/requests/:id
+ */
+export async function getRequest(requestID: string): Promise<Request> {
+  const data = await apiGet<Request>(`/api/requests/${requestID}`);
+  return data;
+}
+
+/**
+ * Update a request.
+ * PATCH /api/requests/:id
+ * Body: partial request object
+ */
+export async function updateRequest(
+  requestID: string,
+  updates: Partial<Request>
+): Promise<Request> {
+  const data = await apiPatch<Request>(`/api/requests/${requestID}`, updates);
+  return data;
+}
+
+/**
+ * Approve a request (admin only).
+ * POST /api/requests/:id/approve
+ */
+export async function approveRequest(requestID: string): Promise<Request> {
+  const data = await apiPost<Request>(`/api/requests/${requestID}/approve`, {});
+  return data;
+}
+
+/**
+ * Reject a request (admin only).
+ * POST /api/requests/:id/reject
+ * Body: { reason }
+ */
+export async function rejectRequest(requestID: string, reason: string): Promise<Request> {
+  const data = await apiPost<Request>(`/api/requests/${requestID}/reject`, { reason });
+  return data;
+}
+
+/**
+ * Mark request as ongoing (equipment borrowed).
+ * POST /api/requests/:id/ongoing
+ */
+export async function markOngoing(requestID: string): Promise<Request> {
+  const data = await apiPost<Request>(`/api/requests/${requestID}/ongoing`, {});
+  return data;
+}
+
+/**
+ * Mark request as returned (equipment returned).
+ * POST /api/requests/:id/return
+ */
+export async function markReturned(requestID: string): Promise<Request> {
+  const data = await apiPost<Request>(`/api/requests/${requestID}/return`, {});
+  return data;
+}
+
+/**
+ * Delete a request (pending only).
+ * DELETE /api/requests/:id
+ */
+export async function deleteRequest(requestID: string): Promise<void> {
+  await apiDelete(`/api/requests/${requestID}`);
+}
+
+export default {
+  createRequest,
+  listRequests,
+  getPendingRequests,
+  getRequestsByUser,
+  getRequest,
+  updateRequest,
+  approveRequest,
+  rejectRequest,
+  markOngoing,
+  markReturned,
+  deleteRequest,
+};

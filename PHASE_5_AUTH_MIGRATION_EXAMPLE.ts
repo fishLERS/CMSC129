@@ -1,4 +1,17 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+/**
+ * PHASE 5: Auth Feature Frontend Migration Example
+ *
+ * This file shows how to convert auth operations from Firebase Auth (client SDK)
+ * to API calls via the auth.api wrapper.
+ *
+ * INSTRUCTIONS:
+ * 1. Create/update client/src/hooks/useAuth.ts with code from this file
+ * 2. Replace Firebase Auth calls with API calls
+ * 3. Update client/src/pages/Login.tsx and Signup.tsx to use new auth API
+ * 4. Test login/signup in browser
+ */
+
+import { useEffect, useState } from "react";
 import * as authApi from "../api/auth.api";
 
 /**
@@ -11,26 +24,16 @@ export interface User {
   role: "student" | "admin";
 }
 
-type AuthContextType = {
-  user: User | null;
-  loading: boolean;
-  error: string | null;
-  signup: (email: string, password: string, displayName: string) => Promise<User>;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  updateProfile: (displayName: string) => Promise<User>;
-  getCurrentUser: () => Promise<User>;
-  resetPassword: (email: string) => Promise<void>;
-  isAuthenticated: boolean;
-};
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 /**
- * AuthProvider - Context provider for authentication.
- * Wraps the app and manages auth state.
+ * useAuth Hook
+ *
+ * Key changes from Firebase:
+ * - No Firebase onAuthStateChanged listener
+ * - Check localStorage for stored token
+ * - Verify token with backend on mount
+ * - Handle auth errors via API responses
  */
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,13 +74,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Sign up a new user.
+   * REPLACEMENT for Firebase createUserWithEmailAndPassword.
    */
   const signup = async (email: string, password: string, displayName: string) => {
     try {
       setLoading(true);
       const userData = await authApi.signup(email, password, displayName);
+
+      // Note: API returns user data but not token
+      // In production, you'd need to automatically login after signup
+      // For now, redirect to login page
       setUser(userData);
       setError(null);
+
       return userData;
     } catch (err: any) {
       setError(err.message);
@@ -89,10 +98,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Log in an existing user.
+   * Note: Firebase has built-in login, but you'll need to create an endpoint
+   * or use a third-party auth service that returns ID tokens.
+   *
+   * For now, this is a placeholder for manual login flow.
    */
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
+
+      // TODO: Create POST /api/auth/login endpoint
+      // This should:
+      // 1. Verify email/password against Firebase Auth
+      // 2. Generate custom token or use Firebase ID token
+      // 3. Return token in response
+      //
+      // For now, use Firebase client SDK to get token:
+      // const cred = await signInWithEmailAndPassword(auth, email, password);
+      // const token = await cred.user.getIdToken();
+
       alert("Login not yet implemented via API. Use Firebase client SDK or create login endpoint.");
       throw new Error("Login endpoint not implemented");
     } catch (err: any) {
@@ -105,9 +129,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Log out the current user.
+   * REPLACEMENT for Firebase signOut.
    */
   const logout = async () => {
     try {
+      // Clear localStorage
       localStorage.removeItem("authToken");
       setUser(null);
       setError(null);
@@ -119,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Update user profile (display name, etc).
+   * REPLACEMENT for Firebase updateProfile.
    */
   const updateProfile = async (displayName: string) => {
     try {
@@ -151,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /**
    * Send password reset email.
+   * TODO: Create POST /api/auth/reset-password endpoint.
    */
   const resetPassword = async (email: string) => {
     try {
@@ -162,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value: AuthContextType = {
+  return {
     user,
     loading,
     error,
@@ -174,19 +202,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resetPassword,
     isAuthenticated: !!user,
   };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-/**
- * useAuth Hook - Use in components to access auth state and methods.
- */
-export function useAuth(): AuthContextType {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 }
 
 export default useAuth;

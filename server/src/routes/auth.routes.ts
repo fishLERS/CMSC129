@@ -1,0 +1,26 @@
+import { Router } from "express";
+import { AuthController } from "../controllers/auth.controller";
+import { requireAuth, requireAdmin } from "../middleware/auth";
+
+/**
+ * Auth Routes.
+ * Defines HTTP endpoints for authentication operations.
+ *
+ * Public endpoints: signup, verify
+ * Protected endpoints: getCurrentUser, updateProfile, setRole (with requireAdmin)
+ */
+const router = Router();
+
+// Public endpoints
+router.post("/signup", AuthController.signup);
+router.post("/verify", AuthController.verifyToken);
+
+// Protected endpoints (require auth)
+router.get("/me", requireAuth, AuthController.getCurrentUser);
+router.patch("/profile", requireAuth, AuthController.updateProfile);
+
+// Admin-only endpoints
+router.post("/:uid/set-role", requireAuth, requireAdmin, AuthController.setUserRole);
+router.post("/:uid/deactivate", requireAuth, requireAdmin, AuthController.deactivateUser);
+
+export default router;

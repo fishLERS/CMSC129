@@ -1,0 +1,117 @@
+import { Request, Response } from "express";
+import { AuthService } from "../services/auth.service";
+
+/**
+ * Auth Controller.
+ * Handles HTTP requests for authentication operations.
+ *
+ * Purpose: HTTP layer for auth endpoints.
+ */
+export class AuthController {
+  /**
+   * POST /api/auth/signup
+   * Create a new user account.
+   * Body: { email, password, displayName? }
+   */
+  static async signup(req: Request, res: Response): Promise<void> {
+    try {
+      const user = await AuthService.signup(req.body);
+      res.status(201).json({ success: true, data: user });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * POST /api/auth/verify
+   * Verify an ID token and get user data.
+   * Body: { token }
+   */
+  static async verifyToken(req: Request, res: Response): Promise<void> {
+    try {
+      const { token } = req.body;
+      if (!token) {
+        res.status(400).json({ success: false, error: "Token required" });
+        return;
+      }
+
+      const user = await AuthService.verifyToken(token);
+      res.status(200).json({ success: true, data: user });
+    } catch (error: any) {
+      res.status(401).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * GET /api/auth/me
+   * Get current user data (requires auth middleware).
+   */
+  static async getCurrentUser(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: "Not authenticated" });
+        return;
+      }
+
+      const user = await AuthService.getUserById(req.user.uid);
+      res.status(200).json({ success: true, data: user });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * PATCH /api/auth/profile
+   * Update user profile (requires auth).
+   * Body: { displayName? }
+   */
+  static async updateProfile(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: "Not authenticated" });
+        return;
+      }
+
+      const user = await AuthService.updateProfile(req.user.uid, req.body);
+      res.status(200).json({ success: true, data: user });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * POST /api/auth/set-role/:uid
+   * Set user role (admin only).
+   * Body: { role: "student" | "admin" }
+   */
+  static async setUserRole(req: Request, res: Response): Promise<void> {
+    try {
+      const { uid } = req.params;
+      const { role } = req.body;
+
+      if (!role || !["student", "admin"].includes(role)) {
+        res.status(400).json({ success: false, error: "Invalid role" });
+        return;
+      }
+
+      await AuthService.setUserRole(uid, role);
+      res.status(200).json({ success: true, message: "User role updated" });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * POST /api/auth/deactivate/:uid
+   * Deactivate a user account (admin only).
+   */
+  static async deactivateUser(req: Request, res: Response): Promise<void> {
+    try {
+      const { uid } = req.params;
+      await AuthService.deactivateUser(uid);
+      res.status(200).json({ success: true, message: "User deactivated" });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+}

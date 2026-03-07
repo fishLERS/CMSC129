@@ -1,3 +1,16 @@
+/**
+ * PHASE 4: Equipment Feature Frontend Migration Example
+ *
+ * This file shows how to convert logicEquipment.ts from direct Firestore calls
+ * to API calls via the equipment.api wrapper.
+ *
+ * INSTRUCTIONS:
+ * 1. Replace the imports in logicEquipment.ts with the NEW code below
+ * 2. Replace each handler function with the API-based versions
+ * 3. Test thoroughly in the browser
+ * 4. Once working, delete query.ts (no longer needed)
+ */
+
 import { useEffect, useState } from "react";
 import { Equipment, AvailableEquipmentItem } from "../../db";
 import * as equipmentApi from "../../api/equipment.api";

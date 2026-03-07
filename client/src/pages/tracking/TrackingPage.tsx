@@ -1,12 +1,12 @@
 import React from 'react'
 import { useAuth } from '../../hooks/useAuth'
-import { db } from '../../firebase'
+import { useRequests } from '../../hooks/useRequests'
 import { isOngoing } from "../../utils/requestTime"
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 import { MapPin, Clock, CheckCircle, XCircle, AlertCircle, FileText, X, Eye, Copy, RotateCcw } from 'lucide-react'
 
 export default function TrackingPage(){
   const { user } = useAuth()
+  const { requests, isLoading } = useRequests(user?.uid)
   const [rows, setRows] = React.useState<Array<any>>([])
   const [filter, setFilter] = React.useState<'all' | 'pending'| 'ongoing' | 'completed' | 'approved' | 'declined'>('all')
   
@@ -15,96 +15,62 @@ export default function TrackingPage(){
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null)
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
 
-  React.useEffect(()=>{
-    if(!user) return
-    console.info('Tracking mounted for user', user.uid)
-  // order by client timestamp to avoid missing docs while serverTimestamp resolves
-  const q = query(collection(db,'requests'), where('createdBy','==', user.uid), orderBy('createdAtClient','desc'))
-    // Helper to process a snapshot into aggregated rows (safe for missing timestamps)
-    const processSnapshot = (snap: any) => {
-      const docs: any[] = []
-      snap.forEach((doc: any) => {
-        const data: any = doc.data()
-        const requestId = doc.id
-        const purpose = data.purpose || ''
-        const status = data.status || ''
-  // prefer admin-provided declinedRemarks, then generic remarks, then purpose as fallback
-  const remarks = data.declinedRemarks || data.remarks || ''
-        // compute human-friendly duration string from start/end fields if available
-        let duration = ''
-        try {
-          const sDate = data.startDate || ''
-          const sTime = data.start || ''
-          const eDate = data.endDate || ''
-          const eTime = data.end || ''
-          if (sDate || eDate) {
-            const startIso = (sDate ? sDate : eDate) + (sTime ? `T${sTime}` : 'T00:00')
-            const endIso = (eDate ? eDate : sDate) + (eTime ? `T${eTime}` : 'T23:59')
-            const sd = new Date(startIso)
-            const ed = new Date(endIso)
-            if (!isNaN(sd.getTime()) && !isNaN(ed.getTime())) {
-              const diffMs = Math.max(0, ed.getTime() - sd.getTime())
-              const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-              const diffHours = Math.floor(diffMs / (1000 * 60 * 60)) % 24
-              const parts: string[] = []
-              if (diffDays > 0) parts.push(`${diffDays}d`)
-              if (diffHours > 0) parts.push(`${diffHours}h`)
-              duration = `${sd.toLocaleString()} → ${ed.toLocaleString()}${parts.length ? ` (${parts.join(' ')})` : ''}`
-            }
+  /**
+   * Transform API requests into row format for display.
+   */
+  React.useEffect(() => {
+    if (!requests || requests.length === 0) {
+      setRows([]);
+      return;
+    }
+
+    const docs = requests.map((req) => {
+      const purpose = req.purpose || '';
+      const status = req.status || 'pending';
+      const remarks = req.rejectionReason || '';
+
+      // Compute human-friendly duration from startDate/endDate
+      let duration = '';
+      try {
+        const sDate = req.startDate || '';
+        const eDate = req.endDate || '';
+        if (sDate || eDate) {
+          const startIso = (sDate || eDate) + 'T00:00';
+          const endIso = (eDate || sDate) + 'T23:59';
+          const sd = new Date(startIso);
+          const ed = new Date(endIso);
+          if (!isNaN(sd.getTime()) && !isNaN(ed.getTime())) {
+            const diffMs = Math.max(0, ed.getTime() - sd.getTime());
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60)) % 24;
+            const parts: string[] = [];
+            if (diffDays > 0) parts.push(`${diffDays}d`);
+            if (diffHours > 0) parts.push(`${diffHours}h`);
+            duration = `${sd.toLocaleString()} → ${ed.toLocaleString()}${parts.length ? ` (${parts.join(' ')})` : ''}`;
           }
-        } catch (e) {
-          duration = ''
         }
-        // compute a sortable key (prefer client ISO timestamp, fallback to server timestamp)
-        let sortKey = ''
-        if (data && data.createdAtClient) sortKey = data.createdAtClient
-        else if (data && data.createdAt && typeof data.createdAt.toDate === 'function') sortKey = data.createdAt.toDate().toISOString()
-        else if (data && data.createdAt) {
-          try { sortKey = new Date(data.createdAt).toISOString() } catch { sortKey = '' }
-        }
-        docs.push({ purpose, requestId, status, remarks, sortKey, startDate: data.startDate, start: data.start, endDate: data.endDate, end: data.end,duration })
-      })
-      // sort by sortKey desc (newest first); if no keys present, keep server ordering
-      docs.sort((a,b) => (b.sortKey || '').localeCompare(a.sortKey || ''))
-      setRows(docs)
-    }
+      } catch (e) {
+        duration = '';
+      }
 
-    // subscribe to ordered query first; if it errors (indexing / missing field), fall back to unordered subscription
-    let unsubMain: (() => void) | null = null
-    let unsubFallback: (() => void) | null = null
+      return {
+        purpose,
+        requestId: req.requestID || '',
+        status,
+        remarks,
+        sortKey: req.createdAt || '',
+        startDate: req.startDate,
+        endDate: req.endDate,
+        duration,
+      };
+    });
 
-    try {
-      unsubMain = onSnapshot(q, (snap) => {
-        console.info('Tracking snapshot count:', snap.size)
-        processSnapshot(snap)
-      }, (err: any) => {
-        console.error('Requests snapshot error', err)
-        // fall back to a simpler listener without orderBy
-        try {
-          const qFallback = query(collection(db, 'requests'), where('createdBy', '==', user.uid))
-          unsubFallback = onSnapshot(qFallback, (snap) => {
-            console.info('Tracking fallback (no-order) snapshot count:', snap.size)
-            processSnapshot(snap)
-          }, (err2) => console.error('Requests fallback error', err2))
-        } catch (e) {
-          console.error('Failed to subscribe fallback', e)
-        }
-      })
-    } catch (e) {
-      console.error('Failed to subscribe main snapshot', e)
-      // try fallback immediately
-      const qFallback = query(collection(db, 'requests'), where('createdBy', '==', user.uid))
-      unsubFallback = onSnapshot(qFallback, (snap) => {
-        console.info('Tracking fallback (no-order) snapshot count:', snap.size)
-        processSnapshot(snap)
-      }, (err2) => console.error('Requests fallback error', err2))
-    }
+    // Sort by date descending (newest first)
+    docs.sort((a, b) => (b.sortKey || '').localeCompare(a.sortKey || ''));
+    setRows(docs);
+  }, [requests]);
 
-    // cleanup both listeners
-    return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
-  },[user])
-
-  // highlight row if navigated from a notification (lastRequestId in localStorage)
+  // Highlight row if navigated from a notification (lastRequestId in localStorage)
   React.useEffect(() => {
     try {
       const id = typeof window !== 'undefined' ? localStorage.getItem('lastRequestId') : null

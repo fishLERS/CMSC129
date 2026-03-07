@@ -1,12 +1,11 @@
 import React from "react";
 import { logicEquipment, useFetchAvailableItems } from "../equipment/logicEquipment";
-import { db, auth } from "../../firebase";
 import { useAuth } from '../../hooks/useAuth'
-import { collection, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
-import { useNavigate } from 'react-router-dom'
+import { useRequests } from '../../hooks/useRequests'
 import { Calendar, Clock, User, FileText, Package, Plus, Minus, Search, Send } from 'lucide-react';
 import { AvailableEquipmentItem } from "../../db";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import { useNavigate } from 'react-router-dom'
 
 // Import Cally calendar components
 import 'cally';
@@ -37,7 +36,7 @@ const removeStepper = `
 export const RequestForm: React.FC = () => {
   const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment();
   const { user } = useAuth()
-
+  const { createRequest } = useRequests(user?.uid)
   const navigate = useNavigate()
 
   const [requestedItems, setRequestedItems] = React.useState<{ [id: string]: number }>({});
@@ -191,41 +190,28 @@ export const RequestForm: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      // prefer authenticated user from the auth hook (keeps behaviour consistent across renders)
-      const currentUser = user || auth.currentUser
-      if (!currentUser) {
+      // Ensure user is authenticated
+      if (!user) {
         setErrorMessage('You must be signed in to submit a request');
         return;
       }
 
-      const docRef = await addDoc(collection(db, "requests"), {
-        ...formData,
+      // Create request via API
+      await createRequest({
+        userID: user.uid,
         items: itemsArray,
-        // server timestamp for canonical ordering, plus a client timestamp fallback
-        createdAt: serverTimestamp(),
-        createdAtClient: new Date().toISOString(),
-        createdBy: currentUser.uid,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        purpose: formData.purpose,
         status: 'pending',
       });
-      
-      console.log('Submitted to Firebase with dates:', { startDate: formData.startDate, endDate: formData.endDate });
 
-      // read back the created document to verify write and server timestamp resolution
-      try {
-        const snap = await getDoc(docRef);
-        console.info('Request created:', docRef.id, snap.exists() ? snap.data() : null);
-        // persist last created id for quick debugging / tracking view
-        try { localStorage.setItem('lastRequestId', docRef.id) } catch (e) { /* ignore */ }
-      } catch (e) {
-        console.warn('Could not read back created request immediately', e);
-      }
-
-      // clear local form state and show confirmation
+      // Clear local form state and show confirmation
       setRequestedItems({})
       setFormData({ startDate: "", endDate: "", start: "", end: "", adviser: "", purpose: "" })
       setSuccessMessage("Request submitted!")
       setErrorMessage(null)
-      // navigate to tracking so user can see the created request
+      // Navigate to tracking so user can see the created request
       navigate('/tracking')
     } catch (error) {
       console.error("Error submitting request:", error);

@@ -1,0 +1,89 @@
+import { getFirestore } from "../config/firebase";
+import { User, UserUpdateInput } from "../models/user";
+
+const USERS_COLLECTION = "users";
+
+/**
+ * User Repository.
+ * Handles all Firestore operations for user accounts.
+ *
+ * Purpose: Data access layer for user data.
+ */
+export class UserRepository {
+  /**
+   * Create a new user document in Firestore.
+   * This is called after Firebase Auth user is created.
+   */
+  static async create(uid: string, data: Omit<User, "uid">): Promise<User> {
+    const db = getFirestore();
+    const user: User = {
+      uid,
+      ...data,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await db.collection(USERS_COLLECTION).doc(uid).set(user);
+    return user;
+  }
+
+  /**
+   * Retrieve a user by UID.
+   */
+  static async getById(uid: string): Promise<User | null> {
+    const db = getFirestore();
+    const doc = await db.collection(USERS_COLLECTION).doc(uid).get();
+
+    if (!doc.exists) {
+      return null;
+    }
+
+    return doc.data() as User;
+  }
+
+  /**
+   * Retrieve a user by email.
+   */
+  static async getByEmail(email: string): Promise<User | null> {
+    const db = getFirestore();
+    const snapshot = await db
+      .collection(USERS_COLLECTION)
+      .where("email", "==", email)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    return snapshot.docs[0].data() as User;
+  }
+
+  /**
+   * Get all users.
+   */
+  static async getAll(): Promise<User[]> {
+    const db = getFirestore();
+    const snapshot = await db.collection(USERS_COLLECTION).get();
+    return snapshot.docs.map((doc) => doc.data() as User);
+  }
+
+  /**
+   * Update a user.
+   */
+  static async update(uid: string, data: UserUpdateInput): Promise<void> {
+    const db = getFirestore();
+    await db.collection(USERS_COLLECTION).doc(uid).update({
+      ...data,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  /**
+   * Delete a user.
+   */
+  static async delete(uid: string): Promise<void> {
+    const db = getFirestore();
+    await db.collection(USERS_COLLECTION).doc(uid).delete();
+  }
+}
