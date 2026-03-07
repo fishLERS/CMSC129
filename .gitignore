@@ -25,3 +25,5 @@ dist-ssr
 
 # Local env files
 .env
+client/.env
+server/.env
