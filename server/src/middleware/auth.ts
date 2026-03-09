@@ -38,7 +38,7 @@ import { getAuth } from "../config/firebase.js";
 declare global {
   namespace Express {
     interface Request {
-      user?: { uid: string; email?: string };
+      user?: { uid: string; email?: string; admin?: boolean; superAdmin?: boolean };
     }
   }
 }
@@ -61,6 +61,8 @@ export async function requireAuth(
     req.user = {
       uid: decodedToken.uid,
       email: decodedToken.email,
+      admin: !!decodedToken.admin || !!decodedToken.superAdmin,
+      superAdmin: !!decodedToken.superAdmin,
     };
     next();
   } catch (error: any) {
@@ -85,14 +87,30 @@ export async function requireAdmin(
     return res.status(401).json({ error: "Not authenticated" });
   }
 
-  try {
-    const claims = await getAuth().getUser(req.user.uid);
-    if (!claims.customClaims?.admin) {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    next();
-  } catch (error: any) {
-    console.error("Admin check error:", error.message);
-    res.status(403).json({ error: "Could not verify admin status" });
+  if (!req.user.admin) {
+    return res.status(403).json({ error: "Admin access required" });
   }
+
+  next();
+}
+
+/**
+ * Middleware to verify super-admin claim.
+ * Must be used AFTER requireAuth.
+ * Returns 403 if user does not have superAdmin claim.
+ */
+export async function requireSuperAdmin(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.user) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+
+  if (!req.user.superAdmin) {
+    return res.status(403).json({ error: "Super admin access required" });
+  }
+
+  next();
 }

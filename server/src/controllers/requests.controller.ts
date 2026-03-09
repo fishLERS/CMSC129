@@ -116,13 +116,63 @@ export class RequestController {
    */
   static async rejectRequest(req: Request, res: Response): Promise<void> {
     try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: "Not authenticated" });
+        return;
+      }
+
       const { reason } = req.body;
       if (!reason) {
         res.status(400).json({ success: false, error: "Rejection reason required" });
         return;
       }
 
-      const request = await RequestService.rejectRequest(req.params.id, reason);
+      const request = await RequestService.rejectRequest(req.params.id, reason, req.user.uid);
+      res.status(200).json({ success: true, data: request });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * POST /api/requests/:id/override-approve
+   * Super admin override from rejected -> approved.
+   * Body: { reason? }
+   */
+  static async overrideApproveRequest(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: "Not authenticated" });
+        return;
+      }
+
+      const { reason } = req.body;
+      const request = await RequestService.overrideApproveRequest(req.params.id, req.user.uid, reason);
+      res.status(200).json({ success: true, data: request });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
+   * POST /api/requests/:id/override-reject
+   * Super admin override from approved -> rejected.
+   * Body: { reason }
+   */
+  static async overrideRejectRequest(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: "Not authenticated" });
+        return;
+      }
+
+      const { reason } = req.body;
+      if (!reason) {
+        res.status(400).json({ success: false, error: "Override reason required" });
+        return;
+      }
+
+      const request = await RequestService.overrideRejectRequest(req.params.id, req.user.uid, reason);
       res.status(200).json({ success: true, data: request });
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });

@@ -124,6 +124,24 @@ export class RequestRepository {
     await this.update(requestID, {
       status: "rejected",
       rejectionReason: reason,
+      rejectedBy: null,
+      rejectedAt: new Date().toISOString(),
+      approvedBy: null,
+      approvedAt: null,
+    } as any);
+  }
+
+  /**
+   * Reject a request and capture actor metadata.
+   */
+  static async rejectByAdmin(requestID: string, reason: string, rejectedBy: string): Promise<void> {
+    await this.update(requestID, {
+      status: "rejected",
+      rejectionReason: reason,
+      rejectedBy,
+      rejectedAt: new Date().toISOString(),
+      approvedBy: null,
+      approvedAt: null,
     } as any);
   }
 
@@ -143,6 +161,35 @@ export class RequestRepository {
     await this.update(requestID, {
       status: "returned",
       returnedAt: new Date().toISOString(),
+    } as any);
+  }
+
+  /**
+   * Override a previous admin decision (super admin only).
+   */
+  static async overrideDecision(
+    requestID: string,
+    payload: {
+      newStatus: "approved" | "rejected";
+      superAdminUid: string;
+      previousStatus: "approved" | "rejected";
+      reason?: string;
+    }
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    const isApprove = payload.newStatus === "approved";
+
+    await this.update(requestID, {
+      status: payload.newStatus,
+      approvedBy: isApprove ? payload.superAdminUid : null,
+      approvedAt: isApprove ? now : null,
+      rejectedBy: isApprove ? null : payload.superAdminUid,
+      rejectedAt: isApprove ? null : now,
+      rejectionReason: isApprove ? null : payload.reason || "Overridden by super admin",
+      overriddenBy: payload.superAdminUid,
+      overriddenAt: now,
+      overrideReason: payload.reason || null,
+      overrideFromStatus: payload.previousStatus,
     } as any);
   }
 

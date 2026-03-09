@@ -18,7 +18,13 @@ export interface Request {
   purpose?: string; // Reason for borrowing
   approvedBy?: string; // Admin UID who approved
   approvedAt?: string; // ISO timestamp
+  rejectedBy?: string; // Admin UID who rejected
+  rejectedAt?: string; // ISO timestamp
   rejectionReason?: string; // Why it was rejected
+  overriddenBy?: string; // Super admin UID who overrode the decision
+  overriddenAt?: string; // ISO timestamp for latest override
+  overrideReason?: string; // Why decision was overridden
+  overrideFromStatus?: "approved" | "rejected"; // Previous decision status
   returnedAt?: string; // When equipment was returned
   createdAt?: string;
   updatedAt?: string;
@@ -27,7 +33,22 @@ export interface Request {
 /**
  * What can be created/updated
  */
-export type RequestCreateInput = Omit<Request, "requestID" | "createdAt" | "updatedAt" | "approvedBy" | "approvedAt" | "rejectionReason" | "returnedAt">;
+export type RequestCreateInput = Omit<
+  Request,
+  | "requestID"
+  | "createdAt"
+  | "updatedAt"
+  | "approvedBy"
+  | "approvedAt"
+  | "rejectedBy"
+  | "rejectedAt"
+  | "rejectionReason"
+  | "overriddenBy"
+  | "overriddenAt"
+  | "overrideReason"
+  | "overrideFromStatus"
+  | "returnedAt"
+>;
 
 export type RequestUpdateInput = Partial<RequestCreateInput>;
 

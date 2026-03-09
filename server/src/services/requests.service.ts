@@ -126,7 +126,7 @@ export class RequestService {
   /**
    * Reject a request (admin only).
    */
-  static async rejectRequest(requestID: string, reason: string): Promise<Request> {
+  static async rejectRequest(requestID: string, reason: string, adminUid: string): Promise<Request> {
     const request = await RequestRepository.getById(requestID);
 
     if (!request) {
@@ -137,11 +137,77 @@ export class RequestService {
       throw new Error(`Cannot reject request with status: ${request.status}`);
     }
 
-    await RequestRepository.reject(requestID, reason);
+    await RequestRepository.rejectByAdmin(requestID, reason, adminUid);
 
     const updated = await RequestRepository.getById(requestID);
     if (!updated) {
       throw new Error("Failed to reject request");
+    }
+
+    return updated;
+  }
+
+  /**
+   * Super admin override: rejected -> approved.
+   */
+  static async overrideApproveRequest(
+    requestID: string,
+    superAdminUid: string,
+    reason?: string
+  ): Promise<Request> {
+    const request = await RequestRepository.getById(requestID);
+
+    if (!request) {
+      throw new Error(`Request not found: ${requestID}`);
+    }
+
+    if (request.status !== "rejected") {
+      throw new Error(`Can only override rejected requests. Current status: ${request.status}`);
+    }
+
+    await RequestRepository.overrideDecision(requestID, {
+      newStatus: "approved",
+      superAdminUid,
+      previousStatus: "rejected",
+      reason,
+    });
+
+    const updated = await RequestRepository.getById(requestID);
+    if (!updated) {
+      throw new Error("Failed to override request to approved");
+    }
+
+    return updated;
+  }
+
+  /**
+   * Super admin override: approved -> rejected.
+   */
+  static async overrideRejectRequest(
+    requestID: string,
+    superAdminUid: string,
+    reason: string
+  ): Promise<Request> {
+    const request = await RequestRepository.getById(requestID);
+
+    if (!request) {
+      throw new Error(`Request not found: ${requestID}`);
+    }
+
+    if (request.status !== "approved") {
+      throw new Error(`Can only override approved requests. Current status: ${request.status}`);
+    }
+
+    await RequestRepository.overrideDecision(requestID, {
+      newStatus: "rejected",
+      superAdminUid,
+      previousStatus: "approved",
+      reason,
+    });
+
+    const updated = await RequestRepository.getById(requestID);
+    if (!updated) {
+      throw new Error("Failed to override request to rejected");
     }
 
     return updated;
