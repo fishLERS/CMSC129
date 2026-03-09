@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { db } from "../../firebase";
+import { auth, db } from "../../firebase";
 import { collection, query, orderBy, limit, onSnapshot, updateDoc, doc, getDoc, serverTimestamp, addDoc } from "firebase/firestore";
+import { onIdTokenChanged } from "firebase/auth";
 import { Bell, Eye, X } from "lucide-react";
 import { logicEquipment } from "../equipment/logicEquipment";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import { overrideApproveRequest, overrideRejectRequest } from "../../api/requests.api";
 
 type ItemCondition = "functional" | "damaged" | "missing" | "consumed";
 
@@ -47,6 +49,12 @@ const AdminDashboard: React.FC = () => {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<Request | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideId, setOverrideId] = useState<string | null>(null);
+  const [overrideAction, setOverrideAction] = useState<"approve" | "reject" | null>(null);
+  const [overrideReason, setOverrideReason] = useState("");
+  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
   const [isFinalizingReturn, setIsFinalizingReturn] = useState(false);
   const [returnAssessments, setReturnAssessments] = useState<
     Record<string, (ItemCondition | null)[]>
@@ -120,6 +128,10 @@ const AdminDashboard: React.FC = () => {
     !!viewRequest && normalizedViewStatus === "returned" && hasDurableItems;
   const showApprovalActions =
     !!viewRequest && !["cancelled", "approved", "returned", "cleared"].includes(normalizedViewStatus);
+  const canOverrideToApprove =
+    !!viewRequest && isSuperAdmin && ["declined", "rejected"].includes(normalizedViewStatus);
+  const canOverrideToReject =
+    !!viewRequest && isSuperAdmin && normalizedViewStatus === "approved";
   const assessmentsReady =
     !requiresReturnAssessment ||
     (viewRequest?.items || []).every((item, idx) => {
@@ -169,6 +181,23 @@ const AdminDashboard: React.FC = () => {
     }
     return '';
   }
+
+  useEffect(() => {
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
+      if (!user) {
+        setIsSuperAdmin(false);
+        return;
+      }
+      try {
+        const token = await user.getIdTokenResult();
+        setIsSuperAdmin(!!token.claims.superAdmin);
+      } catch (error) {
+        console.warn("Failed to read super admin claim", error);
+        setIsSuperAdmin(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -458,6 +487,45 @@ const AdminDashboard: React.FC = () => {
       setDeclineOpen(false);
       setDeclineId(null);
       setDeclineRemarks('');
+    }
+  }
+
+  async function confirmOverride() {
+    if (!overrideId || !overrideAction) return;
+    if (overrideAction === "reject" && !overrideReason.trim()) {
+      setAlertMessage("Override reason is required to reject an approved request.");
+      return;
+    }
+
+    try {
+      setOverrideSubmitting(true);
+
+      if (overrideAction === "approve") {
+        await overrideApproveRequest(overrideId, overrideReason.trim() || undefined);
+        setRequests((prev) =>
+          prev.map((r) => (r.id === overrideId ? { ...r, status: "approved" } : r))
+        );
+        setAlertMessage("Decision overridden to Approved.");
+      } else {
+        await overrideRejectRequest(overrideId, overrideReason.trim());
+        setRequests((prev) =>
+          prev.map((r) =>
+            r.id === overrideId
+              ? { ...r, status: "rejected", declinedRemarks: overrideReason.trim() }
+              : r
+          )
+        );
+        setAlertMessage("Decision overridden to Rejected.");
+      }
+    } catch (error: any) {
+      console.error("Failed to override decision", error);
+      setAlertMessage(error?.message || "Failed to override decision. Please try again.");
+    } finally {
+      setOverrideSubmitting(false);
+      setOverrideOpen(false);
+      setOverrideId(null);
+      setOverrideAction(null);
+      setOverrideReason("");
     }
   }
 
@@ -887,6 +955,11 @@ const AdminDashboard: React.FC = () => {
               <div>
                 <div className="text-xs text-base-content/60">Status</div>
                 <div className="font-medium capitalize">{viewRequest.status || 'Pending'}</div>
+                {isSuperAdmin && (
+                  <div className="mt-2">
+                    <span className="badge badge-secondary badge-sm">Super Admin</span>
+                  </div>
+                )}
                 {viewRequest.returnCondition && (
                   <>
                     <div className="text-xs text-base-content/60 mt-2">Return condition</div>
@@ -1139,6 +1212,44 @@ const AdminDashboard: React.FC = () => {
                     Decline
                   </button>
                 </div>
+              ) : canOverrideToApprove || canOverrideToReject ? (
+                <div className="rounded-box border border-secondary/30 bg-secondary/5 p-3 space-y-2">
+                  <p className="text-sm text-base-content/80">
+                    Super admin override is available for this decision.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {canOverrideToApprove && (
+                      <button
+                        className="btn btn-success btn-outline"
+                        onClick={() => {
+                          setOverrideId(viewRequest.id);
+                          setOverrideAction("approve");
+                          setOverrideReason("");
+                          setOverrideOpen(true);
+                          setViewOpen(false);
+                          setViewRequest(null);
+                        }}
+                      >
+                        Override to Approve
+                      </button>
+                    )}
+                    {canOverrideToReject && (
+                      <button
+                        className="btn btn-error btn-outline"
+                        onClick={() => {
+                          setOverrideId(viewRequest.id);
+                          setOverrideAction("reject");
+                          setOverrideReason("");
+                          setOverrideOpen(true);
+                          setViewOpen(false);
+                          setViewRequest(null);
+                        }}
+                      >
+                        Override to Reject
+                      </button>
+                    )}
+                  </div>
+                </div>
               ) : null}
               <div className="flex justify-end">
                 <button className="btn" onClick={closeRequestModal} disabled={isFinalizingReturn}>
@@ -1232,6 +1343,73 @@ const AdminDashboard: React.FC = () => {
             <div className="flex justify-end gap-2">
               <button className="btn" onClick={() => { setDeclineOpen(false); setDeclineId(null); setDeclineRemarks(''); }}>Cancel</button>
               <button className="btn btn-error" onClick={confirmDecline}>Confirm Decline</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {overrideOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !overrideSubmitting) {
+              setOverrideOpen(false);
+              setOverrideId(null);
+              setOverrideAction(null);
+              setOverrideReason("");
+            }
+          }}
+        >
+          <div
+            className="bg-base-100 p-4 rounded shadow max-w-lg w-full max-h-[80vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="btn btn-sm btn-circle btn-ghost absolute right-4 top-4"
+              disabled={overrideSubmitting}
+              onClick={() => {
+                setOverrideOpen(false);
+                setOverrideId(null);
+                setOverrideAction(null);
+                setOverrideReason("");
+              }}
+            >
+              ×
+            </button>
+            <h3 className="text-lg font-semibold">
+              {overrideAction === "approve" ? "Override to Approve" : "Override to Reject"}
+            </h3>
+            <p className="text-sm text-base-content/70 mb-2">
+              {overrideAction === "approve"
+                ? "Provide an optional reason for overriding this declined request."
+                : "Provide a required reason for overriding this approved request."}
+            </p>
+            <textarea
+              className="textarea textarea-bordered w-full mb-3"
+              rows={5}
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="Enter override reason..."
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="btn"
+                disabled={overrideSubmitting}
+                onClick={() => {
+                  setOverrideOpen(false);
+                  setOverrideId(null);
+                  setOverrideAction(null);
+                  setOverrideReason("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className={`btn ${overrideAction === "approve" ? "btn-success" : "btn-error"}`}
+                disabled={overrideSubmitting}
+                onClick={confirmOverride}
+              >
+                {overrideSubmitting ? "Applying..." : "Confirm Override"}
+              </button>
             </div>
           </div>
         </div>

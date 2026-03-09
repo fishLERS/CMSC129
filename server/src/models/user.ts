@@ -7,6 +7,7 @@ export interface User {
   email: string;
   displayName?: string;
   role: "student" | "admin"; // Student or admin role
+  isSuperAdmin?: boolean; // Higher-privilege admin that can override admin decisions
   createdAt?: string;
   updatedAt?: string;
   isActive?: boolean;

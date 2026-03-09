@@ -108,11 +108,19 @@ export class AuthService {
       throw new Error("User not found");
     }
 
+    const authUser = await getAuth().getUser(uid);
+    const existingClaims = authUser.customClaims || {};
+    const isSuperAdmin = role === "admin" ? !!existingClaims.superAdmin : false;
+
     // Set custom claim in Firebase Auth
-    await getAuth().setCustomUserClaims(uid, { admin: role === "admin" });
+    await getAuth().setCustomUserClaims(uid, {
+      ...existingClaims,
+      admin: role === "admin" || isSuperAdmin,
+      superAdmin: isSuperAdmin,
+    });
 
     // Update Firestore document
-    await UserRepository.update(uid, { role });
+    await UserRepository.update(uid, { role, isSuperAdmin });
   }
 
   /**

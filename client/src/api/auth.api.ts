@@ -15,6 +15,7 @@ export interface User {
   email: string;
   displayName?: string;
   role: "student" | "admin";
+  isSuperAdmin?: boolean;
   createdAt?: string;
   updatedAt?: string;
   isActive?: boolean;

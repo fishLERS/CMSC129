@@ -1,61 +1,93 @@
 #!/usr/bin/env node
 /**
  * Set admin claim for a user
- * Usage: node set-admin.cjs <uid>
- * 
- * Example: node set-admin.cjs abc123xyz
+ * Usage:
+ *   node set-admin.cjs <uid> [admin|super]
+ *
+ * Examples:
+ *   node set-admin.cjs abc123xyz admin
+ *   node set-admin.cjs abc123xyz super
  */
 
 const admin = require('firebase-admin');
+const fs = require('fs');
 const path = require('path');
 
 // Initialize Firebase Admin SDK
-const serviceAccountPath = path.join(__dirname, '../firebase-service-account.json');
+const defaultServiceAccountPath = path.join(__dirname, '../firebase-service-account.json');
+
+function resolveKeyPath() {
+  const keyArg = process.argv.find((arg) => arg.startsWith('--key='));
+  if (keyArg) {
+    return path.resolve(keyArg.slice('--key='.length));
+  }
+
+  if (process.env.SERVICE_ACCOUNT_PATH) {
+    return path.resolve(process.env.SERVICE_ACCOUNT_PATH);
+  }
+
+  return defaultServiceAccountPath;
+}
 
 try {
+  const serviceAccountPath = resolveKeyPath();
+  if (!fs.existsSync(serviceAccountPath)) {
+    throw new Error(`Key file not found: ${serviceAccountPath}`);
+  }
+
   const serviceAccount = require(serviceAccountPath);
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
 } catch (error) {
-  console.error('❌ Error loading service account key');
-  console.error('Make sure firebase-service-account.json exists in the server directory');
+  console.error('Error loading service account key');
+  console.error('Provide a key with --key=path, SERVICE_ACCOUNT_PATH, or place firebase-service-account.json in server/');
+  console.error(error.message);
   process.exit(1);
 }
 
 const auth = admin.auth();
 
-async function setAdminClaim(uid) {
+async function setAdminClaim(uid, level = 'admin') {
   try {
     if (!uid) {
-      console.error('❌ Usage: node set-admin.cjs <uid>');
-      console.error('Example: node set-admin.cjs abc123xyz');
+      console.error('Usage: node set-admin.cjs <uid> [admin|super]');
+      console.error('Example: node set-admin.cjs abc123xyz super --key=C:\\path\\serviceAccountKey.json');
       process.exit(1);
     }
 
-    console.log(`⏳ Setting admin claim for user: ${uid}`);
-    
-    // Set custom claims
-    await auth.setCustomUserClaims(uid, { admin: true });
-    
-    console.log('✅ Admin claim set successfully!');
-    console.log(`User ${uid} is now an admin.`);
-    
-    // Get user to verify
+    const normalizedLevel = String(level).toLowerCase();
+    if (!['admin', 'super'].includes(normalizedLevel)) {
+      console.error('Invalid level. Use "admin" or "super".');
+      process.exit(1);
+    }
+
+    const isSuperAdmin = normalizedLevel === 'super';
+    console.log(`Setting ${isSuperAdmin ? 'super admin' : 'admin'} claim for user: ${uid}`);
+
+    await auth.setCustomUserClaims(uid, {
+      admin: true,
+      superAdmin: isSuperAdmin,
+    });
+
+    console.log('Admin claim set successfully');
+    console.log(`User ${uid} is now ${isSuperAdmin ? 'a super admin' : 'an admin'}.`);
+
     const user = await auth.getUser(uid);
-    console.log(`\n📋 User Details:`);
+    console.log('\nUser Details:');
     console.log(`   Email: ${user.email}`);
     console.log(`   Display Name: ${user.displayName || 'Not set'}`);
-    console.log(`   Admin: true`);
-    
+    console.log(`   Admin: ${!!user.customClaims?.admin}`);
+    console.log(`   Super Admin: ${!!user.customClaims?.superAdmin}`);
+
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error setting admin claim:');
+    console.error('Error setting admin claim:');
     console.error(error.message);
     process.exit(1);
   }
 }
 
-// Get UID from command line
 const uid = process.argv[2];
-setAdminClaim(uid);
+const level = process.argv[3] || 'admin';
+setAdminClaim(uid, level);

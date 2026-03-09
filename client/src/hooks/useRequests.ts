@@ -14,7 +14,13 @@ export interface Request {
   purpose?: string;
   approvedBy?: string;
   approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
   rejectionReason?: string;
+  overriddenBy?: string;
+  overriddenAt?: string;
+  overrideReason?: string;
+  overrideFromStatus?: "approved" | "rejected";
   returnedAt?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -135,6 +141,34 @@ export function useRequests(userID?: string) {
   };
 
   /**
+   * Super admin override: rejected -> approved.
+   */
+  const overrideApproveRequest = async (requestID: string, reason?: string) => {
+    try {
+      await requestsApi.overrideApproveRequest(requestID, reason);
+      await fetchRequests();
+    } catch (err: any) {
+      console.error("Failed to override request to approved:", err);
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  /**
+   * Super admin override: approved -> rejected.
+   */
+  const overrideRejectRequest = async (requestID: string, reason: string) => {
+    try {
+      await requestsApi.overrideRejectRequest(requestID, reason);
+      await fetchRequests();
+    } catch (err: any) {
+      console.error("Failed to override request to rejected:", err);
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  /**
    * Mark request as ongoing (equipment borrowed).
    */
   const markOngoing = async (requestID: string) => {
@@ -198,6 +232,8 @@ export function useRequests(userID?: string) {
     createRequest,
     approveRequest,
     rejectRequest,
+    overrideApproveRequest,
+    overrideRejectRequest,
     markOngoing,
     markReturned,
     deleteRequest,

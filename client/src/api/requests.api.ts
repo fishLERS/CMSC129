@@ -29,7 +29,13 @@ export interface Request {
   purpose?: string;
   approvedBy?: string;
   approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
   rejectionReason?: string;
+  overriddenBy?: string;
+  overriddenAt?: string;
+  overrideReason?: string;
+  overrideFromStatus?: "approved" | "rejected";
   returnedAt?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -115,6 +121,32 @@ export async function rejectRequest(requestID: string, reason: string): Promise<
 }
 
 /**
+ * Super admin override from rejected -> approved.
+ * POST /api/requests/:id/override-approve
+ * Body: { reason? }
+ */
+export async function overrideApproveRequest(
+  requestID: string,
+  reason?: string
+): Promise<Request> {
+  const data = await apiPost<Request>(`/api/requests/${requestID}/override-approve`, { reason });
+  return data;
+}
+
+/**
+ * Super admin override from approved -> rejected.
+ * POST /api/requests/:id/override-reject
+ * Body: { reason }
+ */
+export async function overrideRejectRequest(
+  requestID: string,
+  reason: string
+): Promise<Request> {
+  const data = await apiPost<Request>(`/api/requests/${requestID}/override-reject`, { reason });
+  return data;
+}
+
+/**
  * Mark request as ongoing (equipment borrowed).
  * POST /api/requests/:id/ongoing
  */
@@ -149,6 +181,8 @@ export default {
   updateRequest,
   approveRequest,
   rejectRequest,
+  overrideApproveRequest,
+  overrideRejectRequest,
   markOngoing,
   markReturned,
   deleteRequest,

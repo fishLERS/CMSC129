@@ -11,6 +11,7 @@ export interface User {
   email: string;
   displayName?: string;
   role: "student" | "admin";
+  isSuperAdmin?: boolean;
 }
 
 type AuthContextType = {
