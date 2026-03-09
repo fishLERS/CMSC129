@@ -80,7 +80,12 @@ export default function Login() {
       const role = userDoc.data()?.role || null;
       if (!role) throw new Error("User role not found");
       if (role !== roleType) throw new Error(`You are not registered as ${roleType}`);
+      
+      // Store auth token for session verification
+      const token = await cred.user.getIdToken();
+      localStorage.setItem("authToken", token);
       localStorage.setItem("userRole", role);
+      
       if (role === "admin") nav("/admindashboard", { replace: true });
       else nav("/student", { replace: true });
     } catch (e: any) {

@@ -63,7 +63,9 @@ export default function Signup() {
         createdAt: new Date(),
       });
 
-      // Store role in localStorage for quick access if needed
+      // Store auth token and role in localStorage for quick access if needed
+      const token = await cred.user.getIdToken();
+      localStorage.setItem('authToken', token);
       localStorage.setItem('userRole', requestedRole);
 
       if (requestedRole === 'admin') {
