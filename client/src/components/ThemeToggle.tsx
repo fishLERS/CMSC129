@@ -16,9 +16,9 @@ export default function ThemeToggle({ className = '' }: ThemeToggleProps) {
       title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
     >
       {theme === 'dark' ? (
-        <Sun className="w-5 h-5 text-yellow-400" />
+        <Sun className="w-5 h-5 text-white-400" />
       ) : (
-        <Moon className="w-5 h-5 text-slate-600" />
+        <Moon className="w-5 h-5 text-white-600" />
       )}
     </button>
   );
