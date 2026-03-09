@@ -445,6 +445,10 @@ export default function HomeStudent() {
           <h1 className="text-2xl font-bold">Student Dashboard</h1>
           <p className="text-base-content/70">Welcome, {user?.displayName ?? user?.email?.split('@')[0] ?? 'Student'}! Today is {formatDate(new Date())}</p>
         </div>
+                
+        <button className="btn btn-primary btn-sm" onClick={() => nav("/requestpage")}>
+          + Request Equipment
+        </button>
 
         {/* Notification dropdown */}
         <div className="relative">
