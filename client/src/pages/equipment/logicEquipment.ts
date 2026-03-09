@@ -202,7 +202,20 @@ export function useFetchAvailableItems(
           snapshot.forEach((doc) => {
             const data = doc.data() as any;
             const status = (data.status || "").toString().toLowerCase();
-            if (status !== "pending" && status !== "ongoing") return;
+            if (status !== "ongoing") return;
+            const reqStart = data.startDate;
+            const reqEnd = data.endDate;
+
+            if (_startDate && _endDate && reqStart && reqEnd) {
+              const userStart = new Date(_startDate);
+              const userEnd = new Date(_endDate);
+              const existingStart = new Date(reqStart);
+              const existingEnd = new Date(reqEnd);
+
+              const overlaps = userStart <= existingEnd && userEnd >= existingStart;
+
+              if (!overlaps) return;
+            }
             const items = Array.isArray(data.items) ? data.items : [];
             items.forEach((item: any) => {
               const equipmentID = item?.equipmentID;
