@@ -162,6 +162,13 @@ export const RequestForm: React.FC = () => {
       setErrorMessage("Please select a return time.");
       return;
     }
+    const startDateTime = new Date(`${formData.startDate}T${formData.start}`);
+    const endDateTime = new Date(`${formData.endDate}T${formData.end}`);
+
+    if (startDateTime >= endDateTime) {
+      setErrorMessage("Return time must be later than the start time.");
+      return;
+    }
     if (!formData.adviser.trim()) {
       setErrorMessage("Please enter an adviser or project leader.");
       return;
