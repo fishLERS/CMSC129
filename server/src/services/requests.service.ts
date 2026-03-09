@@ -161,7 +161,8 @@ export class RequestService {
       throw new Error(`Request not found: ${requestID}`);
     }
 
-    if (request.status !== "rejected") {
+    const currentStatus = String(request.status || "").toLowerCase();
+    if (!["rejected", "declined"].includes(currentStatus)) {
       throw new Error(`Can only override rejected requests. Current status: ${request.status}`);
     }
 
