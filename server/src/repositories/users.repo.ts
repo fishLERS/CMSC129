@@ -1,5 +1,5 @@
-import { getFirestore } from "../config/firebase";
-import { User, UserUpdateInput } from "../models/user";
+import { getFirestore } from "../config/firebase.js";
+import { User, UserUpdateInput } from "../models/user.js";
 
 const USERS_COLLECTION = "users";
 

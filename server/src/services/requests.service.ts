@@ -1,6 +1,6 @@
-import { getAuth } from "../config/firebase";
-import { Request, RequestCreateInput, RequestUpdateInput, RequestApprovalPayload } from "../models/request";
-import { RequestRepository } from "../repositories/requests.repo";
+import { getAuth } from "../config/firebase.js";
+import { Request, RequestCreateInput, RequestUpdateInput, RequestApprovalPayload } from "../models/request.js";
+import { RequestRepository } from "../repositories/requests.repo.js";
 
 /**
  * Request Service.

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { EquipmentController } from "../controllers/equipment.controller";
-import { requireAuth, requireAdmin } from "../middleware/auth";
+import { EquipmentController } from "../controllers/equipment.controller.js";
+import { requireAuth, requireAdmin } from "../middleware/auth.js";
 
 /**
  * Equipment Routes.

@@ -1,6 +1,6 @@
-import { loadConfig } from "./config/env";
-import { initializeFirebase } from "./config/firebase";
-import { createApp, startServer } from "./app";
+import { loadConfig } from "./config/env.js";
+import { initializeFirebase } from "./config/firebase.js";
+import { createApp, startServer } from "./app.js";
 
 /**
  * Main entry point.

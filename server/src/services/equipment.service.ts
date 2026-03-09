@@ -1,5 +1,5 @@
-import { Equipment, EquipmentUpdateInput, EquipmentResponse } from "../models/equipment";
-import { EquipmentRepository } from "../repositories/equipment.repo";
+import { Equipment, EquipmentUpdateInput, EquipmentResponse } from "../models/equipment.js";
+import { EquipmentRepository } from "../repositories/equipment.repo.js";
 
 /**
  * Equipment Service.

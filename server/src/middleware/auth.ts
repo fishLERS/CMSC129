@@ -33,7 +33,7 @@ export function errorHandler(
  *
  * Usage: app.use(requireAuth) or router.use(requireAuth)
  */
-import { getAuth } from "../config/firebase";
+import { getAuth } from "../config/firebase.js";
 
 declare global {
   namespace Express {

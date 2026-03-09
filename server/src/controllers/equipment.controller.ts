@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { EquipmentService } from "../services/equipment.service";
+import { EquipmentService } from "../services/equipment.service.js";
 
 /**
  * Equipment Controller.

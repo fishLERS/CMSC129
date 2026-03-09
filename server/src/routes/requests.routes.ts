@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { RequestController } from "../controllers/requests.controller";
-import { requireAuth, requireAdmin } from "../middleware/auth";
+import { RequestController } from "../controllers/requests.controller.js";
+import { requireAuth, requireAdmin } from "../middleware/auth.js";
 
 /**
  * Request Routes.

@@ -1,5 +1,5 @@
 import admin from "firebase-admin";
-import { AppConfig } from "./env";
+import { AppConfig } from "./env.js";
 
 let app: admin.app.App | null = null;
 let firestore: FirebaseFirestore.Firestore | null = null;

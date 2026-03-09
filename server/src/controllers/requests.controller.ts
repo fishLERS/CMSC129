@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { RequestService } from "../services/requests.service";
+import { RequestService } from "../services/requests.service.js";
 
 /**
  * Request Controller.

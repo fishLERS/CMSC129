@@ -1,5 +1,5 @@
-import { getFirestore } from "../config/firebase";
-import { Request, RequestCreateInput, RequestUpdateInput, RequestApprovalPayload } from "../models/request";
+import { getFirestore } from "../config/firebase.js";
+import { Request, RequestCreateInput, RequestUpdateInput, RequestApprovalPayload } from "../models/request.js";
 
 const REQUESTS_COLLECTION = "requests";
 

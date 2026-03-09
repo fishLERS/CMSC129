@@ -1,11 +1,11 @@
 import express from "express";
 import cors from "cors";
-import { loadConfig, AppConfig } from "./config/env";
-import { initializeFirebase } from "./config/firebase";
-import { errorHandler } from "./middleware/auth";
-import equipmentRoutes from "./routes/equipment.routes";
-import authRoutes from "./routes/auth.routes";
-import requestRoutes from "./routes/requests.routes";
+import { loadConfig, AppConfig } from "./config/env.js";
+import { initializeFirebase } from "./config/firebase.js";
+import { errorHandler } from "./middleware/auth.js";
+import equipmentRoutes from "./routes/equipment.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import requestRoutes from "./routes/requests.routes.js";
 
 /**
  * Create and configure the Express app.

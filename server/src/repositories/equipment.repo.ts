@@ -1,5 +1,5 @@
-import { getFirestore } from "../config/firebase";
-import { Equipment, EquipmentUpdateInput, PurgedEquipment } from "../models/equipment";
+import { getFirestore } from "../config/firebase.js";
+import { Equipment, EquipmentUpdateInput, PurgedEquipment } from "../models/equipment.js";
 
 const EQUIPMENT_COLLECTION = "equipment";
 const PURGED_COLLECTION = "equipment_purged";

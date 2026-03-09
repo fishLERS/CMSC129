@@ -1,6 +1,6 @@
-import { getAuth } from "../config/firebase";
-import { User, UserUpdateInput, AuthPayload } from "../models/user";
-import { UserRepository } from "../repositories/users.repo";
+import { getAuth } from "../config/firebase.js";
+import { User, UserUpdateInput, AuthPayload } from "../models/user.js";
+import { UserRepository } from "../repositories/users.repo.js";
 
 /**
  * Auth Service.
