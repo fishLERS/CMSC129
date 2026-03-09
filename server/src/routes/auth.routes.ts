@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller.js";
-import { requireAuth, requireAdmin } from "../middleware/auth.js";
+import { requireAuth, requireAdmin, requireSuperAdmin } from "../middleware/auth.js";
 
 /**
  * Auth Routes.
@@ -20,7 +20,7 @@ router.get("/me", requireAuth, AuthController.getCurrentUser);
 router.patch("/profile", requireAuth, AuthController.updateProfile);
 
 // Admin-only endpoints
-router.post("/:uid/set-role", requireAuth, requireAdmin, AuthController.setUserRole);
+router.post("/:uid/set-role", requireAuth, requireSuperAdmin, AuthController.setUserRole);
 router.post("/:uid/deactivate", requireAuth, requireAdmin, AuthController.deactivateUser);
 
 export default router;

@@ -47,6 +47,7 @@ try {
 }
 
 const auth = admin.auth();
+const firestore = admin.firestore();
 
 async function setAdminClaim(uid, level = 'admin') {
   try {
@@ -70,6 +71,29 @@ async function setAdminClaim(uid, level = 'admin') {
       superAdmin: isSuperAdmin,
     });
 
+    // Keep Firestore user role in sync with claims for frontend route guards.
+    const userRef = firestore.collection('users').doc(uid);
+    const userSnapshot = await userRef.get();
+    const now = new Date().toISOString();
+    if (userSnapshot.exists) {
+      await userRef.set(
+        {
+          role: 'admin',
+          isSuperAdmin,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+    } else {
+      await userRef.set({
+        uid,
+        role: 'admin',
+        isSuperAdmin,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
     console.log('Admin claim set successfully');
     console.log(`User ${uid} is now ${isSuperAdmin ? 'a super admin' : 'an admin'}.`);
 
@@ -79,6 +103,8 @@ async function setAdminClaim(uid, level = 'admin') {
     console.log(`   Display Name: ${user.displayName || 'Not set'}`);
     console.log(`   Admin: ${!!user.customClaims?.admin}`);
     console.log(`   Super Admin: ${!!user.customClaims?.superAdmin}`);
+    console.log('   Firestore role: admin');
+    console.log(`   Firestore isSuperAdmin: ${isSuperAdmin}`);
 
     process.exit(0);
   } catch (error) {

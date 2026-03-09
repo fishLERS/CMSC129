@@ -9,6 +9,7 @@ export interface AppConfig {
   firebasePrivateKey: string;
   firebaseClientEmail: string;
   clientUrl: string;
+  clientUrls: string[];
 }
 
 /**
@@ -35,5 +36,9 @@ export function loadConfig(): AppConfig {
     firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, "\n"),
     firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
     clientUrl: process.env.CLIENT_URL!,
+    clientUrls: (process.env.CLIENT_URLS || "")
+      .split(",")
+      .map((url) => url.trim())
+      .filter(Boolean),
   };
 }
