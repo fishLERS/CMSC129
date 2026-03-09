@@ -77,17 +77,37 @@ export default function Login() {
       setSuccessMsg(null);
       const cred = await signInWithEmailAndPassword(auth, email, pass);
       const userDoc = await getDoc(doc(db, "users", cred.user.uid));
-      const role = userDoc.data()?.role || null;
-      if (!role) throw new Error("User role not found");
-      if (role !== roleType) throw new Error(`You are not registered as ${roleType}`);
+      const firestoreRole = userDoc.data()?.role || null;
       
-      // Store auth token for session verification
-      const token = await cred.user.getIdToken();
+      if (!firestoreRole) throw new Error("User role not found in database");
+      
+      // Check if selected role matches Firestore role
+      if (firestoreRole !== roleType) {
+        throw new Error(`Your account is registered as a ${firestoreRole}. Please select ${firestoreRole} to log in.`);
+      }
+      
+      // Force refresh token to get latest custom claims
+      const idTokenResult = await cred.user.getIdTokenResult(true);
+      const token = idTokenResult.token;
+      
+      // For admin accounts, verify they have the Firebase custom claim
+      if (firestoreRole === "admin") {
+        if (!idTokenResult.claims.admin) {
+          setErr("Your admin account is awaiting approval. An administrator must approve your request first.");
+          return;
+        }
+      }
+      
+      // Store token and role
       localStorage.setItem("authToken", token);
-      localStorage.setItem("userRole", role);
+      localStorage.setItem("userRole", firestoreRole);
       
-      if (role === "admin") nav("/admindashboard", { replace: true });
-      else nav("/student", { replace: true });
+      // Redirect based on role
+      if (firestoreRole === "admin") {
+        nav("/admindashboard", { replace: true });
+      } else {
+        nav("/student", { replace: true });
+      }
     } catch (e: any) {
       if (e.code === "auth/invalid-credential") {
         setErr("The email or password you entered is incorrect. Please try again.");

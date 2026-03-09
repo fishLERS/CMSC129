@@ -15,11 +15,27 @@ export function createApp(config: AppConfig): express.Application {
   const app = express();
 
   // ============ CORS CONFIGURATION ============
-  // Allow requests from the frontend running on localhost:5173 (Vite dev server)
-  // In production, change CLIENT_URL to your actual frontend domain
+  // Allow requests from the frontend running on localhost (any Vite dev port: 5173, 5174, etc.)
+  // In production, change to your actual frontend domain
+  const allowedOrigins = [
+    config.clientUrl,
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+  ];
+
   app.use(
     cors({
-      origin: config.clientUrl,
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("CORS not allowed"));
+        }
+      },
       credentials: true,
       methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
       allowedHeaders: ["Content-Type", "Authorization"],

@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
+import { auth } from "../firebase";
 import * as authApi from "../api/auth.api";
 
 /**
@@ -15,6 +17,7 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   error: string | null;
+  isAdmin: boolean;
   signup: (email: string, password: string, displayName: string) => Promise<User>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -34,39 +37,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   /**
-   * Check if user is already logged in.
-   * Called on component mount.
+   * Subscribe to Firebase auth state changes and verify user data.
+   * This runs whenever the user logs in/out.
    */
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
+    let mounted = true;
 
-        if (!token) {
-          // No token stored, user is not logged in
-          setUser(null);
-          setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (!firebaseUser) {
+          // User is logged out
+          if (mounted) {
+            setUser(null);
+            setIsAdmin(false);
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("userRole");
+          }
           return;
         }
 
-        // Verify token with backend
-        const userData = await authApi.verifyToken(token);
-        setUser(userData);
-        setError(null);
-      } catch (err: any) {
-        console.error("Auth verification failed:", err);
-        // Token is invalid or expired, clear it
-        localStorage.removeItem("authToken");
-        setUser(null);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+        // Get the stored token
+        const token = localStorage.getItem("authToken");
 
-    checkAuth();
+        if (!token) {
+          // No token stored, user is logged out
+          if (mounted) {
+            setUser(null);
+            setIsAdmin(false);
+          }
+          return;
+        }
+
+        // Verify token with backend and get user data
+        try {
+          const userData = await authApi.verifyToken(token);
+          
+          // Check Firebase custom claims for admin status
+          const idTokenResult = await firebaseUser.getIdTokenResult();
+          const hasAdminClaim = !!idTokenResult.claims.admin;
+
+          if (mounted) {
+            setUser(userData);
+            setIsAdmin(hasAdminClaim && userData.role === "admin");
+            localStorage.setItem("userRole", userData.role);
+            setError(null);
+          }
+        } catch (err: any) {
+          console.error("Auth verification failed:", err);
+          // Token is invalid or expired, clear it
+          if (mounted) {
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("userRole");
+            setUser(null);
+            setIsAdmin(false);
+            setError(err.message);
+          }
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, []);
 
   /**
@@ -108,8 +146,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const logout = async () => {
     try {
+      // Sign out from Firebase
+      await firebaseSignOut(auth);
+      
+      // Clear all stored auth data
       localStorage.removeItem("authToken");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("userSeenStatuses");
+      localStorage.removeItem("studentNotificationHistory");
+      
+      // Clear state
       setUser(null);
+      setIsAdmin(false);
       setError(null);
     } catch (err: any) {
       setError(err.message);
@@ -166,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     error,
+    isAdmin,
     signup,
     login,
     logout,

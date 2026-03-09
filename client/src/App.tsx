@@ -16,6 +16,7 @@ import ProfileAdmin from "./pages/admin/profile-admin";
 import AdminUsers from "./pages/admin/AdminUsers";
 import Analytics from "./pages/admin/Analytics";
 import AdminRequestHistory from "./pages/admin/AdminRequestHistory";
+import DataMigration from "./pages/admin/DataMigration";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import DrawerLayout from "./components/DrawerLayout";
@@ -171,6 +172,19 @@ const App: React.FC = () => {
             <AdminDrawerLayout>
               <PageWithFooter>
                 <Analytics />
+              </PageWithFooter>
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/migration"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AdminDrawerLayout>
+              <PageWithFooter>
+                <DataMigration />
               </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>

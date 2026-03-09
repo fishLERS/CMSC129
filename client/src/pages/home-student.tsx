@@ -151,6 +151,8 @@ export default function HomeStudent() {
     let unsubMain: (() => void) | null = null
     let unsubFallback: (() => void) | null = null
 
+    console.log('HomeStudent: Loading requests for user:', user.uid)
+    
     try {
       const q = query(
         collection(db, 'requests'),
@@ -160,13 +162,18 @@ export default function HomeStudent() {
       )
 
       unsubMain = onSnapshot(q, (snap) => {
+        console.log('HomeStudent: Got snapshot with', snap.docs.length, 'documents')
         processSnapshot(snap)
       }, (err) => {
         console.error('HomeStudent snapshot error', err)
+        console.log('HomeStudent: Falling back to unordered query...')
         // fall back to unordered query
         try {
           const qf = query(collection(db, 'requests'), where('createdBy', '==', user.uid), limit(20))
-          unsubFallback = onSnapshot(qf, (snap) => processSnapshot(snap), (err2) => console.error('HomeStudent fallback error', err2))
+          unsubFallback = onSnapshot(qf, (snap) => {
+            console.log('HomeStudent: Fallback query returned', snap.docs.length, 'documents')
+            processSnapshot(snap)
+          }, (err2) => console.error('HomeStudent fallback error', err2))
         } catch (e) {
           console.error('HomeStudent failed to subscribe fallback', e)
         }
@@ -174,7 +181,10 @@ export default function HomeStudent() {
     } catch (e) {
       console.error('HomeStudent failed to subscribe main', e)
       const qf = query(collection(db, 'requests'), where('createdBy', '==', user.uid), limit(20))
-      unsubFallback = onSnapshot(qf, (snap) => processSnapshot(snap), (err2) => console.error('HomeStudent fallback error', err2))
+      unsubFallback = onSnapshot(qf, (snap) => {
+        console.log('HomeStudent: Direct fallback returned', snap.docs.length, 'documents')
+        processSnapshot(snap)
+      }, (err2) => console.error('HomeStudent fallback error', err2))
     }
 
     return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
