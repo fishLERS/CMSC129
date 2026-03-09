@@ -29,24 +29,28 @@ export function createApp(config: AppConfig): express.Application {
 
   const isLocalDevOrigin = (origin: string): boolean =>
     /^https?:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/.test(origin);
+  const isLanDevOrigin = (origin: string): boolean =>
+    /^https?:\/\/((192\.168|10\.\d+|172\.(1[6-9]|2\d|3[0-1]))\.\d+\.\d+):\d{2,5}$/.test(origin);
 
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        // Allow requests with no origin (like curl or server-to-server)
-        if (!origin) return callback(null, true);
+  const corsOptions: cors.CorsOptions = {
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like curl or server-to-server)
+      if (!origin) return callback(null, true);
 
-        if (allowedOrigins.includes(origin) || isLocalDevOrigin(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error(`CORS not allowed for origin: ${origin}`));
-        }
-      },
-      credentials: true,
-      methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-    })
-  );
+      if (allowedOrigins.includes(origin) || isLocalDevOrigin(origin) || isLanDevOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS not allowed for origin: ${origin}`));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 204,
+  };
+
+  app.use(cors(corsOptions));
+  app.options("*", cors(corsOptions));
 
   // ============ MIDDLEWARE ============
   app.use(express.json());

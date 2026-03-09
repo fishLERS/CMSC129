@@ -65,6 +65,7 @@ const AdminDashboard: React.FC = () => {
   const [recentNotifications, setRecentNotifications] = useState<Array<any>>([]);
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
   const highlightTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userNameCacheRef = React.useRef<Record<string, string>>({});
 
   const closeRequestModal = useCallback(() => {
     if (isFinalizingReturn) return;
@@ -201,7 +202,7 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    const q = query(collection(db, "requests"), orderBy("createdAt", "desc"), limit(50));
+    const q = query(collection(db, "requests"), orderBy("createdAt", "desc"), limit(20));
     const unsub = onSnapshot(q, async (snap) => {
       try {
         const data = snap.docs.map((docSnap) => ({
@@ -210,25 +211,30 @@ const AdminDashboard: React.FC = () => {
         })) as Request[];
 
         const uids = Array.from(new Set(data.map((d: any) => d.createdBy).filter(Boolean)));
-        const userNameByUid: Record<string, string> = {};
-        await Promise.all(
-          uids.map(async (uid) => {
-            try {
-              const userDoc = await getDoc(doc(db, "users", uid));
-              if (userDoc.exists()) {
-                const ud = userDoc.data() as any;
-                userNameByUid[uid] = ud.displayName || ud.email || uid;
+        const missingUids = uids.filter((uid) => !userNameCacheRef.current[uid]);
+        if (missingUids.length > 0) {
+          await Promise.all(
+            missingUids.map(async (uid) => {
+              try {
+                const userDoc = await getDoc(doc(db, "users", uid));
+                if (userDoc.exists()) {
+                  const ud = userDoc.data() as any;
+                  userNameCacheRef.current[uid] = ud.displayName || ud.email || uid;
+                } else {
+                  userNameCacheRef.current[uid] = uid;
+                }
+              } catch (e) {
+                console.warn("Failed to load user", uid, e);
+                userNameCacheRef.current[uid] = uid;
               }
-            } catch (e) {
-              console.warn("Failed to load user", uid, e);
-            }
-          })
-        );
+            })
+          );
+        }
 
         const enriched = data.map((d) => ({
           ...d,
           createdByName: (d as any).createdBy
-            ? userNameByUid[(d as any).createdBy] || (d as any).createdBy
+            ? userNameCacheRef.current[(d as any).createdBy] || (d as any).createdBy
             : undefined,
         }));
         setRequests(enriched as Request[]);

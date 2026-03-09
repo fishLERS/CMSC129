@@ -60,25 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // Get the stored token
-        const token = localStorage.getItem("authToken");
-
-        if (!token) {
-          // No token stored, user is logged out
-          if (mounted) {
-            setUser(null);
-            setIsAdmin(false);
-          }
-          return;
-        }
-
-        // Verify token with backend and get user data
+        // Use cached token when possible; force-refresh only when explicitly needed.
         try {
+          const token = await firebaseUser.getIdToken();
+          localStorage.setItem("authToken", token);
           const userData = await authApi.verifyToken(token);
           
-          // Check Firebase custom claims for admin status
+          // Check Firebase custom claims for admin status (admin OR superAdmin).
           const idTokenResult = await firebaseUser.getIdTokenResult();
-          const hasAdminClaim = !!idTokenResult.claims.admin;
+          const hasAdminClaim = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
 
           if (mounted) {
             setUser(userData);
