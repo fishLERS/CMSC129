@@ -169,7 +169,13 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
                 <h4 className="font-semibold truncate">
                   {user?.displayName ?? (user?.email ? user.email.split("@")[0] : "Admin")}
                 </h4>
-                <span className="badge badge-secondary badge-sm shrink-0">Admin</span>
+                <span
+                  className={`badge badge-sm shrink-0 ${
+                    user?.isSuperAdmin ? "badge-accent" : "badge-secondary"
+                  }`}
+                >
+                  {user?.isSuperAdmin ? "Super Admin" : "Admin"}
+                </span>
               </div>
               <span className="text-xs text-base-content/60 truncate block">{user?.email ?? ""}</span>
             </div>
