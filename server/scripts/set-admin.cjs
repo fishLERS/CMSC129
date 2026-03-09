@@ -10,19 +10,39 @@
  */
 
 const admin = require('firebase-admin');
+const fs = require('fs');
 const path = require('path');
 
 // Initialize Firebase Admin SDK
-const serviceAccountPath = path.join(__dirname, '../firebase-service-account.json');
+const defaultServiceAccountPath = path.join(__dirname, '../firebase-service-account.json');
+
+function resolveKeyPath() {
+  const keyArg = process.argv.find((arg) => arg.startsWith('--key='));
+  if (keyArg) {
+    return path.resolve(keyArg.slice('--key='.length));
+  }
+
+  if (process.env.SERVICE_ACCOUNT_PATH) {
+    return path.resolve(process.env.SERVICE_ACCOUNT_PATH);
+  }
+
+  return defaultServiceAccountPath;
+}
 
 try {
+  const serviceAccountPath = resolveKeyPath();
+  if (!fs.existsSync(serviceAccountPath)) {
+    throw new Error(`Key file not found: ${serviceAccountPath}`);
+  }
+
   const serviceAccount = require(serviceAccountPath);
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
 } catch (error) {
   console.error('Error loading service account key');
-  console.error('Make sure firebase-service-account.json exists in the server directory');
+  console.error('Provide a key with --key=path, SERVICE_ACCOUNT_PATH, or place firebase-service-account.json in server/');
+  console.error(error.message);
   process.exit(1);
 }
 
@@ -32,7 +52,7 @@ async function setAdminClaim(uid, level = 'admin') {
   try {
     if (!uid) {
       console.error('Usage: node set-admin.cjs <uid> [admin|super]');
-      console.error('Example: node set-admin.cjs abc123xyz super');
+      console.error('Example: node set-admin.cjs abc123xyz super --key=C:\\path\\serviceAccountKey.json');
       process.exit(1);
     }
 
