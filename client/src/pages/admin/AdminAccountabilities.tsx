@@ -1,6 +1,6 @@
 import React from 'react'
 import { db } from '../../firebase'
-import { collection, query, orderBy, onSnapshot, getDocs, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { FileWarning, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react'
 
 type IssueCondition = 'damaged' | 'missing' | 'detail'
@@ -67,25 +67,6 @@ const AdminAccountabilities: React.FC = () => {
     }
 
     return () => { if (unsub) unsub(); }
-  }, [])
-
-  // load all users for name mapping
-  React.useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const snaps = await getDocs(collection(db, 'users'))
-        const map: Record<string,string> = {}
-        snaps.forEach(s => {
-          const d: any = s.data()
-          if (d?.studentNumber) map[d.studentNumber] = d.displayName || d.email || s.id
-        })
-        if (!cancelled) setStudentNameByNumber(map)
-      } catch (e) {
-        console.warn('Failed to load users for names', e)
-      }
-    })()
-    return () => { cancelled = true }
   }, [])
 
   React.useEffect(() => {

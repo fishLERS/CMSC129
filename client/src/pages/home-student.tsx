@@ -400,32 +400,46 @@ export default function HomeStudent() {
   }, [user])
 
   React.useEffect(() => {
-    const missingIds = accountabilities
-      .map(acc => acc.requestId)
-      .filter((id): id is string => !!id && !accountabilityRequestInfo[id])
+    const missingIds = Array.from(
+      new Set(
+        accountabilities
+          .map(acc => acc.requestId)
+          .filter((id): id is string => !!id && !accountabilityRequestInfo[id])
+      )
+    )
     if (!missingIds.length) return
-    missingIds.forEach(async (requestId) => {
-      try {
-        const snap = await getDoc(docRef(db, 'requests', requestId))
-        if (snap.exists()) {
-          const data: any = snap.data()
-          setAccountabilityRequestInfo(prev => ({
-            ...prev,
-            [requestId]: {
-              purpose: data.purpose || '',
-              createdAt: data.createdAt || data.createdAtClient || null,
+
+    let cancelled = false
+    ;(async () => {
+      const updates: Record<string, { purpose?: string; createdAt?: any }> = {}
+      await Promise.all(
+        missingIds.map(async (requestId) => {
+          try {
+            const snap = await getDoc(docRef(db, 'requests', requestId))
+            if (snap.exists()) {
+              const data: any = snap.data()
+              updates[requestId] = {
+                purpose: data.purpose || '',
+                createdAt: data.createdAt || data.createdAtClient || null,
+              }
+            } else {
+              updates[requestId] = { purpose: '', createdAt: null }
             }
-          }))
-        } else {
-          setAccountabilityRequestInfo(prev => ({
-            ...prev,
-            [requestId]: { purpose: '', createdAt: null }
-          }))
-        }
-      } catch (e) {
-        console.warn('Failed to load accountability request info', e)
+          } catch (e) {
+            console.warn('Failed to load accountability request info', e)
+            updates[requestId] = { purpose: '', createdAt: null }
+          }
+        })
+      )
+
+      if (!cancelled && Object.keys(updates).length > 0) {
+        setAccountabilityRequestInfo(prev => ({ ...prev, ...updates }))
       }
-    })
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [accountabilities, accountabilityRequestInfo])
 
 
