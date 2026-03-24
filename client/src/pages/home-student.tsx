@@ -563,8 +563,8 @@ export default function HomeStudent() {
             <div role="tablist" className="tabs tabs-boxed bg-base-300">
               <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
               <a role="tab" className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
-              <a role="tab" className={`tab ${tab === 'ongoing' ? 'tab-active' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
               <a role="tab" className={`tab ${tab === 'approved' ? 'tab-active' : ''}`} onClick={() => setTab('approved')}>Approved</a>
+              <a role="tab" className={`tab ${tab === 'ongoing' ? 'tab-active' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
               <a role="tab" className={`tab ${tab === 'completed' ? 'tab-active' : ''}`} onClick={() => setTab('completed')}>Completed</a>
               <a role="tab" className={`tab ${tab === 'rejected' ? 'tab-active' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
               <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
