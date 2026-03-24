@@ -20,6 +20,7 @@ export default function AdminUsers() {
   const [updating, setUpdating] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState('')
   const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
+  const [alertType, setAlertType] = React.useState<'success' | 'error' | 'info'>('info')
 
   React.useEffect(() => {
     const usersRef = collection(db, 'users')
@@ -73,8 +74,14 @@ export default function AdminUsers() {
       setUsers((prev) =>
         prev.map((u) => (u.uid === user.uid ? { ...u, role: newRole, requestedAdmin: false } : u))
       )
+      setAlertType('info')
+      setAlertMessage(
+        `Permissions updated for ${user.email || user.displayName || user.uid}. ` +
+        `Please ask this user to re-login to refresh their token and apply new access.`
+      )
     } catch (error) {
       console.error('Failed to update user role', error)
+      setAlertType('error')
       setAlertMessage('Failed to update user role. Please try again.')
     } finally {
       setUpdating(null)
@@ -104,8 +111,14 @@ export default function AdminUsers() {
             : u
         )
       )
+      setAlertType('info')
+      setAlertMessage(
+        `Permissions updated for ${user.email || user.displayName || user.uid}. ` +
+        `Please ask this user to re-login to refresh their token and apply new access.`
+      )
     } catch (error: any) {
       console.error('Failed to update super admin role', error)
+      setAlertType('error')
       setAlertMessage(error?.message || 'Failed to update super admin role. Please try again.')
     } finally {
       setUpdating(null)
@@ -141,7 +154,7 @@ export default function AdminUsers() {
   return (
     <div className="p-6 space-y-6">
       {alertMessage && (
-        <div className="alert alert-error">
+        <div className={`alert ${alertType === 'error' ? 'alert-error' : alertType === 'success' ? 'alert-success' : 'alert-info'}`}>
           <span>{alertMessage}</span>
           <button className="btn btn-sm" onClick={() => setAlertMessage(null)}>Close</button>
         </div>
