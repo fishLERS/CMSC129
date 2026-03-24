@@ -101,9 +101,11 @@ const AdminRequestHistory: React.FC = () => {
   const [search, setSearch] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState<"all" | string>("all");
   const [yearFilter, setYearFilter] = React.useState<"all" | string>("all");
+  const [quickFilter, setQuickFilter] = React.useState<"all" | "overridden" | "super-admin-actions">("all");
   const [sortOrder, setSortOrder] = React.useState<"desc" | "asc">("desc");
   const [selectedRequest, setSelectedRequest] = React.useState<AdminRequestRecord | null>(null);
   const [nameMap, setNameMap] = React.useState<Record<string, string>>({});
+  const [superAdminMap, setSuperAdminMap] = React.useState<Record<string, boolean>>({});
   const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment();
 
   React.useEffect(() => {
@@ -181,6 +183,10 @@ const AdminRequestHistory: React.FC = () => {
           setNameMap((prev) => ({
             ...prev,
             [uid]: data.displayName || data.email || uid,
+          }));
+          setSuperAdminMap((prev) => ({
+            ...prev,
+            [uid]: !!data.isSuperAdmin,
           }));
         }
       } catch (e) {
@@ -276,6 +282,9 @@ const AdminRequestHistory: React.FC = () => {
 
   const filtered = React.useMemo(() => {
     const term = search.trim().toLowerCase();
+    const hasOverride = (req: AdminRequestRecord) =>
+      !!req.overriddenAt || !!req.overriddenBy || !!req.overrideReason;
+    const isSuperAdminActor = (uid?: string) => !!uid && !!superAdminMap[uid];
     const list = requests.filter((req) => {
       const statusKey = (req.status || "").toLowerCase();
       const statusMatch = statusFilter === "all" || statusKey === statusFilter;
@@ -288,7 +297,16 @@ const AdminRequestHistory: React.FC = () => {
         requester.includes(term) ||
         (req.purpose || "").toLowerCase().includes(term) ||
         (req.id || "").toLowerCase().includes(term);
-      return statusMatch && yearMatch && matchesSearch;
+      const quickFilterMatch =
+        quickFilter === "all"
+          ? true
+          : quickFilter === "overridden"
+          ? hasOverride(req)
+          : hasOverride(req) ||
+            isSuperAdminActor(req.approvedBy) ||
+            isSuperAdminActor(req.rejectedBy) ||
+            isSuperAdminActor(req.overriddenBy);
+      return statusMatch && yearMatch && matchesSearch && quickFilterMatch;
     });
 
     const getSortValue = (req: AdminRequestRecord) => {
@@ -301,7 +319,7 @@ const AdminRequestHistory: React.FC = () => {
       const diff = getSortValue(a) - getSortValue(b);
       return sortOrder === "asc" ? diff : -diff;
     });
-  }, [requests, search, statusFilter, yearFilter, sortOrder, nameMap]);
+  }, [requests, search, statusFilter, yearFilter, sortOrder, nameMap, quickFilter, superAdminMap]);
 
   const grouped = React.useMemo(() => {
     const buckets: Record<string, AdminRequestRecord[]> = {};
@@ -319,7 +337,7 @@ const AdminRequestHistory: React.FC = () => {
   }, [filtered]);
 
   const activeFilters =
-    search.trim().length > 0 || statusFilter !== "all" || yearFilter !== "all";
+    search.trim().length > 0 || statusFilter !== "all" || yearFilter !== "all" || quickFilter !== "all";
 
   return (
     <div className="p-6 space-y-6">
@@ -446,16 +464,44 @@ const AdminRequestHistory: React.FC = () => {
               </select>
             </label>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-base-content/70">Quick access:</span>
+            <button
+              className={`btn btn-sm ${quickFilter === "overridden" ? "btn-secondary" : "btn-outline"}`}
+              onClick={() =>
+                setQuickFilter((prev) => (prev === "overridden" ? "all" : "overridden"))
+              }
+            >
+              Only overridden requests
+            </button>
+            <button
+              className={`btn btn-sm ${quickFilter === "super-admin-actions" ? "btn-secondary" : "btn-outline"}`}
+              onClick={() =>
+                setQuickFilter((prev) =>
+                  prev === "super-admin-actions" ? "all" : "super-admin-actions"
+                )
+              }
+            >
+              Only super-admin actions
+            </button>
+          </div>
 
           {activeFilters && (
             <div className="flex flex-wrap gap-2">
               <span className="badge badge-outline">Filters active</span>
+              {quickFilter === "overridden" && (
+                <span className="badge badge-secondary">Only overridden requests</span>
+              )}
+              {quickFilter === "super-admin-actions" && (
+                <span className="badge badge-secondary">Only super-admin actions</span>
+              )}
               <button
                 className="btn btn-ghost btn-sm"
                 onClick={() => {
                   setSearch("");
                   setStatusFilter("all");
                   setYearFilter("all");
+                  setQuickFilter("all");
                   setSortOrder("desc");
                 }}
               >
