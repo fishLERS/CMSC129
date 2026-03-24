@@ -481,6 +481,10 @@ const AdminDashboard: React.FC = () => {
 
   async function confirmOverride() {
     if (!overrideId || !overrideAction) return;
+    if (!isSuperAdmin) {
+      setAlertMessage("Super Admin access is required for override actions.");
+      return;
+    }
     if (overrideAction === "reject" && !overrideReason.trim()) {
       setAlertMessage("Override reason is required to reject an approved request.");
       return;

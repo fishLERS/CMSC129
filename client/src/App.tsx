@@ -155,7 +155,7 @@ const App: React.FC = () => {
       <Route
         path="/admin/users"
         element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireAdmin requireSuperAdmin>
             <AdminDrawerLayout>
               <PageWithFooter>
                 <AdminUsers />
@@ -181,7 +181,7 @@ const App: React.FC = () => {
       <Route
         path="/admin/migration"
         element={
-          <ProtectedRoute requireAdmin>
+          <ProtectedRoute requireAdmin requireSuperAdmin>
             <AdminDrawerLayout>
               <PageWithFooter>
                 <DataMigration />
