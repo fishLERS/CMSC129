@@ -182,9 +182,9 @@ export default function Dashboard() {
       <div className="card bg-base-200 shadow-xl">
         <div className="card-body p-0">
           <div className="tabs tabs-boxed bg-base-300 p-2 flex flex-wrap">
-            <button className={`tab ${tab === "active" ? "tab-active" : ""}`} onClick={() => setTab("active")}>Active</button>
-            <button className={`tab ${tab === "archived" ? "tab-active" : ""}`} onClick={() => setTab("archived")}>Archived</button>
-            <button className={`tab ${tab === "purged" ? "tab-active" : ""}`} onClick={() => setTab("purged")}>Purged</button>
+            <button className={`tab transition-all duration-300 ease-in-out ${tab === "active" ? "tab-active bg-primary text-white font-semibold" : ""}`} onClick={() => setTab("active")}>Active</button>
+            <button className={`tab transition-all duration-300 ease-in-out ${tab === "archived" ? "tab-active bg-primary text-white font-semibold" : ""}`} onClick={() => setTab("archived")}>Archived</button>
+            <button className={`tab transition-all duration-300 ease-in-out ${tab === "purged" ? "tab-active bg-primary text-white font-semibold" : ""}`} onClick={() => setTab("purged")}>Purged</button>
           </div>
         </div>
         <div className="card-body space-y-4">
