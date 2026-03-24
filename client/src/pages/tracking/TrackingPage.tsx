@@ -2,6 +2,7 @@ import React from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { useRequests } from '../../hooks/useRequests'
 import { isOngoing } from "../../utils/requestTime"
+import { logicEquipment } from '../equipment/logicEquipment'
 import { MapPin, Clock, CheckCircle, XCircle, AlertCircle, FileText, X, Eye, Copy, RotateCcw } from 'lucide-react'
 
 export default function TrackingPage(){
@@ -15,6 +16,7 @@ export default function TrackingPage(){
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null)
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
   const [showAllCount, setShowAllCount] = React.useState(5)
+  const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment()
 
   /**
    * Transform API requests into row format for display.
@@ -29,6 +31,16 @@ export default function TrackingPage(){
       const purpose = req.purpose || '';
       const status = req.status || 'pending';
       const remarks = req.rejectionReason || '';
+
+      // Calculate total quantity
+      const totalQuantity = Array.isArray(req.items) ? req.items.reduce((s: any, i: any) => s + (i.qty || 0), 0) : 0;
+
+      // Get detailed items list for tooltip
+      const itemsList = Array.isArray(req.items) ? req.items.map((item: any) => {
+        const equipment = equipmentList.find((e: any) => e.equipmentID === item.equipmentID);
+        const itemName = equipment?.name || item.name || item.equipmentID || 'Unknown';
+        return `${itemName}: ${item.qty || 0}`;
+      }).join(', ') : '';
 
       // Compute human-friendly duration from startDate/endDate
       let duration = '';
@@ -63,13 +75,16 @@ export default function TrackingPage(){
         startDate: req.startDate,
         endDate: req.endDate,
         duration,
+        totalQuantity,
+        itemsList,
+        items: req.items || [],
       };
     });
 
     // Sort by date descending (newest first)
     docs.sort((a, b) => (b.sortKey || '').localeCompare(a.sortKey || ''));
     setRows(docs);
-  }, [requests]);
+  }, [requests, equipmentList]);
 
   // Highlight row if navigated from a notification (lastRequestId in localStorage)
   React.useEffect(() => {
@@ -217,6 +232,7 @@ export default function TrackingPage(){
               <thead>
                 <tr>
                   <th>Purpose</th>
+                  <th>Quantity</th>
                   <th>Request ID</th>
                   <th>Status</th>
                   <th>Remarks</th>
@@ -225,7 +241,7 @@ export default function TrackingPage(){
               <tbody>
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="text-center py-12">
+                    <td colSpan={5} className="text-center py-12">
                       <div className="flex flex-col items-center gap-2 text-base-content/60">
                         <MapPin className="w-12 h-12 opacity-30" />
                         <p className="font-medium">No requests found</p>
@@ -253,6 +269,19 @@ export default function TrackingPage(){
                             <Clock className="w-3 h-3" />
                             {r.duration}
                           </div>
+                        )}
+                      </td>
+                      <td>
+                        {filter === 'pending' && r.itemsList ? (
+                          <div className="tooltip" data-tip={r.itemsList}>
+                            <span className="badge badge-ghost cursor-help">
+                              {r.totalQuantity || '-'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="badge badge-ghost">
+                            {r.totalQuantity || '-'}
+                          </span>
                         )}
                       </td>
                       <td>
