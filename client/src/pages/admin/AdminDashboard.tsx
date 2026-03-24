@@ -847,13 +847,13 @@ const AdminDashboard: React.FC = () => {
           {/* Tabs Header */}
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300">
-              <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
-              <a role="tab" className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
-              <a role="tab" className={`tab ${tab === 'approved' ? 'tab-active' : ''}`} onClick={() => setTab('approved')}>Approved</a>
-              <a role="tab" className={`tab ${tab === 'declined' ? 'tab-active' : ''}`} onClick={() => setTab('declined')}>Declined</a>
-              <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
-              <a role="tab" className={`tab ${tab === 'returned' ? 'tab-active' : ''}`} onClick={() => setTab('returned')}>Returned</a>
-              <a role="tab" className={`tab ${tab === 'cleared' ? 'tab-active' : ''}`} onClick={() => setTab('cleared')}>Cleared</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('all')}>All</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('pending')}>Pending</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'approved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('approved')}>Approved</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'declined' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('declined')}>Declined</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'returned' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('returned')}>Returned</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'cleared' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('cleared')}>Cleared</a>
             </div>
           </div>
 
