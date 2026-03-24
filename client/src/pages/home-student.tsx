@@ -553,6 +553,18 @@ export default function HomeStudent() {
           <div className="stat-value text-info">{requests.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length}</div>
           <div className="stat-desc">Items returned</div>
         </div>
+        <div className="stat cursor-pointer hover:bg-base-300 hover:scale-100 active:scale-95 transition-all duration-200 overflow-hidden" onClick={() => nav('/accountabilities')}>
+          <div className="stat-title">Accountabilities</div>
+
+          <div className="stat-value text-error">
+            { accountabilities.filter(a => {
+              const s = (a.status || '').toLowerCase()
+              return s !== 'resolved' && s !== 'completed'
+             }).length
+            }
+          </div>
+        <div className="stat-desc">Unresolved issues</div>
+      </div>
       </div>
 
       {/* Requests Table Card */}
