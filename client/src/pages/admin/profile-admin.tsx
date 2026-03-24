@@ -23,7 +23,7 @@ interface AdminProfile {
 }
 
 export default function ProfileAdmin() {
-  const { user, isSuperAdmin } = useAuth();
+  const { user, isSuperAdmin, claimRoleLabel } = useAuth();
   const [loading, setLoading] = React.useState(true);
   const [profile, setProfile] = React.useState<AdminProfile | null>(null);
   const [editing, setEditing] = React.useState(false);
@@ -194,6 +194,11 @@ export default function ProfileAdmin() {
                   <span className="font-medium">
                     {roleLabel}
                   </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-base-content/60" />
+                  <span className="text-base-content/60">Claim Source:</span>
+                  <span className="font-medium">{claimRoleLabel}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Hash className="w-4 h-4 text-base-content/60" />

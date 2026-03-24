@@ -15,7 +15,7 @@ const LOGOUT_TOAST_KEY = "fishlers-logout-toast";
 const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isSuperAdmin, permissionNotice, dismissPermissionNotice } = useAuth();
+  const { user, isSuperAdmin, claimRoleLabel, permissionNotice, dismissPermissionNotice } = useAuth();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -99,7 +99,10 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
               </div>
             </button>
           </div>
-          <div className="navbar-end">
+          <div className="navbar-end gap-2">
+            <span className="badge badge-outline badge-sm text-primary-content border-primary-content/40">
+              {claimRoleLabel}
+            </span>
             <ThemeToggle className="text-primary-content" />
           </div>
         </nav>
@@ -188,6 +191,7 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
                 </span>
               </div>
               <span className="text-xs text-base-content/60 truncate block">{user?.email ?? ""}</span>
+              <span className="text-[10px] text-base-content/50 truncate block">{claimRoleLabel}</span>
             </div>
           </button>
         </div>

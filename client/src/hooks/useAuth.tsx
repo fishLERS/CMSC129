@@ -20,6 +20,7 @@ type AuthContextType = {
   error: string | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  claimRoleLabel: string;
   permissionNotice: string | null;
   dismissPermissionNotice: () => void;
   signup: (email: string, password: string, displayName: string) => Promise<User>;
@@ -43,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [claimRoleLabel, setClaimRoleLabel] = useState("Claim: Student");
   const [permissionNotice, setPermissionNotice] = useState<string | null>(null);
   const lastPermissionSignature = useRef<{
     uid: string;
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setIsAdmin(false);
             setIsSuperAdmin(false);
+            setClaimRoleLabel("Claim: Student");
             setPermissionNotice(null);
             lastPermissionSignature.current = null;
             localStorage.removeItem("authToken");
@@ -106,6 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(resolvedUser);
             setIsAdmin(hasAdminClaim && resolvedUser.role === "admin");
             setIsSuperAdmin(!!resolvedUser.isSuperAdmin);
+            setClaimRoleLabel(
+              hasSuperAdminClaim
+                ? "Claim: Super Admin"
+                : hasAdminClaim
+                ? "Claim: Admin"
+                : "Claim: Student"
+            );
             if (roleClaimMismatch || superClaimMismatch) {
               setPermissionNotice(
                 "Permissions were updated for this account. Please re-login to refresh your token and apply access changes."
@@ -136,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setIsAdmin(false);
             setIsSuperAdmin(false);
+            setClaimRoleLabel("Claim: Student");
             setPermissionNotice(null);
             lastPermissionSignature.current = null;
             setError(err.message);
@@ -161,6 +172,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = await authApi.signup(email, password, displayName);
       setUser(userData);
       setIsSuperAdmin(!!userData.isSuperAdmin);
+      setClaimRoleLabel(
+        userData.isSuperAdmin ? "Claim: Super Admin" : userData.role === "admin" ? "Claim: Admin" : "Claim: Student"
+      );
       setError(null);
       return userData;
     } catch (err: any) {
@@ -205,6 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setIsAdmin(false);
       setIsSuperAdmin(false);
+      setClaimRoleLabel("Claim: Student");
       setPermissionNotice(null);
       lastPermissionSignature.current = null;
       setError(null);
@@ -273,6 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     isAdmin,
     isSuperAdmin,
+    claimRoleLabel,
     permissionNotice,
     dismissPermissionNotice: () => setPermissionNotice(null),
     signup,
