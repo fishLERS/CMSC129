@@ -3,6 +3,7 @@ import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatRoleLabel } from '../../utils/roleLabel'
 import { setSuperAdmin } from '../../api/auth.api'
+import { useTelemetry } from '../../hooks/useTelemetry'
 
 interface UserData {
   uid: string
@@ -27,6 +28,7 @@ export default function AdminUsers() {
   const [confirmInput, setConfirmInput] = React.useState('')
   const [confirmSubmitting, setConfirmSubmitting] = React.useState(false)
   const confirmActionRef = React.useRef<null | (() => Promise<void>)>(null)
+  const { measureActionLatency } = useTelemetry()
 
   React.useEffect(() => {
     const usersRef = collection(db, 'users')
@@ -68,7 +70,11 @@ export default function AdminUsers() {
   async function applyAdminRoleChange(user: UserData, newRole: 'student' | 'admin') {
     try {
       setUpdating(user.uid)
-      await updateDoc(doc(db, 'users', user.uid), { role: newRole, requestedAdmin: false })
+      await measureActionLatency(
+        'admin_users.set_role_firestore',
+        () => updateDoc(doc(db, 'users', user.uid), { role: newRole, requestedAdmin: false }),
+        { uid: user.uid, newRole }
+      )
       setUsers((prev) =>
         prev.map((u) => (u.uid === user.uid ? { ...u, role: newRole, requestedAdmin: false } : u))
       )
@@ -89,7 +95,11 @@ export default function AdminUsers() {
   async function applySuperAdminChange(user: UserData, nextValue: boolean) {
     try {
       setUpdating(user.uid)
-      await setSuperAdmin(user.uid, nextValue)
+      await measureActionLatency(
+        'admin_users.set_super_admin',
+        () => setSuperAdmin(user.uid, nextValue),
+        { uid: user.uid, isSuperAdmin: nextValue }
+      )
       setUsers((prev) =>
         prev.map((u) =>
           u.uid === user.uid

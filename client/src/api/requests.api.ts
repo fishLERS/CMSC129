@@ -6,6 +6,7 @@
  */
 
 import { apiGet, apiPost, apiPatch, apiDelete } from "./http";
+import { measureActionLatency, trackSuperAdminApiFailure } from "../utils/telemetry";
 
 /**
  * Request item type.
@@ -129,8 +130,23 @@ export async function overrideApproveRequest(
   requestID: string,
   reason?: string
 ): Promise<Request> {
-  const data = await apiPost<Request>(`/api/requests/${requestID}/override-approve`, { reason });
-  return data;
+  const endpoint = `/api/requests/${requestID}/override-approve`;
+  try {
+    const data = await measureActionLatency(
+      "super_admin.override_approve",
+      () => apiPost<Request>(endpoint, { reason }),
+      { requestID, hasReason: !!reason }
+    );
+    return data;
+  } catch (error: any) {
+    trackSuperAdminApiFailure({
+      endpoint,
+      action: "override_approve",
+      error,
+      context: { requestID, hasReason: !!reason },
+    });
+    throw error;
+  }
 }
 
 /**
@@ -142,8 +158,23 @@ export async function overrideRejectRequest(
   requestID: string,
   reason: string
 ): Promise<Request> {
-  const data = await apiPost<Request>(`/api/requests/${requestID}/override-reject`, { reason });
-  return data;
+  const endpoint = `/api/requests/${requestID}/override-reject`;
+  try {
+    const data = await measureActionLatency(
+      "super_admin.override_reject",
+      () => apiPost<Request>(endpoint, { reason }),
+      { requestID, hasReason: !!reason }
+    );
+    return data;
+  } catch (error: any) {
+    trackSuperAdminApiFailure({
+      endpoint,
+      action: "override_reject",
+      error,
+      context: { requestID, hasReason: !!reason },
+    });
+    throw error;
+  }
 }
 
 /**

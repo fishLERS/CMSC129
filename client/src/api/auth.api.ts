@@ -6,6 +6,7 @@
  */
 
 import { apiPost, apiGet, apiPatch } from "./http";
+import { measureActionLatency, trackSuperAdminApiFailure } from "../utils/telemetry";
 
 /**
  * User type (from server models).
@@ -96,7 +97,22 @@ export async function setUserRole(
  * Body: { isSuperAdmin: boolean }
  */
 export async function setSuperAdmin(uid: string, isSuperAdmin: boolean): Promise<void> {
-  await apiPost(`/api/auth/${uid}/set-super-admin`, { isSuperAdmin });
+  const endpoint = `/api/auth/${uid}/set-super-admin`;
+  try {
+    await measureActionLatency(
+      "super_admin.set_super_admin",
+      () => apiPost(endpoint, { isSuperAdmin }),
+      { uid, isSuperAdmin }
+    );
+  } catch (error: any) {
+    trackSuperAdminApiFailure({
+      endpoint,
+      action: "set_super_admin",
+      error,
+      context: { uid, isSuperAdmin },
+    });
+    throw error;
+  }
 }
 
 /**
