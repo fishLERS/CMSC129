@@ -18,6 +18,7 @@ import Analytics from "./pages/admin/Analytics";
 import AdminRequestHistory from "./pages/admin/AdminRequestHistory";
 import DataMigration from "./pages/admin/DataMigration";
 import SuperAdminActivityLog from "./pages/admin/SuperAdminActivityLog";
+import PermissionsMatrix from "./pages/admin/PermissionsMatrix";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import DrawerLayout from "./components/DrawerLayout";
@@ -212,6 +213,19 @@ const App: React.FC = () => {
             <AdminDrawerLayout>
               <PageWithFooter>
                 <AdminRequestHistory />
+              </PageWithFooter>
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/permissions"
+        element={
+          <ProtectedRoute requireAdmin>
+            <AdminDrawerLayout>
+              <PageWithFooter>
+                <PermissionsMatrix />
               </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>
