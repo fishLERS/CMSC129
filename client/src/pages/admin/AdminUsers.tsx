@@ -210,13 +210,20 @@ export default function AdminUsers() {
                         <td>{user.email || '—'}</td>
                         <td>
                           <span
-                            className={`badge ${user.role === 'admin' ? 'badge-secondary' : 'badge-primary'} badge-sm`}
+                            className={`badge ${
+                              user.role === 'admin'
+                                ? user.isSuperAdmin
+                                  ? 'badge-accent'
+                                  : 'badge-secondary'
+                                : 'badge-primary'
+                            } badge-sm`}
                           >
-                            {user.role === 'admin' ? 'Admin' : 'Student'}
+                            {user.role === 'admin'
+                              ? user.isSuperAdmin
+                                ? 'Super Admin'
+                                : 'Admin'
+                              : 'Student'}
                           </span>
-                          {user.role === 'admin' && user.isSuperAdmin ? (
-                            <span className="badge badge-accent badge-sm ml-2">Super Admin</span>
-                          ) : null}
                           {user.requestedAdmin && user.role !== 'admin' ? (
                             <span className="badge badge-warning badge-sm ml-2">Requested</span>
                           ) : null}
