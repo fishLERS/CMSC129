@@ -37,6 +37,7 @@ export default function ProfileAdmin() {
   const [passwordError, setPasswordError] = React.useState("");
   const [passwordSuccess, setPasswordSuccess] = React.useState("");
   const isSuperAdmin = !!(profile?.isSuperAdmin || user?.isSuperAdmin);
+  const roleLabel = isSuperAdmin ? "Super Admin" : (profile?.role || "admin");
 
   React.useEffect(() => {
     if (!user) return;
@@ -191,7 +192,7 @@ export default function ProfileAdmin() {
                   <Shield className="w-4 h-4 text-base-content/60" />
                   <span className="text-base-content/60">Role:</span>
                   <span className="font-medium">
-                    {isSuperAdmin ? "super admin" : profile?.role || "admin"}
+                    {roleLabel}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -277,7 +278,7 @@ export default function ProfileAdmin() {
                     <input
                       type="text"
                       className={`input input-bordered w-full input-disabled ${editing ? "bg-base-300 opacity-60" : ""}`}
-                      value={profile?.role || "admin"}
+                      value={roleLabel}
                       placeholder="Role not set"
                       readOnly
                     />

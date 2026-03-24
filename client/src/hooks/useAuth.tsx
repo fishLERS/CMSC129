@@ -62,18 +62,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Use cached token when possible; force-refresh only when explicitly needed.
         try {
-          const token = await firebaseUser.getIdToken();
+          // Force-refresh to avoid stale custom claims after role/claim updates.
+          const idTokenResult = await firebaseUser.getIdTokenResult(true);
+          const token = idTokenResult.token;
           localStorage.setItem("authToken", token);
           const userData = await authApi.verifyToken(token);
-          
+
           // Check Firebase custom claims for admin status (admin OR superAdmin).
-          const idTokenResult = await firebaseUser.getIdTokenResult();
           const hasAdminClaim = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
+          const hasSuperAdminClaim = !!idTokenResult.claims.superAdmin;
+          const resolvedUser: User = {
+            ...userData,
+            // Claims are the runtime source of truth; fallback to API payload for compatibility.
+            isSuperAdmin: hasSuperAdminClaim || !!userData.isSuperAdmin,
+          };
 
           if (mounted) {
-            setUser(userData);
-            setIsAdmin(hasAdminClaim && userData.role === "admin");
-            localStorage.setItem("userRole", userData.role);
+            setUser(resolvedUser);
+            setIsAdmin(hasAdminClaim && resolvedUser.role === "admin");
+            localStorage.setItem("userRole", resolvedUser.role);
             setError(null);
           }
         } catch (err: any) {
