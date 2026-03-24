@@ -39,6 +39,10 @@ type AdminRequestRecord = {
   createdBy?: string;
   createdByName?: string;
   declinedRemarks?: string;
+  approvedBy?: string;
+  approvedAt?: any;
+  rejectedBy?: string;
+  rejectedAt?: any;
   overriddenBy?: string;
   overriddenAt?: any;
   overrideReason?: string;
@@ -78,6 +82,17 @@ const formatStatusLabel = (value?: string) => {
   const normalized = (value || "").toString().trim().toLowerCase();
   if (!normalized) return "Unknown";
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+};
+
+const toMillis = (value: any) => {
+  if (!value) return 0;
+  try {
+    if (typeof value?.toDate === "function") return value.toDate().getTime();
+    if (value instanceof Date) return value.getTime();
+    return new Date(value).getTime();
+  } catch {
+    return 0;
+  }
 };
 
 const AdminRequestHistory: React.FC = () => {
@@ -125,6 +140,10 @@ const AdminRequestHistory: React.FC = () => {
             createdBy: data.createdBy,
             createdByName: data.createdByName,
             declinedRemarks: data.declinedRemarks || data.remarks,
+            approvedBy: data.approvedBy,
+            approvedAt: data.approvedAt,
+            rejectedBy: data.rejectedBy,
+            rejectedAt: data.rejectedAt,
             overriddenBy: data.overriddenBy,
             overriddenAt: data.overriddenAt,
             overrideReason: data.overrideReason,
@@ -143,7 +162,12 @@ const AdminRequestHistory: React.FC = () => {
     const missing = Array.from(
       new Set(
         requests
-          .map((req) => req.createdBy)
+          .flatMap((req) => [
+            req.createdBy,
+            req.approvedBy,
+            req.rejectedBy,
+            req.overriddenBy,
+          ])
           .filter((uid): uid is string => !!uid && !nameMap[uid])
       )
     );
@@ -198,6 +222,57 @@ const AdminRequestHistory: React.FC = () => {
     if (req.createdBy) return req.createdBy;
     return "Unknown requester";
   };
+
+  const getActorName = (uid?: string) => {
+    if (!uid) return "System";
+    return nameMap[uid] || uid;
+  };
+
+  const timelineEvents = React.useMemo(() => {
+    if (!selectedRequest) return [];
+    const events: Array<{
+      key: string;
+      label: string;
+      badgeClass: string;
+      actor: string;
+      at: any;
+      reason?: string;
+    }> = [];
+
+    if (selectedRequest.approvedAt) {
+      events.push({
+        key: "approved",
+        label: "Approved",
+        badgeClass: "badge-success",
+        actor: getActorName(selectedRequest.approvedBy),
+        at: selectedRequest.approvedAt,
+      });
+    }
+
+    if (selectedRequest.rejectedAt || selectedRequest.status?.toLowerCase() === "declined" || selectedRequest.status?.toLowerCase() === "rejected") {
+      events.push({
+        key: "rejected",
+        label: "Rejected",
+        badgeClass: "badge-error",
+        actor: getActorName(selectedRequest.rejectedBy),
+        at: selectedRequest.rejectedAt,
+        reason: selectedRequest.declinedRemarks || undefined,
+      });
+    }
+
+    if (selectedRequest.overriddenAt || selectedRequest.overriddenBy || selectedRequest.overrideReason) {
+      events.push({
+        key: "overridden",
+        label: "Overridden",
+        badgeClass: "badge-secondary",
+        actor: getActorName(selectedRequest.overriddenBy),
+        at: selectedRequest.overriddenAt,
+        reason: selectedRequest.overrideReason || undefined,
+      });
+    }
+
+    return events.sort((a, b) => toMillis(b.at) - toMillis(a.at));
+  }, [selectedRequest, nameMap]);
 
   const filtered = React.useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -583,6 +658,40 @@ const AdminRequestHistory: React.FC = () => {
                     </>
                   )}
                 </div>
+              </div>
+              <div className="bg-base-200 rounded-lg p-4 space-y-3">
+                <p className="text-xs uppercase tracking-wide text-base-content/60">
+                  Decision Timeline
+                </p>
+                {timelineEvents.length === 0 ? (
+                  <p className="text-sm text-base-content/70">
+                    No approval, rejection, or override events recorded.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {timelineEvents.map((event) => (
+                      <div
+                        key={`${selectedRequest.id}-${event.key}`}
+                        className="rounded border border-base-300 bg-base-100 p-3"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`badge ${event.badgeClass}`}>{event.label}</span>
+                          <span className="text-xs text-base-content/60">
+                            {formatDateTime(event.at) || "Time not available"}
+                          </span>
+                        </div>
+                        <p className="text-sm mt-1">
+                          <span className="font-medium">Actor:</span> {event.actor}
+                        </p>
+                        {event.reason && (
+                          <p className="text-sm whitespace-pre-wrap">
+                            <span className="font-medium">Reason:</span> {event.reason}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wide text-base-content/60 mb-2">
