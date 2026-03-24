@@ -51,18 +51,34 @@ export class AuthService {
    * Returns user data if token is valid.
    */
   static async verifyToken(token: string): Promise<User> {
+    let decodedToken: any;
+
     try {
-      const decodedToken = await getAuth().verifyIdToken(token);
-      const user = await UserRepository.getById(decodedToken.uid);
-
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      return user;
+      decodedToken = await getAuth().verifyIdToken(token);
     } catch (error: any) {
       throw new Error("Invalid authentication token");
     }
+
+    let user = await UserRepository.getById(decodedToken.uid);
+
+    // Auto-bootstrap Firestore user record if auth exists but profile doc is missing.
+    if (!user) {
+      const authUser = await getAuth().getUser(decodedToken.uid);
+      const isSuperAdmin = !!decodedToken.superAdmin;
+      const isAdmin = !!decodedToken.admin || isSuperAdmin;
+
+      user = await UserRepository.create(decodedToken.uid, {
+        email: authUser.email || decodedToken.email || "",
+        displayName:
+          authUser.displayName ||
+          (authUser.email ? authUser.email.split("@")[0] : "User"),
+        role: isAdmin ? "admin" : "student",
+        isSuperAdmin,
+        isActive: true,
+      });
+    }
+
+    return user;
   }
 
   /**

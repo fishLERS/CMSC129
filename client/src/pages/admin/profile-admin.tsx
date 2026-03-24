@@ -17,6 +17,7 @@ interface AdminProfile {
   photoURL?: string;
   staffId?: string;
   role?: string;
+  isSuperAdmin?: boolean;
   uid?: string;
 }
 
@@ -35,6 +36,7 @@ export default function ProfileAdmin() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [passwordError, setPasswordError] = React.useState("");
   const [passwordSuccess, setPasswordSuccess] = React.useState("");
+  const isSuperAdmin = !!(profile?.isSuperAdmin || user?.isSuperAdmin);
 
   React.useEffect(() => {
     if (!user) return;
@@ -139,9 +141,13 @@ export default function ProfileAdmin() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <User className="w-6 h-6" />
-          Admin Profile
+          {isSuperAdmin ? "Super Admin Profile" : "Admin Profile"}
         </h1>
-        <p className="text-base-content/70">Manage your admin account information.</p>
+        <p className="text-base-content/70">
+          {isSuperAdmin
+            ? "Manage your super admin account information."
+            : "Manage your admin account information."}
+        </p>
       </div>
 
       {loading ? (
@@ -168,7 +174,9 @@ export default function ProfileAdmin() {
                 </div>
               </div>
               <h2 className="card-title mt-4">{profile?.displayName || user.displayName || "Admin"}</h2>
-              <span className="badge badge-secondary">Admin</span>
+              <span className={`badge ${isSuperAdmin ? "badge-accent" : "badge-secondary"}`}>
+                {isSuperAdmin ? "Super Admin" : "Admin"}
+              </span>
               <p className="text-sm text-base-content/60 mt-2">{profile?.email || user.email}</p>
 
               <div className="divider"></div>
@@ -182,7 +190,9 @@ export default function ProfileAdmin() {
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-base-content/60" />
                   <span className="text-base-content/60">Role:</span>
-                  <span className="font-medium">{profile?.role || "admin"}</span>
+                  <span className="font-medium">
+                    {isSuperAdmin ? "super admin" : profile?.role || "admin"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Hash className="w-4 h-4 text-base-content/60" />

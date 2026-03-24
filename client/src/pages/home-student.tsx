@@ -400,32 +400,46 @@ export default function HomeStudent() {
   }, [user])
 
   React.useEffect(() => {
-    const missingIds = accountabilities
-      .map(acc => acc.requestId)
-      .filter((id): id is string => !!id && !accountabilityRequestInfo[id])
+    const missingIds = Array.from(
+      new Set(
+        accountabilities
+          .map(acc => acc.requestId)
+          .filter((id): id is string => !!id && !accountabilityRequestInfo[id])
+      )
+    )
     if (!missingIds.length) return
-    missingIds.forEach(async (requestId) => {
-      try {
-        const snap = await getDoc(docRef(db, 'requests', requestId))
-        if (snap.exists()) {
-          const data: any = snap.data()
-          setAccountabilityRequestInfo(prev => ({
-            ...prev,
-            [requestId]: {
-              purpose: data.purpose || '',
-              createdAt: data.createdAt || data.createdAtClient || null,
+
+    let cancelled = false
+    ;(async () => {
+      const updates: Record<string, { purpose?: string; createdAt?: any }> = {}
+      await Promise.all(
+        missingIds.map(async (requestId) => {
+          try {
+            const snap = await getDoc(docRef(db, 'requests', requestId))
+            if (snap.exists()) {
+              const data: any = snap.data()
+              updates[requestId] = {
+                purpose: data.purpose || '',
+                createdAt: data.createdAt || data.createdAtClient || null,
+              }
+            } else {
+              updates[requestId] = { purpose: '', createdAt: null }
             }
-          }))
-        } else {
-          setAccountabilityRequestInfo(prev => ({
-            ...prev,
-            [requestId]: { purpose: '', createdAt: null }
-          }))
-        }
-      } catch (e) {
-        console.warn('Failed to load accountability request info', e)
+          } catch (e) {
+            console.warn('Failed to load accountability request info', e)
+            updates[requestId] = { purpose: '', createdAt: null }
+          }
+        })
+      )
+
+      if (!cancelled && Object.keys(updates).length > 0) {
+        setAccountabilityRequestInfo(prev => ({ ...prev, ...updates }))
       }
-    })
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [accountabilities, accountabilityRequestInfo])
 
 
@@ -445,6 +459,10 @@ export default function HomeStudent() {
           <h1 className="text-2xl font-bold">Student Dashboard</h1>
           <p className="text-base-content/70">Welcome, {user?.displayName ?? user?.email?.split('@')[0] ?? 'Student'}! Today is {formatDate(new Date())}</p>
         </div>
+                
+        <button className="btn btn-primary btn-sm" onClick={() => nav("/requestpage")}>
+          + Request Equipment
+        </button>
 
         {/* Notification dropdown */}
         <div className="relative">
@@ -535,6 +553,18 @@ export default function HomeStudent() {
           <div className="stat-value text-info">{requests.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length}</div>
           <div className="stat-desc">Items returned</div>
         </div>
+        <div className="stat cursor-pointer hover:bg-base-300 hover:scale-100 active:scale-95 transition-all duration-200 overflow-hidden" onClick={() => nav('/accountabilities')}>
+          <div className="stat-title">Accountabilities</div>
+
+          <div className="stat-value text-error">
+            { accountabilities.filter(a => {
+              const s = (a.status || '').toLowerCase()
+              return s !== 'resolved' && s !== 'completed'
+             }).length
+            }
+          </div>
+        <div className="stat-desc">Unresolved issues</div>
+      </div>
       </div>
 
       {/* Requests Table Card */}
@@ -543,14 +573,13 @@ export default function HomeStudent() {
           {/* Tabs Header */}
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300">
-              <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
-              <a role="tab" className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
-              <a role="tab" className={`tab ${tab === 'ongoing' ? 'tab-active' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
-              <a role="tab" className={`tab ${tab === 'approved' ? 'tab-active' : ''}`} onClick={() => setTab('approved')}>Approved</a>
-              <a role="tab" className={`tab ${tab === 'completed' ? 'tab-active' : ''}`} onClick={() => setTab('completed')}>Completed</a>
-              <a role="tab" className={`tab ${tab === 'rejected' ? 'tab-active' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
-              <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
-              <a role="tab" className={`tab ${tab === 'accountability' ? 'tab-active' : ''}`} onClick={() => setTab('accountability')}>Accountability</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('all')}>All</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('pending')}>Pending</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'approved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('approved')}>Approved</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'ongoing' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'completed' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('completed')}>Completed</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'rejected' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
             </div>
           </div>
 
@@ -616,7 +645,7 @@ export default function HomeStudent() {
                             Cancel
                           </button>
                         )}
-                        {['approved', 'ongoing'].includes((r.status || '').toString().toLowerCase()) && (
+                        {tab === 'ongoing' && isOngoing(r) && (
                           <button 
                             className="btn btn-primary btn-sm gap-1" 
                             disabled={busyId === r.id} 

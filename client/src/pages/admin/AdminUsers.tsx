@@ -7,6 +7,7 @@ interface UserData {
   displayName?: string
   email?: string
   role?: string
+  isSuperAdmin?: boolean
   createdAt?: any
   requestedAdmin?: boolean
 }
@@ -32,6 +33,7 @@ export default function AdminUsers() {
               displayName: data.displayName || '',
               email: data.email || '',
               role: data.role || 'student',
+              isSuperAdmin: !!data.isSuperAdmin,
               createdAt: data.createdAt,
               requestedAdmin: !!data.requestedAdmin,
             })
@@ -100,6 +102,7 @@ export default function AdminUsers() {
   })
 
   const adminCount = users.filter((u) => u.role === 'admin').length
+  const superAdminCount = users.filter((u) => u.role === 'admin' && u.isSuperAdmin).length
   const pendingCount = users.filter((u) => u.role !== 'admin' && u.requestedAdmin).length
 
   return (
@@ -125,6 +128,11 @@ export default function AdminUsers() {
           <div className="stat-title">Current Admins</div>
           <div className="stat-value text-secondary">{adminCount}</div>
           <div className="stat-desc">Elevated users</div>
+        </div>
+        <div className="stat">
+          <div className="stat-title">Super Admins</div>
+          <div className="stat-value text-accent">{superAdminCount}</div>
+          <div className="stat-desc">Override access</div>
         </div>
         <div className="stat">
           <div className="stat-title">Pending Requests</div>
@@ -206,6 +214,9 @@ export default function AdminUsers() {
                           >
                             {user.role === 'admin' ? 'Admin' : 'Student'}
                           </span>
+                          {user.role === 'admin' && user.isSuperAdmin ? (
+                            <span className="badge badge-accent badge-sm ml-2">Super Admin</span>
+                          ) : null}
                           {user.requestedAdmin && user.role !== 'admin' ? (
                             <span className="badge badge-warning badge-sm ml-2">Requested</span>
                           ) : null}

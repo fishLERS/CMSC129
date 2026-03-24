@@ -187,22 +187,22 @@ export default function TrackingPage(){
           {/* Filter Tabs */}
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300 w-fit">
-              <a role="tab" className={`tab ${filter === 'all' ? 'tab-active' : ''}`} onClick={() => setFilter('all')}>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('all')}>
                 All ({rows.length})
               </a>
-              <a role="tab" className={`tab ${filter === 'pending' ? 'tab-active' : ''}`} onClick={() => setFilter('pending')}>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('pending')}>
                 Pending ({pendingCount})
               </a>
-              <a role="tab" className={`tab ${filter === 'ongoing' ? 'tab-active' : ''}`} onClick={() => setFilter('ongoing')}>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'ongoing' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('ongoing')}>
                 Ongoing ({ongoingCount})
               </a>
-              <a role="tab" className={`tab ${filter === 'approved' ? 'tab-active' : ''}`} onClick={() => setFilter('approved')}>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'approved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('approved')}>
                 Approved ({approvedCount})
               </a>
-              <a role="tab" className={`tab ${filter === 'completed' ? 'tab-active' : ''}`} onClick={() => setFilter('completed')}>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'completed' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('completed')}>
                 Completed ({completedCount})
               </a>
-              <a role="tab" className={`tab ${filter === 'declined' ? 'tab-active' : ''}`} onClick={() => setFilter('declined')}>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'declined' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('declined')}>
                 Declined ({declinedCount})
               </a>
             </div>

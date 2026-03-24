@@ -1,5 +1,5 @@
 import React from 'react'
-import { collection, onSnapshot } from 'firebase/firestore'
+import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { TrendingUp, TrendingDown, Users, Package, ClipboardList, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 
@@ -38,89 +38,67 @@ export default function Analytics() {
 
   React.useEffect(() => {
     setLoading(true)
-    const loadState = { requests: false, equipment: false, users: false }
-    const markLoaded = (key: keyof typeof loadState) => {
-      if (!loadState[key]) {
-        loadState[key] = true
-        if (Object.values(loadState).every(Boolean)) {
-          setLoading(false)
-        }
-      }
-    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const [requestsSnap, equipmentSnap, usersSnap] = await Promise.all([
+          getDocs(query(collection(db, 'requests'), orderBy('createdAt', 'desc'), limit(200))),
+          getDocs(collection(db, 'equipment')),
+          getDocs(collection(db, 'users')),
+        ])
 
-    const unsubRequests = onSnapshot(
-      collection(db, 'requests'),
-      (snapshot) => {
-        const requestsList: RequestData[] = snapshot.docs.map((doc) => {
-          const data = doc.data()
-          return {
-            id: doc.id,
-            status: data.status || 'unknown',
-            createdAt: data.createdAt,
-            createdAtClient: data.createdAtClient,
-            createdBy: data.createdBy || '',
-            purpose: data.purpose || '',
-            items: data.items || [],
-          }
-        })
-        setRequests(requestsList)
-        markLoaded('requests')
-      },
-      (error) => {
-        console.error('Failed to subscribe to requests', error)
-        markLoaded('requests')
-      }
-    )
+        if (cancelled) return
 
-    const unsubEquipment = onSnapshot(
-      collection(db, 'equipment'),
-      (snapshot) => {
-        const equipmentList: EquipmentData[] = snapshot.docs.map((doc) => {
-          const data = doc.data()
-          return {
-            equipmentID: doc.id,
-            name: data.name || '',
-            totalInventory: data.totalInventory || 0,
-            category: data.category || 'Uncategorized',
-            isDisposable: data.isDisposable || false,
-          }
-        })
-        setEquipment(equipmentList)
-        markLoaded('equipment')
-      },
-      (error) => {
-        console.error('Failed to subscribe to equipment', error)
-        markLoaded('equipment')
-      }
-    )
+        setRequests(
+          requestsSnap.docs.map((doc) => {
+            const data = doc.data()
+            return {
+              id: doc.id,
+              status: data.status || 'unknown',
+              createdAt: data.createdAt,
+              createdAtClient: data.createdAtClient,
+              createdBy: data.createdBy || '',
+              purpose: data.purpose || '',
+              items: data.items || [],
+            } as RequestData
+          })
+        )
 
-    const unsubUsers = onSnapshot(
-      collection(db, 'users'),
-      (snapshot) => {
-        const usersList: UserData[] = snapshot.docs.map((doc) => {
-          const data = doc.data()
-          return {
-            uid: doc.id,
-            role: data.role || 'student',
-            createdAt: data.createdAt,
-            requestedAdmin: data.requestedAdmin || false,
-            displayName: data.displayName || '',
-            email: data.email || '',
-          }
-        })
-        setUsers(usersList)
-        markLoaded('users')
-      },
-      (error) => {
-        console.error('Failed to subscribe to users', error)
-        markLoaded('users')
+        setEquipment(
+          equipmentSnap.docs.map((doc) => {
+            const data = doc.data()
+            return {
+              equipmentID: doc.id,
+              name: data.name || '',
+              totalInventory: data.totalInventory || 0,
+              category: data.category || 'Uncategorized',
+              isDisposable: data.isDisposable || false,
+            } as EquipmentData
+          })
+        )
+
+        setUsers(
+          usersSnap.docs.map((doc) => {
+            const data = doc.data()
+            return {
+              uid: doc.id,
+              role: data.role || 'student',
+              createdAt: data.createdAt,
+              requestedAdmin: data.requestedAdmin || false,
+              displayName: data.displayName || '',
+              email: data.email || '',
+            } as UserData
+          })
+        )
+      } catch (error) {
+        console.error('Failed to load analytics data', error)
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-    )
+    })()
 
     return () => {
-      unsubRequests()
-      unsubEquipment()
-      unsubUsers()
+      cancelled = true
     }
   }, [])
 

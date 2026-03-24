@@ -65,6 +65,7 @@ const AdminDashboard: React.FC = () => {
   const [recentNotifications, setRecentNotifications] = useState<Array<any>>([]);
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
   const highlightTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userNameCacheRef = React.useRef<Record<string, string>>({});
 
   const closeRequestModal = useCallback(() => {
     if (isFinalizingReturn) return;
@@ -201,7 +202,7 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    const q = query(collection(db, "requests"), orderBy("createdAt", "desc"), limit(50));
+    const q = query(collection(db, "requests"), orderBy("createdAt", "desc"), limit(20));
     const unsub = onSnapshot(q, async (snap) => {
       try {
         const data = snap.docs.map((docSnap) => ({
@@ -210,25 +211,30 @@ const AdminDashboard: React.FC = () => {
         })) as Request[];
 
         const uids = Array.from(new Set(data.map((d: any) => d.createdBy).filter(Boolean)));
-        const userNameByUid: Record<string, string> = {};
-        await Promise.all(
-          uids.map(async (uid) => {
-            try {
-              const userDoc = await getDoc(doc(db, "users", uid));
-              if (userDoc.exists()) {
-                const ud = userDoc.data() as any;
-                userNameByUid[uid] = ud.displayName || ud.email || uid;
+        const missingUids = uids.filter((uid) => !userNameCacheRef.current[uid]);
+        if (missingUids.length > 0) {
+          await Promise.all(
+            missingUids.map(async (uid) => {
+              try {
+                const userDoc = await getDoc(doc(db, "users", uid));
+                if (userDoc.exists()) {
+                  const ud = userDoc.data() as any;
+                  userNameCacheRef.current[uid] = ud.displayName || ud.email || uid;
+                } else {
+                  userNameCacheRef.current[uid] = uid;
+                }
+              } catch (e) {
+                console.warn("Failed to load user", uid, e);
+                userNameCacheRef.current[uid] = uid;
               }
-            } catch (e) {
-              console.warn("Failed to load user", uid, e);
-            }
-          })
-        );
+            })
+          );
+        }
 
         const enriched = data.map((d) => ({
           ...d,
           createdByName: (d as any).createdBy
-            ? userNameByUid[(d as any).createdBy] || (d as any).createdBy
+            ? userNameCacheRef.current[(d as any).createdBy] || (d as any).createdBy
             : undefined,
         }));
         setRequests(enriched as Request[]);
@@ -841,13 +847,13 @@ const AdminDashboard: React.FC = () => {
           {/* Tabs Header */}
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300">
-              <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
-              <a role="tab" className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
-              <a role="tab" className={`tab ${tab === 'approved' ? 'tab-active' : ''}`} onClick={() => setTab('approved')}>Approved</a>
-              <a role="tab" className={`tab ${tab === 'declined' ? 'tab-active' : ''}`} onClick={() => setTab('declined')}>Declined</a>
-              <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
-              <a role="tab" className={`tab ${tab === 'returned' ? 'tab-active' : ''}`} onClick={() => setTab('returned')}>Returned</a>
-              <a role="tab" className={`tab ${tab === 'cleared' ? 'tab-active' : ''}`} onClick={() => setTab('cleared')}>Cleared</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('all')}>All</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('pending')}>Pending</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'approved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('approved')}>Approved</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'declined' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('declined')}>Declined</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'returned' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('returned')}>Returned</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'cleared' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('cleared')}>Cleared</a>
             </div>
           </div>
 
