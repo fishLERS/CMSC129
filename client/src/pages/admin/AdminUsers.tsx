@@ -1,6 +1,8 @@
 import React from 'react'
 import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
+import { formatRoleLabel } from '../../utils/roleLabel'
+import { setSuperAdmin } from '../../api/auth.api'
 
 interface UserData {
   uid: string
@@ -18,6 +20,7 @@ export default function AdminUsers() {
   const [updating, setUpdating] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState('')
   const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
+  const [alertType, setAlertType] = React.useState<'success' | 'error' | 'info'>('info')
 
   React.useEffect(() => {
     const usersRef = collection(db, 'users')
@@ -71,9 +74,52 @@ export default function AdminUsers() {
       setUsers((prev) =>
         prev.map((u) => (u.uid === user.uid ? { ...u, role: newRole, requestedAdmin: false } : u))
       )
+      setAlertType('info')
+      setAlertMessage(
+        `Permissions updated for ${user.email || user.displayName || user.uid}. ` +
+        `Please ask this user to re-login to refresh their token and apply new access.`
+      )
     } catch (error) {
       console.error('Failed to update user role', error)
+      setAlertType('error')
       setAlertMessage('Failed to update user role. Please try again.')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  async function toggleSuperAdmin(user: UserData) {
+    const nextValue = !user.isSuperAdmin
+    const confirmMsg = nextValue
+      ? `Promote ${user.email || user.displayName || user.uid} to Super Admin?`
+      : `Demote ${user.email || user.displayName || user.uid} from Super Admin?`
+
+    if (!confirm(confirmMsg)) return
+
+    try {
+      setUpdating(user.uid)
+      await setSuperAdmin(user.uid, nextValue)
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.uid === user.uid
+            ? {
+                ...u,
+                role: nextValue ? 'admin' : u.role,
+                isSuperAdmin: nextValue,
+                requestedAdmin: false,
+              }
+            : u
+        )
+      )
+      setAlertType('info')
+      setAlertMessage(
+        `Permissions updated for ${user.email || user.displayName || user.uid}. ` +
+        `Please ask this user to re-login to refresh their token and apply new access.`
+      )
+    } catch (error: any) {
+      console.error('Failed to update super admin role', error)
+      setAlertType('error')
+      setAlertMessage(error?.message || 'Failed to update super admin role. Please try again.')
     } finally {
       setUpdating(null)
     }
@@ -108,7 +154,7 @@ export default function AdminUsers() {
   return (
     <div className="p-6 space-y-6">
       {alertMessage && (
-        <div className="alert alert-error">
+        <div className={`alert ${alertType === 'error' ? 'alert-error' : alertType === 'success' ? 'alert-success' : 'alert-info'}`}>
           <span>{alertMessage}</span>
           <button className="btn btn-sm" onClick={() => setAlertMessage(null)}>Close</button>
         </div>
@@ -210,30 +256,48 @@ export default function AdminUsers() {
                         <td>{user.email || '—'}</td>
                         <td>
                           <span
-                            className={`badge ${user.role === 'admin' ? 'badge-secondary' : 'badge-primary'} badge-sm`}
+                            className={`badge ${
+                              user.role === 'admin'
+                                ? user.isSuperAdmin
+                                  ? 'badge-accent'
+                                  : 'badge-secondary'
+                                : 'badge-primary'
+                            } badge-sm`}
                           >
-                            {user.role === 'admin' ? 'Admin' : 'Student'}
+                            {formatRoleLabel(user.role || 'student', !!user.isSuperAdmin)}
                           </span>
-                          {user.role === 'admin' && user.isSuperAdmin ? (
-                            <span className="badge badge-accent badge-sm ml-2">Super Admin</span>
-                          ) : null}
                           {user.requestedAdmin && user.role !== 'admin' ? (
                             <span className="badge badge-warning badge-sm ml-2">Requested</span>
                           ) : null}
                         </td>
                         <td className="text-sm">{formatDate(user.createdAt) || '—'}</td>
                         <td>
-                          <button
-                            className={`btn btn-sm ${user.role === 'admin' ? 'btn-error' : 'btn-primary'}`}
-                            onClick={() => toggleAdmin(user)}
-                            disabled={updating === user.uid}
-                          >
-                            {updating === user.uid
-                              ? 'Updating...'
-                              : user.role === 'admin'
-                              ? 'Revoke Admin'
-                              : 'Grant Admin'}
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              className={`btn btn-sm ${user.role === 'admin' ? 'btn-error' : 'btn-primary'}`}
+                              onClick={() => toggleAdmin(user)}
+                              disabled={updating === user.uid}
+                            >
+                              {updating === user.uid
+                                ? 'Updating...'
+                                : user.role === 'admin'
+                                ? 'Revoke Admin'
+                                : 'Grant Admin'}
+                            </button>
+                            {user.role === 'admin' && (
+                              <button
+                                className={`btn btn-sm ${user.isSuperAdmin ? 'btn-warning' : 'btn-accent'}`}
+                                onClick={() => toggleSuperAdmin(user)}
+                                disabled={updating === user.uid}
+                              >
+                                {updating === user.uid
+                                  ? 'Updating...'
+                                  : user.isSuperAdmin
+                                  ? 'Remove Super'
+                                  : 'Make Super'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -251,6 +315,7 @@ export default function AdminUsers() {
           <ul className="text-sm text-base-content/70 list-disc list-inside space-y-1">
             <li>This list shows current admins plus users who requested elevated access.</li>
             <li>Granting access promotes the user and clears their pending flag.</li>
+            <li>Use Make Super/Remove Super to manage super-admin access through backend claims.</li>
             <li>Revoking access demotes the user back to student immediately.</li>
             <li>All changes are applied in real time via Firestore snapshots.</li>
           </ul>

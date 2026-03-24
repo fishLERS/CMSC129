@@ -2,18 +2,21 @@ import React from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { useRequests } from '../../hooks/useRequests'
 import { isOngoing } from "../../utils/requestTime"
+import { logicEquipment } from '../equipment/logicEquipment'
 import { MapPin, Clock, CheckCircle, XCircle, AlertCircle, FileText, X, Eye, Copy, RotateCcw } from 'lucide-react'
 
 export default function TrackingPage(){
   const { user } = useAuth()
   const { requests, isLoading } = useRequests(user?.uid)
   const [rows, setRows] = React.useState<Array<any>>([])
-  const [filter, setFilter] = React.useState<'all' | 'pending'| 'ongoing' | 'completed' | 'approved' | 'declined'>('all')
+  const [filter, setFilter] = React.useState<'all' | 'pending'| 'ongoing' | 'completed' | 'approved' | 'declined' | 'rejected_cancelled'>('all')
   
   const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
   const [showRemarksText, setShowRemarksText] = React.useState('')
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null)
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
+  const [showAllCount, setShowAllCount] = React.useState(5)
+  const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment()
 
   /**
    * Transform API requests into row format for display.
@@ -28,6 +31,16 @@ export default function TrackingPage(){
       const purpose = req.purpose || '';
       const status = req.status || 'pending';
       const remarks = req.rejectionReason || '';
+
+      // Calculate total quantity
+      const totalQuantity = Array.isArray(req.items) ? req.items.reduce((s: any, i: any) => s + (i.qty || 0), 0) : 0;
+
+      // Get detailed items list for tooltip
+      const itemsList = Array.isArray(req.items) ? req.items.map((item: any) => {
+        const equipment = equipmentList.find((e: any) => e.equipmentID === item.equipmentID);
+        const itemName = equipment?.name || item.name || item.equipmentID || 'Unknown';
+        return `${itemName}: ${item.qty || 0}`;
+      }).join(', ') : '';
 
       // Compute human-friendly duration from startDate/endDate
       let duration = '';
@@ -62,13 +75,16 @@ export default function TrackingPage(){
         startDate: req.startDate,
         endDate: req.endDate,
         duration,
+        totalQuantity,
+        itemsList,
+        items: req.items || [],
       };
     });
 
     // Sort by date descending (newest first)
     docs.sort((a, b) => (b.sortKey || '').localeCompare(a.sortKey || ''));
     setRows(docs);
-  }, [requests]);
+  }, [requests, equipmentList]);
 
   // Highlight row if navigated from a notification (lastRequestId in localStorage)
   React.useEffect(() => {
@@ -103,6 +119,7 @@ export default function TrackingPage(){
     if (filter === 'ongoing') return s === 'approved' && isOngoing(r)
     if (filter === 'approved') return s === 'approved' && !isOngoing(r)
     if (filter === 'declined') return s === 'declined' || s === 'rejected'
+    if (filter === 'rejected_cancelled') return s === 'declined' || s === 'rejected' || s === 'cancelled'
     return true
   })
 
@@ -112,6 +129,7 @@ export default function TrackingPage(){
   const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
   const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && !isOngoing(r)).length
   const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
+  const rejectedCancelledCount = rows.filter(r => ['declined', 'rejected', 'cancelled'].includes((r.status || '').toLowerCase())).length
   const completedCount = rows.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length
 
   // Status badge helper
@@ -187,7 +205,7 @@ export default function TrackingPage(){
           {/* Filter Tabs */}
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300 w-fit">
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('all')}>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => { setFilter('all'); setShowAllCount(5); }}>
                 All ({rows.length})
               </a>
               <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('pending')}>
@@ -202,8 +220,8 @@ export default function TrackingPage(){
               <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'completed' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('completed')}>
                 Completed ({completedCount})
               </a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'declined' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('declined')}>
-                Declined ({declinedCount})
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'rejected_cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('rejected_cancelled')}>
+                Unfulfilled ({rejectedCancelledCount})
               </a>
             </div>
           </div>
@@ -214,6 +232,7 @@ export default function TrackingPage(){
               <thead>
                 <tr>
                   <th>Purpose</th>
+                  <th>Quantity</th>
                   <th>Request ID</th>
                   <th>Status</th>
                   <th>Remarks</th>
@@ -222,20 +241,22 @@ export default function TrackingPage(){
               <tbody>
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="text-center py-12">
+                    <td colSpan={5} className="text-center py-12">
                       <div className="flex flex-col items-center gap-2 text-base-content/60">
                         <MapPin className="w-12 h-12 opacity-30" />
                         <p className="font-medium">No requests found</p>
                         <p className="text-sm">
                           {filter === 'all' 
                             ? "You haven't made any requests yet" 
+                            : filter === 'rejected_cancelled'
+                            ? 'No rejected or cancelled requests'
                             : `No ${filter} requests`}
                         </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  filteredRows.map((r, idx) => (
+                  (filter === 'all' ? filteredRows.slice(0, showAllCount) : filteredRows).map((r, idx) => (
                     <tr
                       key={r.requestId || idx}
                       id={`req-${r.requestId}`}
@@ -248,6 +269,19 @@ export default function TrackingPage(){
                             <Clock className="w-3 h-3" />
                             {r.duration}
                           </div>
+                        )}
+                      </td>
+                      <td>
+                        {filter === 'pending' && r.itemsList ? (
+                          <div className="tooltip" data-tip={r.itemsList}>
+                            <span className="badge badge-ghost cursor-help">
+                              {r.totalQuantity || '-'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="badge badge-ghost">
+                            {r.totalQuantity || '-'}
+                          </span>
                         )}
                       </td>
                       <td>
@@ -284,6 +318,16 @@ export default function TrackingPage(){
               </tbody>
             </table>
           </div>
+          {filter === 'all' && filteredRows.length > showAllCount && (
+            <div className="p-4 border-t border-base-300 flex justify-center">
+              <button 
+                className="btn btn-primary btn-outline"
+                onClick={() => setShowAllCount(showAllCount + 5)}
+              >
+                Show more
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

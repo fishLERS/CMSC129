@@ -10,6 +10,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../../firebase";
+import { formatRoleLabel } from "../../utils/roleLabel";
 
 interface AdminProfile {
   displayName?: string;
@@ -22,7 +23,7 @@ interface AdminProfile {
 }
 
 export default function ProfileAdmin() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const [loading, setLoading] = React.useState(true);
   const [profile, setProfile] = React.useState<AdminProfile | null>(null);
   const [editing, setEditing] = React.useState(false);
@@ -36,7 +37,7 @@ export default function ProfileAdmin() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [passwordError, setPasswordError] = React.useState("");
   const [passwordSuccess, setPasswordSuccess] = React.useState("");
-  const isSuperAdmin = !!(profile?.isSuperAdmin || user?.isSuperAdmin);
+  const roleLabel = formatRoleLabel(profile?.role || "admin", isSuperAdmin);
 
   React.useEffect(() => {
     if (!user) return;
@@ -145,8 +146,8 @@ export default function ProfileAdmin() {
         </h1>
         <p className="text-base-content/70">
           {isSuperAdmin
-            ? "Manage your super admin account information."
-            : "Manage your admin account information."}
+            ? "Manage your Super Admin account information."
+            : "Manage your Admin account information."}
         </p>
       </div>
 
@@ -191,7 +192,7 @@ export default function ProfileAdmin() {
                   <Shield className="w-4 h-4 text-base-content/60" />
                   <span className="text-base-content/60">Role:</span>
                   <span className="font-medium">
-                    {isSuperAdmin ? "super admin" : profile?.role || "admin"}
+                    {roleLabel}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -277,7 +278,7 @@ export default function ProfileAdmin() {
                     <input
                       type="text"
                       className={`input input-bordered w-full input-disabled ${editing ? "bg-base-300 opacity-60" : ""}`}
-                      value={profile?.role || "admin"}
+                      value={roleLabel}
                       placeholder="Role not set"
                       readOnly
                     />

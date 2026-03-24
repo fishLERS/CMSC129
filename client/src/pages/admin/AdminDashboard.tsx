@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { auth, db } from "../../firebase";
+import { db } from "../../firebase";
 import { collection, query, orderBy, limit, onSnapshot, updateDoc, doc, getDoc, serverTimestamp, addDoc } from "firebase/firestore";
-import { onIdTokenChanged } from "firebase/auth";
 import { Bell, Eye, X } from "lucide-react";
 import { logicEquipment } from "../equipment/logicEquipment";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { overrideApproveRequest, overrideRejectRequest } from "../../api/requests.api";
+import { useAuth } from "../../hooks/useAuth";
 
 type ItemCondition = "functional" | "damaged" | "missing" | "consumed";
 
@@ -33,6 +33,10 @@ interface Request {
   cancelledAt?: any;
   returnedAt?: any;
   clearedAt?: any;
+  overriddenBy?: string;
+  overriddenAt?: any;
+  overrideReason?: string;
+  overrideFromStatus?: string;
   returnCondition?: ItemCondition;
   returnConditionSummary?: { functional: number; damaged: number; missing: number; consumed: number };
   returnAssessment?: Array<{ equipmentID?: string; index: number; condition: ItemCondition }>;
@@ -49,7 +53,7 @@ const AdminDashboard: React.FC = () => {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<Request | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const { isSuperAdmin, user } = useAuth();
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideId, setOverrideId] = useState<string | null>(null);
   const [overrideAction, setOverrideAction] = useState<"approve" | "reject" | null>(null);
@@ -183,22 +187,11 @@ const AdminDashboard: React.FC = () => {
     return '';
   }
 
-  useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (!user) {
-        setIsSuperAdmin(false);
-        return;
-      }
-      try {
-        const token = await user.getIdTokenResult();
-        setIsSuperAdmin(!!token.claims.superAdmin);
-      } catch (error) {
-        console.warn("Failed to read super admin claim", error);
-        setIsSuperAdmin(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+  const formatStatusLabel = (value?: string) => {
+    const normalized = (value || "").toString().trim().toLowerCase();
+    if (!normalized) return "Unknown";
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -498,6 +491,10 @@ const AdminDashboard: React.FC = () => {
 
   async function confirmOverride() {
     if (!overrideId || !overrideAction) return;
+    if (!isSuperAdmin) {
+      setAlertMessage("Super Admin access is required for override actions.");
+      return;
+    }
     if (overrideAction === "reject" && !overrideReason.trim()) {
       setAlertMessage("Override reason is required to reject an approved request.");
       return;
@@ -509,7 +506,18 @@ const AdminDashboard: React.FC = () => {
       if (overrideAction === "approve") {
         await overrideApproveRequest(overrideId, overrideReason.trim() || undefined);
         setRequests((prev) =>
-          prev.map((r) => (r.id === overrideId ? { ...r, status: "approved" } : r))
+          prev.map((r) =>
+            r.id === overrideId
+              ? {
+                  ...r,
+                  status: "approved",
+                  overriddenBy: user?.uid || r.overriddenBy,
+                  overriddenAt: new Date().toISOString(),
+                  overrideReason: overrideReason.trim() || undefined,
+                  overrideFromStatus: (r.status || "").toString().toLowerCase(),
+                }
+              : r
+          )
         );
         setAlertMessage("Decision overridden to Approved.");
       } else {
@@ -517,7 +525,15 @@ const AdminDashboard: React.FC = () => {
         setRequests((prev) =>
           prev.map((r) =>
             r.id === overrideId
-              ? { ...r, status: "rejected", declinedRemarks: overrideReason.trim() }
+              ? {
+                  ...r,
+                  status: "rejected",
+                  declinedRemarks: overrideReason.trim(),
+                  overriddenBy: user?.uid || r.overriddenBy,
+                  overriddenAt: new Date().toISOString(),
+                  overrideReason: overrideReason.trim(),
+                  overrideFromStatus: (r.status || "").toString().toLowerCase(),
+                }
               : r
           )
         );
@@ -1160,6 +1176,39 @@ const AdminDashboard: React.FC = () => {
                 <div className="text-xs text-base-content/60">Admin Remarks</div>
                 <div className="whitespace-pre-wrap font-medium">{viewRequest.declinedRemarks || (viewRequest as any).remarks || '—'}</div>
               </div>
+              {(viewRequest.overriddenBy || viewRequest.overriddenAt || viewRequest.overrideReason) && (
+                <div className="md:col-span-2 rounded-box border border-secondary/30 bg-secondary/5 p-3 space-y-2">
+                  <div className="text-xs uppercase tracking-wide text-base-content/60">Override Audit</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <div className="text-xs text-base-content/60">Overridden By</div>
+                      <div className="font-medium font-mono">
+                        {viewRequest.overriddenBy || "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-base-content/60">Overridden At</div>
+                      <div className="font-medium">
+                        {formatDateTime(viewRequest.overriddenAt) || "—"}
+                      </div>
+                    </div>
+                  </div>
+                  {(viewRequest.overrideFromStatus || viewRequest.status) && (
+                    <div className="text-sm">
+                      <span className="text-xs text-base-content/60">Decision Transition: </span>
+                      <span className="font-medium">
+                        {formatStatusLabel(viewRequest.overrideFromStatus)} → {formatStatusLabel(viewRequest.status)}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-xs text-base-content/60">Override Reason</div>
+                    <div className="whitespace-pre-wrap font-medium">
+                      {viewRequest.overrideReason || "—"}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-3">
               {requiresReturnAssessment ? (

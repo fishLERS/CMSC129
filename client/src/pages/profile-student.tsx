@@ -5,6 +5,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import { auth } from '../firebase'
 import { User, Mail, Hash, Shield, Key, Save, X, Edit, CheckCircle, AlertCircle } from 'lucide-react'
+import { formatRoleLabel } from '../utils/roleLabel'
 
 function formatDate(ts: any) {
   try {
@@ -32,6 +33,7 @@ export default function ProfileStudent() {
   const [passwordError, setPasswordError] = React.useState('')
   const [passwordSuccess, setPasswordSuccess] = React.useState('')
   const [profileAlert, setProfileAlert] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const roleLabel = formatRoleLabel(profile?.role || 'student', !!user?.isSuperAdmin)
 
   React.useEffect(() => {
     if (!user) return
@@ -182,7 +184,7 @@ export default function ProfileStudent() {
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-base-content/60" />
                     <span className="text-base-content/60">Role:</span>
-                    <span className="font-medium capitalize">{profile?.role || 'student'}</span>
+                    <span className="font-medium">{roleLabel}</span>
                   </div>
                 </div>
               </div>
@@ -266,7 +268,7 @@ export default function ProfileStudent() {
                     <input
                       type="text"
                       className={`input input-bordered w-full input-disabled ${editing ? 'bg-base-300 opacity-60' : ''}`}
-                      value={profile?.role || 'student'}
+                      value={roleLabel}
                       readOnly
                     />
                   </div>
