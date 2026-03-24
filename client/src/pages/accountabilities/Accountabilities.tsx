@@ -148,10 +148,10 @@ export default function Accountabilities(){
                   {/* Tabs Header */}
                   <div className="p-4 border-b border-base-300">
                     <div role="tablist" className="tabs tabs-boxed bg-base-300">
-                      <a role="tab" className={`tab ${tab === 'all' ? 'tab-active' : ''}`} onClick={() => setTab('all')}>All</a>
-                      <a role="tab" className={`tab ${tab === 'pending' ? 'tab-active' : ''}`} onClick={() => setTab('pending')}>Pending</a>
-                      <a role="tab" className={`tab ${tab === 'resolved' ? 'tab-active' : ''}`} onClick={() => setTab('resolved')}>Resolved</a>
-                      <a role="tab" className={`tab ${tab === 'overdue' ? 'tab-active' : ''}`} onClick={() => setTab('overdue')}>Overdue</a>
+                      <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('all')}>All</a>
+                      <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('pending')}>Pending</a>
+                      <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'resolved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('resolved')}>Resolved</a>
+                      <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'overdue' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('overdue')}>Overdue</a>
                     </div>
                   </div>
                   {/* Table */}
