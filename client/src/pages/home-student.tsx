@@ -568,7 +568,6 @@ export default function HomeStudent() {
               <a role="tab" className={`tab ${tab === 'completed' ? 'tab-active' : ''}`} onClick={() => setTab('completed')}>Completed</a>
               <a role="tab" className={`tab ${tab === 'rejected' ? 'tab-active' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
               <a role="tab" className={`tab ${tab === 'cancelled' ? 'tab-active' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
-              <a role="tab" className={`tab ${tab === 'accountability' ? 'tab-active' : ''}`} onClick={() => setTab('accountability')}>Accountability</a>
             </div>
           </div>
 
