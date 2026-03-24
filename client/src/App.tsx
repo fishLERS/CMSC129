@@ -17,6 +17,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import Analytics from "./pages/admin/Analytics";
 import AdminRequestHistory from "./pages/admin/AdminRequestHistory";
 import DataMigration from "./pages/admin/DataMigration";
+import SuperAdminActivityLog from "./pages/admin/SuperAdminActivityLog";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import DrawerLayout from "./components/DrawerLayout";
@@ -185,6 +186,19 @@ const App: React.FC = () => {
             <AdminDrawerLayout>
               <PageWithFooter>
                 <DataMigration />
+              </PageWithFooter>
+            </AdminDrawerLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/super-activity"
+        element={
+          <ProtectedRoute requireAdmin requireSuperAdmin>
+            <AdminDrawerLayout>
+              <PageWithFooter>
+                <SuperAdminActivityLog />
               </PageWithFooter>
             </AdminDrawerLayout>
           </ProtectedRoute>
