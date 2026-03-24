@@ -91,6 +91,15 @@ export async function setUserRole(
 }
 
 /**
+ * Set/remove super-admin access (super-admin only).
+ * POST /api/auth/:uid/set-super-admin
+ * Body: { isSuperAdmin: boolean }
+ */
+export async function setSuperAdmin(uid: string, isSuperAdmin: boolean): Promise<void> {
+  await apiPost(`/api/auth/${uid}/set-super-admin`, { isSuperAdmin });
+}
+
+/**
  * Deactivate a user account (admin only).
  * POST /api/auth/:uid/deactivate
  */
@@ -104,5 +113,6 @@ export default {
   getCurrentUser,
   updateProfile,
   setUserRole,
+  setSuperAdmin,
   deactivateUser,
 };

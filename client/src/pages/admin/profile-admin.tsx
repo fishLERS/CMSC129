@@ -10,6 +10,7 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "../../firebase";
+import { formatRoleLabel } from "../../utils/roleLabel";
 
 interface AdminProfile {
   displayName?: string;
@@ -22,7 +23,7 @@ interface AdminProfile {
 }
 
 export default function ProfileAdmin() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const [loading, setLoading] = React.useState(true);
   const [profile, setProfile] = React.useState<AdminProfile | null>(null);
   const [editing, setEditing] = React.useState(false);
@@ -36,8 +37,7 @@ export default function ProfileAdmin() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [passwordError, setPasswordError] = React.useState("");
   const [passwordSuccess, setPasswordSuccess] = React.useState("");
-  const isSuperAdmin = !!(profile?.isSuperAdmin || user?.isSuperAdmin);
-  const roleLabel = isSuperAdmin ? "Super Admin" : (profile?.role || "admin");
+  const roleLabel = formatRoleLabel(profile?.role || "admin", isSuperAdmin);
 
   React.useEffect(() => {
     if (!user) return;
@@ -146,8 +146,8 @@ export default function ProfileAdmin() {
         </h1>
         <p className="text-base-content/70">
           {isSuperAdmin
-            ? "Manage your super admin account information."
-            : "Manage your admin account information."}
+            ? "Manage your Super Admin account information."
+            : "Manage your Admin account information."}
         </p>
       </div>
 

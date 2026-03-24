@@ -5,6 +5,7 @@ import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { ArrowLeft, Fish } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
+import { formatRoleLabel } from "../utils/roleLabel";
 
 const LOGOUT_TOAST_KEY = "fishlers-logout-toast";
 
@@ -83,7 +84,8 @@ export default function Login() {
       
       // Check if selected role matches Firestore role
       if (firestoreRole !== roleType) {
-        throw new Error(`Your account is registered as a ${firestoreRole}. Please select ${firestoreRole} to log in.`);
+        const roleLabel = formatRoleLabel(firestoreRole);
+        throw new Error(`Your account is registered as ${roleLabel}. Please select ${roleLabel} to log in.`);
       }
       
       // Use current token and claims from this fresh sign-in.

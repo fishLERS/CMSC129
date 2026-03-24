@@ -114,4 +114,31 @@ export class AuthController {
       res.status(400).json({ success: false, error: error.message });
     }
   }
+
+  /**
+   * POST /api/auth/:uid/set-super-admin
+   * Set super-admin access (super admin only).
+   * Body: { isSuperAdmin: boolean }
+   */
+  static async setSuperAdmin(req: Request, res: Response): Promise<void> {
+    try {
+      const { uid } = req.params;
+      const { isSuperAdmin } = req.body;
+
+      if (typeof isSuperAdmin !== "boolean") {
+        res.status(400).json({ success: false, error: "isSuperAdmin must be boolean" });
+        return;
+      }
+
+      await AuthService.setSuperAdmin(uid, isSuperAdmin);
+      res.status(200).json({
+        success: true,
+        message: isSuperAdmin
+          ? "User promoted to super admin"
+          : "User demoted from super admin",
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
 }
