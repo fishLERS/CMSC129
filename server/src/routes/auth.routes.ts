@@ -21,6 +21,7 @@ router.patch("/profile", requireAuth, AuthController.updateProfile);
 
 // Admin-only endpoints
 router.post("/:uid/set-role", requireAuth, requireSuperAdmin, AuthController.setUserRole);
+router.post("/:uid/set-super-admin", requireAuth, requireSuperAdmin, AuthController.setSuperAdmin);
 router.post("/:uid/deactivate", requireAuth, requireAdmin, AuthController.deactivateUser);
 
 export default router;

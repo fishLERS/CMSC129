@@ -2,6 +2,7 @@ import React from 'react'
 import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatRoleLabel } from '../../utils/roleLabel'
+import { setSuperAdmin } from '../../api/auth.api'
 
 interface UserData {
   uid: string
@@ -75,6 +76,37 @@ export default function AdminUsers() {
     } catch (error) {
       console.error('Failed to update user role', error)
       setAlertMessage('Failed to update user role. Please try again.')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  async function toggleSuperAdmin(user: UserData) {
+    const nextValue = !user.isSuperAdmin
+    const confirmMsg = nextValue
+      ? `Promote ${user.email || user.displayName || user.uid} to Super Admin?`
+      : `Demote ${user.email || user.displayName || user.uid} from Super Admin?`
+
+    if (!confirm(confirmMsg)) return
+
+    try {
+      setUpdating(user.uid)
+      await setSuperAdmin(user.uid, nextValue)
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.uid === user.uid
+            ? {
+                ...u,
+                role: nextValue ? 'admin' : u.role,
+                isSuperAdmin: nextValue,
+                requestedAdmin: false,
+              }
+            : u
+        )
+      )
+    } catch (error: any) {
+      console.error('Failed to update super admin role', error)
+      setAlertMessage(error?.message || 'Failed to update super admin role. Please try again.')
     } finally {
       setUpdating(null)
     }
@@ -227,17 +259,32 @@ export default function AdminUsers() {
                         </td>
                         <td className="text-sm">{formatDate(user.createdAt) || '—'}</td>
                         <td>
-                          <button
-                            className={`btn btn-sm ${user.role === 'admin' ? 'btn-error' : 'btn-primary'}`}
-                            onClick={() => toggleAdmin(user)}
-                            disabled={updating === user.uid}
-                          >
-                            {updating === user.uid
-                              ? 'Updating...'
-                              : user.role === 'admin'
-                              ? 'Revoke Admin'
-                              : 'Grant Admin'}
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              className={`btn btn-sm ${user.role === 'admin' ? 'btn-error' : 'btn-primary'}`}
+                              onClick={() => toggleAdmin(user)}
+                              disabled={updating === user.uid}
+                            >
+                              {updating === user.uid
+                                ? 'Updating...'
+                                : user.role === 'admin'
+                                ? 'Revoke Admin'
+                                : 'Grant Admin'}
+                            </button>
+                            {user.role === 'admin' && (
+                              <button
+                                className={`btn btn-sm ${user.isSuperAdmin ? 'btn-warning' : 'btn-accent'}`}
+                                onClick={() => toggleSuperAdmin(user)}
+                                disabled={updating === user.uid}
+                              >
+                                {updating === user.uid
+                                  ? 'Updating...'
+                                  : user.isSuperAdmin
+                                  ? 'Remove Super'
+                                  : 'Make Super'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -255,6 +302,7 @@ export default function AdminUsers() {
           <ul className="text-sm text-base-content/70 list-disc list-inside space-y-1">
             <li>This list shows current admins plus users who requested elevated access.</li>
             <li>Granting access promotes the user and clears their pending flag.</li>
+            <li>Use Make Super/Remove Super to manage super-admin access through backend claims.</li>
             <li>Revoking access demotes the user back to student immediately.</li>
             <li>All changes are applied in real time via Firestore snapshots.</li>
           </ul>

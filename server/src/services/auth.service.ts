@@ -140,6 +140,34 @@ export class AuthService {
   }
 
   /**
+   * Promote/demote a user to/from super admin.
+   * Super admin always implies admin role + admin claim.
+   */
+  static async setSuperAdmin(uid: string, isSuperAdmin: boolean): Promise<void> {
+    const user = await UserRepository.getById(uid);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const authUser = await getAuth().getUser(uid);
+    const existingClaims = authUser.customClaims || {};
+
+    const nextRole: "student" | "admin" = isSuperAdmin ? "admin" : user.role;
+    const nextAdminClaim = isSuperAdmin || nextRole === "admin";
+
+    await getAuth().setCustomUserClaims(uid, {
+      ...existingClaims,
+      admin: nextAdminClaim,
+      superAdmin: isSuperAdmin,
+    });
+
+    await UserRepository.update(uid, {
+      role: nextRole,
+      isSuperAdmin,
+    });
+  }
+
+  /**
    * Deactivate a user account.
    */
   static async deactivateUser(uid: string): Promise<void> {
