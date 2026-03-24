@@ -10,6 +10,7 @@ export interface AppConfig {
   firebaseClientEmail: string;
   clientUrl: string;
   clientUrls: string[];
+  mongodbUri: string;
 }
 
 /**
@@ -22,6 +23,7 @@ export function loadConfig(): AppConfig {
     "FIREBASE_PRIVATE_KEY",
     "FIREBASE_CLIENT_EMAIL",
     "CLIENT_URL",
+    "MONGODB_URI",
   ];
 
   const missing = requiredVars.filter((v) => !process.env[v]);
@@ -40,5 +42,6 @@ export function loadConfig(): AppConfig {
       .split(",")
       .map((url) => url.trim())
       .filter(Boolean),
+    mongodbUri: process.env.MONGODB_URI!,
   };
 }

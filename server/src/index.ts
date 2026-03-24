@@ -1,6 +1,8 @@
 import { loadConfig } from "./config/env.js";
 import { initializeFirebase } from "./config/firebase.js";
 import { createApp, startServer } from "./app.js";
+import { connectMongoDB } from "./config/mongodb.js";
+import { startFirestoreListeners } from "./services/firestoreListerner.js";
 
 /**
  * Main entry point.
@@ -14,6 +16,8 @@ async function main() {
 
     // Initialize Firebase Admin SDK
     initializeFirebase(config);
+    await connectMongoDB();
+    startFirestoreListeners();
 
     // Create and start Express app
     const app = createApp(config);
