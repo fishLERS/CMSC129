@@ -272,7 +272,7 @@ export default function TrackingPage(){
                         )}
                       </td>
                       <td>
-                        {filter === 'pending' && r.itemsList ? (
+                        {r.itemsList ? (
                           <div className="tooltip" data-tip={r.itemsList}>
                             <span className="badge badge-ghost cursor-help">
                               {r.totalQuantity || '-'}
