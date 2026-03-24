@@ -8,7 +8,7 @@ export default function TrackingPage(){
   const { user } = useAuth()
   const { requests, isLoading } = useRequests(user?.uid)
   const [rows, setRows] = React.useState<Array<any>>([])
-  const [filter, setFilter] = React.useState<'all' | 'pending'| 'ongoing' | 'completed' | 'approved' | 'declined'>('all')
+  const [filter, setFilter] = React.useState<'all' | 'pending'| 'ongoing' | 'completed' | 'approved' | 'declined' | 'rejected_cancelled'>('all')
   
   const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
   const [showRemarksText, setShowRemarksText] = React.useState('')
@@ -104,6 +104,7 @@ export default function TrackingPage(){
     if (filter === 'ongoing') return s === 'approved' && isOngoing(r)
     if (filter === 'approved') return s === 'approved' && !isOngoing(r)
     if (filter === 'declined') return s === 'declined' || s === 'rejected'
+    if (filter === 'rejected_cancelled') return s === 'declined' || s === 'rejected' || s === 'cancelled'
     return true
   })
 
@@ -113,6 +114,7 @@ export default function TrackingPage(){
   const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
   const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && !isOngoing(r)).length
   const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
+  const rejectedCancelledCount = rows.filter(r => ['declined', 'rejected', 'cancelled'].includes((r.status || '').toLowerCase())).length
   const completedCount = rows.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length
 
   // Status badge helper
@@ -203,8 +205,8 @@ export default function TrackingPage(){
               <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'completed' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('completed')}>
                 Completed ({completedCount})
               </a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'declined' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('declined')}>
-                Declined ({declinedCount})
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'rejected_cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('rejected_cancelled')}>
+                Unfulfilled ({rejectedCancelledCount})
               </a>
             </div>
           </div>
@@ -230,6 +232,8 @@ export default function TrackingPage(){
                         <p className="text-sm">
                           {filter === 'all' 
                             ? "You haven't made any requests yet" 
+                            : filter === 'rejected_cancelled'
+                            ? 'No rejected or cancelled requests'
                             : `No ${filter} requests`}
                         </p>
                       </div>
