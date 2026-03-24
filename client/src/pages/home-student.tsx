@@ -645,7 +645,7 @@ export default function HomeStudent() {
                             Cancel
                           </button>
                         )}
-                        {['approved', 'ongoing'].includes((r.status || '').toString().toLowerCase()) && (
+                        {tab === 'ongoing' && isOngoing(r) && (
                           <button 
                             className="btn btn-primary btn-sm gap-1" 
                             disabled={busyId === r.id} 
