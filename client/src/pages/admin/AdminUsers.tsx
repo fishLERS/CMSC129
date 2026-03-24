@@ -1,6 +1,7 @@
 import React from 'react'
 import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase'
+import { formatRoleLabel } from '../../utils/roleLabel'
 
 interface UserData {
   uid: string
@@ -218,11 +219,7 @@ export default function AdminUsers() {
                                 : 'badge-primary'
                             } badge-sm`}
                           >
-                            {user.role === 'admin'
-                              ? user.isSuperAdmin
-                                ? 'Super Admin'
-                                : 'Admin'
-                              : 'Student'}
+                            {formatRoleLabel(user.role || 'student', !!user.isSuperAdmin)}
                           </span>
                           {user.requestedAdmin && user.role !== 'admin' ? (
                             <span className="badge badge-warning badge-sm ml-2">Requested</span>
