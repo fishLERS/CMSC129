@@ -15,7 +15,7 @@ const LOGOUT_TOAST_KEY = "fishlers-logout-toast";
 const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isSuperAdmin } = useAuth();
+  const { user, isSuperAdmin, permissionNotice, dismissPermissionNotice } = useAuth();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -106,6 +106,12 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
         
         {/* Page content - scrollable */}
         <main className="flex-1 p-4 bg-base-200 overflow-y-auto">
+          {permissionNotice && (
+            <div className="alert alert-warning mb-4">
+              <span>{permissionNotice}</span>
+              <button className="btn btn-sm" onClick={dismissPermissionNotice}>Close</button>
+            </div>
+          )}
           {logoutError && (
             <div className="alert alert-error mb-4">
               <span>{logoutError}</span>

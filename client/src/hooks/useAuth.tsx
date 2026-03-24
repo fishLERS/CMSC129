@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "../firebase";
 import * as authApi from "../api/auth.api";
@@ -20,6 +20,8 @@ type AuthContextType = {
   error: string | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  permissionNotice: string | null;
+  dismissPermissionNotice: () => void;
   signup: (email: string, password: string, displayName: string) => Promise<User>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -41,6 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [permissionNotice, setPermissionNotice] = useState<string | null>(null);
+  const lastPermissionSignature = useRef<{
+    uid: string;
+    role: "student" | "admin";
+    adminClaim: boolean;
+    superAdminClaim: boolean;
+  } | null>(null);
 
   /**
    * Subscribe to Firebase auth state changes and verify user data.
@@ -57,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setIsAdmin(false);
             setIsSuperAdmin(false);
+            setPermissionNotice(null);
+            lastPermissionSignature.current = null;
             localStorage.removeItem("authToken");
             localStorage.removeItem("userRole");
           }
@@ -79,11 +90,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Claims are the runtime source of truth; fallback to API payload for compatibility.
             isSuperAdmin: hasSuperAdminClaim || !!userData.isSuperAdmin,
           };
+          const roleClaimMismatch =
+            (resolvedUser.role === "admin" && !hasAdminClaim) ||
+            (resolvedUser.role === "student" && hasAdminClaim);
+          const superClaimMismatch = !!userData.isSuperAdmin !== hasSuperAdminClaim;
+          const currentSignature = {
+            uid: resolvedUser.uid,
+            role: resolvedUser.role,
+            adminClaim: hasAdminClaim,
+            superAdminClaim: hasSuperAdminClaim,
+          };
+          const previousSignature = lastPermissionSignature.current;
 
           if (mounted) {
             setUser(resolvedUser);
             setIsAdmin(hasAdminClaim && resolvedUser.role === "admin");
             setIsSuperAdmin(!!resolvedUser.isSuperAdmin);
+            if (roleClaimMismatch || superClaimMismatch) {
+              setPermissionNotice(
+                "Permissions were updated for this account. Please re-login to refresh your token and apply access changes."
+              );
+            } else if (
+              previousSignature &&
+              previousSignature.uid === currentSignature.uid &&
+              (previousSignature.role !== currentSignature.role ||
+                previousSignature.adminClaim !== currentSignature.adminClaim ||
+                previousSignature.superAdminClaim !== currentSignature.superAdminClaim)
+            ) {
+              setPermissionNotice(
+                "Session permissions changed. Refresh this page or re-login if any access looks out of sync."
+              );
+            } else {
+              setPermissionNotice(null);
+            }
+            lastPermissionSignature.current = currentSignature;
             localStorage.setItem("userRole", resolvedUser.role);
             setError(null);
           }
@@ -96,6 +136,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setIsAdmin(false);
             setIsSuperAdmin(false);
+            setPermissionNotice(null);
+            lastPermissionSignature.current = null;
             setError(err.message);
           }
         }
@@ -163,6 +205,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setIsAdmin(false);
       setIsSuperAdmin(false);
+      setPermissionNotice(null);
+      lastPermissionSignature.current = null;
       setError(null);
     } catch (err: any) {
       setError(err.message);
@@ -229,6 +273,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     isAdmin,
     isSuperAdmin,
+    permissionNotice,
+    dismissPermissionNotice: () => setPermissionNotice(null),
     signup,
     login,
     logout,
