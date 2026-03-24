@@ -21,6 +21,12 @@ export default function AdminUsers() {
   const [searchTerm, setSearchTerm] = React.useState('')
   const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
   const [alertType, setAlertType] = React.useState<'success' | 'error' | 'info'>('info')
+  const [confirmOpen, setConfirmOpen] = React.useState(false)
+  const [confirmTitle, setConfirmTitle] = React.useState('')
+  const [confirmMessage, setConfirmMessage] = React.useState('')
+  const [confirmInput, setConfirmInput] = React.useState('')
+  const [confirmSubmitting, setConfirmSubmitting] = React.useState(false)
+  const confirmActionRef = React.useRef<null | (() => Promise<void>)>(null)
 
   React.useEffect(() => {
     const usersRef = collection(db, 'users')
@@ -59,15 +65,7 @@ export default function AdminUsers() {
     return () => unsubscribe()
   }, [])
 
-  async function toggleAdmin(user: UserData) {
-    const newRole = user.role === 'admin' ? 'student' : 'admin'
-    const confirmMsg =
-      newRole === 'admin'
-        ? `Grant admin privileges to ${user.email || user.displayName || user.uid}?`
-        : `Revoke admin privileges from ${user.email || user.displayName || user.uid}?`
-
-    if (!confirm(confirmMsg)) return
-
+  async function applyAdminRoleChange(user: UserData, newRole: 'student' | 'admin') {
     try {
       setUpdating(user.uid)
       await updateDoc(doc(db, 'users', user.uid), { role: newRole, requestedAdmin: false })
@@ -88,14 +86,7 @@ export default function AdminUsers() {
     }
   }
 
-  async function toggleSuperAdmin(user: UserData) {
-    const nextValue = !user.isSuperAdmin
-    const confirmMsg = nextValue
-      ? `Promote ${user.email || user.displayName || user.uid} to Super Admin?`
-      : `Demote ${user.email || user.displayName || user.uid} from Super Admin?`
-
-    if (!confirm(confirmMsg)) return
-
+  async function applySuperAdminChange(user: UserData, nextValue: boolean) {
     try {
       setUpdating(user.uid)
       await setSuperAdmin(user.uid, nextValue)
@@ -123,6 +114,66 @@ export default function AdminUsers() {
     } finally {
       setUpdating(null)
     }
+  }
+
+  function openTypedConfirm(
+    title: string,
+    message: string,
+    action: () => Promise<void>
+  ) {
+    setConfirmTitle(title)
+    setConfirmMessage(message)
+    setConfirmInput('')
+    setConfirmSubmitting(false)
+    confirmActionRef.current = action
+    setConfirmOpen(true)
+  }
+
+  async function submitTypedConfirm() {
+    if (!confirmActionRef.current) return
+    try {
+      setConfirmSubmitting(true)
+      await confirmActionRef.current()
+      setConfirmOpen(false)
+      setConfirmInput('')
+      confirmActionRef.current = null
+    } finally {
+      setConfirmSubmitting(false)
+    }
+  }
+
+  async function toggleAdmin(user: UserData) {
+    const newRole = user.role === 'admin' ? 'student' : 'admin'
+    const displayName = user.email || user.displayName || user.uid
+
+    if (newRole === 'student') {
+      openTypedConfirm(
+        'Confirm Admin Revocation',
+        `You are about to revoke admin privileges from ${displayName}. Type CONFIRM to continue.`,
+        () => applyAdminRoleChange(user, newRole)
+      )
+      return
+    }
+
+    if (!confirm(`Grant admin privileges to ${displayName}?`)) return
+    await applyAdminRoleChange(user, newRole)
+  }
+
+  async function toggleSuperAdmin(user: UserData) {
+    const nextValue = !user.isSuperAdmin
+    const displayName = user.email || user.displayName || user.uid
+
+    if (!nextValue) {
+      openTypedConfirm(
+        'Confirm Super Admin Demotion',
+        `You are about to remove Super Admin access from ${displayName}. Type CONFIRM to continue.`,
+        () => applySuperAdminChange(user, nextValue)
+      )
+      return
+    }
+
+    if (!confirm(`Promote ${displayName} to Super Admin?`)) return
+    await applySuperAdminChange(user, nextValue)
   }
 
   function formatDate(ts: any) {
@@ -321,6 +372,58 @@ export default function AdminUsers() {
           </ul>
         </div>
       </div>
+
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !confirmSubmitting) {
+              setConfirmOpen(false)
+              setConfirmInput('')
+              confirmActionRef.current = null
+            }
+          }}
+        >
+          <div
+            className="bg-base-100 p-4 rounded shadow max-w-lg w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold">{confirmTitle}</h3>
+            <p className="text-sm text-base-content/70 mt-1">{confirmMessage}</p>
+            <div className="alert alert-warning mt-3">
+              <span>Type CONFIRM to proceed with this destructive action.</span>
+            </div>
+            <input
+              type="text"
+              className="input input-bordered w-full mt-3"
+              placeholder="Type CONFIRM"
+              value={confirmInput}
+              onChange={(e) => setConfirmInput(e.target.value)}
+              disabled={confirmSubmitting}
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                className="btn"
+                disabled={confirmSubmitting}
+                onClick={() => {
+                  setConfirmOpen(false)
+                  setConfirmInput('')
+                  confirmActionRef.current = null
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-error"
+                disabled={confirmSubmitting || confirmInput.trim() !== 'CONFIRM'}
+                onClick={submitTypedConfirm}
+              >
+                {confirmSubmitting ? 'Applying...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

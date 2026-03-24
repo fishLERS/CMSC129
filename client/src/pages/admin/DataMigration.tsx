@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { db } from '../../firebase';
-import { collection, getDocs, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../../hooks/useAuth';
 
 export default function DataMigration() {
@@ -8,6 +8,8 @@ export default function DataMigration() {
   const [migrating, setMigrating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmInput, setConfirmInput] = useState('');
 
   async function migrateAllData() {
     if (!user) return;
@@ -79,7 +81,10 @@ export default function DataMigration() {
             <button
               className="btn btn-primary"
               disabled={migrating}
-              onClick={migrateAllData}
+              onClick={() => {
+                setConfirmInput('');
+                setConfirmOpen(true);
+              }}
             >
               {migrating ? (
                 <>
@@ -99,6 +104,62 @@ export default function DataMigration() {
           )}
         </div>
       </div>
+
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !migrating) {
+              setConfirmOpen(false);
+              setConfirmInput('');
+            }
+          }}
+        >
+          <div
+            className="bg-base-100 p-4 rounded shadow max-w-lg w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold">Confirm Data Migration</h3>
+            <p className="text-sm text-base-content/70 mt-1">
+              This action will reassign existing records and cannot be undone.
+              Type CONFIRM to proceed.
+            </p>
+            <div className="alert alert-warning mt-3">
+              <span>Destructive action: type CONFIRM exactly.</span>
+            </div>
+            <input
+              type="text"
+              className="input input-bordered w-full mt-3"
+              placeholder="Type CONFIRM"
+              value={confirmInput}
+              onChange={(e) => setConfirmInput(e.target.value)}
+              disabled={migrating}
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                className="btn"
+                disabled={migrating}
+                onClick={() => {
+                  setConfirmOpen(false);
+                  setConfirmInput('');
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-error"
+                disabled={migrating || confirmInput.trim() !== 'CONFIRM'}
+                onClick={async () => {
+                  setConfirmOpen(false);
+                  await migrateAllData();
+                }}
+              >
+                {migrating ? 'Migrating...' : 'Confirm Migration'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
