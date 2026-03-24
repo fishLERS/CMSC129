@@ -39,6 +39,10 @@ type AdminRequestRecord = {
   createdBy?: string;
   createdByName?: string;
   declinedRemarks?: string;
+  overriddenBy?: string;
+  overriddenAt?: any;
+  overrideReason?: string;
+  overrideFromStatus?: string;
 };
 
 const getStatusBadgeClass = (status: string) => {
@@ -57,6 +61,23 @@ const formatRange = (req: AdminRequestRecord) => {
   if (!start && !end) return "No schedule provided";
   if (start && end) return `${start} to ${end}`;
   return start || end;
+};
+
+const formatDateTime = (value: any) => {
+  if (!value) return "";
+  try {
+    if (typeof value?.toDate === "function") return value.toDate().toLocaleString();
+    if (value instanceof Date) return value.toLocaleString();
+    return new Date(value).toLocaleString();
+  } catch {
+    return "";
+  }
+};
+
+const formatStatusLabel = (value?: string) => {
+  const normalized = (value || "").toString().trim().toLowerCase();
+  if (!normalized) return "Unknown";
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 };
 
 const AdminRequestHistory: React.FC = () => {
@@ -104,6 +125,10 @@ const AdminRequestHistory: React.FC = () => {
             createdBy: data.createdBy,
             createdByName: data.createdByName,
             declinedRemarks: data.declinedRemarks || data.remarks,
+            overriddenBy: data.overriddenBy,
+            overriddenAt: data.overriddenAt,
+            overrideReason: data.overrideReason,
+            overrideFromStatus: data.overrideFromStatus,
           };
         });
         setRequests(docs);
@@ -436,9 +461,14 @@ const AdminRequestHistory: React.FC = () => {
                                 </div>
                               </td>
                               <td>
-                                <span className={`badge ${getStatusBadgeClass(req.status || "")}`}>
-                                  {req.status || "Pending"}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className={`badge ${getStatusBadgeClass(req.status || "")}`}>
+                                    {req.status || "Pending"}
+                                  </span>
+                                  {(req.overriddenAt || req.overriddenBy) && (
+                                    <span className="badge badge-secondary">Super Admin</span>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -506,15 +536,52 @@ const AdminRequestHistory: React.FC = () => {
                   <p className="text-xs uppercase tracking-wide text-base-content/60">
                     Status
                   </p>
-                  <span className={`badge ${getStatusBadgeClass(selectedRequest.status || "")}`}>
-                    {selectedRequest.status || "Pending"}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`badge ${getStatusBadgeClass(selectedRequest.status || "")}`}>
+                      {selectedRequest.status || "Pending"}
+                    </span>
+                    {(selectedRequest.overriddenAt || selectedRequest.overriddenBy) && (
+                      <span className="badge badge-secondary">Super Admin</span>
+                    )}
+                  </div>
                   <p className="text-xs uppercase tracking-wide text-base-content/60">
                     Remarks
                   </p>
                   <p className="whitespace-pre-wrap text-sm">
-                    {selectedRequest.declinedRemarks || "—"}
+                    {selectedRequest.declinedRemarks || "N/A"}
                   </p>
+                  {(selectedRequest.overriddenAt ||
+                    selectedRequest.overriddenBy ||
+                    selectedRequest.overrideReason) && (
+                    <>
+                      <p className="text-xs uppercase tracking-wide text-base-content/60">
+                        Override Audit
+                      </p>
+                      <div className="rounded border border-base-300 bg-base-100 p-3 space-y-2 text-sm">
+                        <div className="flex flex-wrap gap-2">
+                          <span className="badge badge-secondary badge-sm">Super Admin</span>
+                          {(selectedRequest.overrideFromStatus || selectedRequest.status) && (
+                            <span className="badge badge-outline badge-sm">
+                              {formatStatusLabel(selectedRequest.overrideFromStatus)} to{" "}
+                              {formatStatusLabel(selectedRequest.status)}
+                            </span>
+                          )}
+                        </div>
+                        <p>
+                          <span className="font-medium">Overridden by:</span>{" "}
+                          {selectedRequest.overriddenBy || "N/A"}
+                        </p>
+                        <p>
+                          <span className="font-medium">Overridden at:</span>{" "}
+                          {formatDateTime(selectedRequest.overriddenAt) || "N/A"}
+                        </p>
+                        <p className="whitespace-pre-wrap">
+                          <span className="font-medium">Reason:</span>{" "}
+                          {selectedRequest.overrideReason || "N/A"}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               <div>
@@ -565,3 +632,4 @@ const AdminRequestHistory: React.FC = () => {
 };
 
 export default AdminRequestHistory;
+

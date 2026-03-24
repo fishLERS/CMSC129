@@ -42,6 +42,17 @@ interface Request {
   returnAssessment?: Array<{ equipmentID?: string; index: number; condition: ItemCondition }>;
 }
 
+type NotificationType = "new" | "returned" | "override";
+
+type NotificationEntry = {
+  id: string;
+  type: NotificationType;
+  purpose: string;
+  requester: string;
+  actionAt: string;
+  timestamp: number;
+};
+
 const AdminDashboard: React.FC = () => {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,8 +76,8 @@ const AdminDashboard: React.FC = () => {
   >({});
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifAllOpen, setNotifAllOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Array<any>>([]);
-  const [recentNotifications, setRecentNotifications] = useState<Array<any>>([]);
+  const [notifications, setNotifications] = useState<NotificationEntry[]>([]);
+  const [recentNotifications, setRecentNotifications] = useState<NotificationEntry[]>([]);
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
   const highlightTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const userNameCacheRef = React.useRef<Record<string, string>>({});
@@ -193,6 +204,24 @@ const AdminDashboard: React.FC = () => {
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
   };
 
+  const getNotificationBadgeClass = (type: NotificationType) => {
+    if (type === "new") return "badge-primary";
+    if (type === "override") return "badge-secondary";
+    return "badge-info";
+  };
+
+  const getNotificationLabel = (type: NotificationType) => {
+    if (type === "new") return "New";
+    if (type === "override") return "Super Admin";
+    return "Returned";
+  };
+
+  const getNotificationDetail = (entry: NotificationEntry) => {
+    if (entry.type === "new") return `Submitted by ${entry.requester}`;
+    if (entry.type === "override") return `Overridden by ${entry.requester}`;
+    return `Marked returned by ${entry.requester}`;
+  };
+
   useEffect(() => {
     setLoading(true);
     const q = query(collection(db, "requests"), orderBy("createdAt", "desc"), limit(20));
@@ -286,11 +315,12 @@ const AdminDashboard: React.FC = () => {
     }
     try {
       const storedRaw = localStorage.getItem("adminSeenRequestStatuses");
+      const overrideStoredRaw = localStorage.getItem("adminSeenRequestOverrides");
       const historyRaw = localStorage.getItem("adminNotificationHistory");
-      let history: any[] = [];
+      let history: NotificationEntry[] = [];
       try {
         const parsed = JSON.parse(historyRaw || "[]");
-        if (Array.isArray(parsed)) history = parsed;
+        if (Array.isArray(parsed)) history = parsed as NotificationEntry[];
       } catch {
         history = [];
       }
@@ -298,12 +328,17 @@ const AdminDashboard: React.FC = () => {
         history.map((entry) => `${entry.type}-${entry.id}`)
       );
 
-      const makeEntry = (req: Request, type: "new" | "returned") => {
+      const makeEntry = (req: Request, type: NotificationType): NotificationEntry => {
         const purpose = req.purpose || "Equipment request";
-        const requester = req.createdByName || req.createdBy || "Student";
+        const requester =
+          type === "override"
+            ? req.overriddenBy || "Super Admin"
+            : req.createdByName || req.createdBy || "Student";
         const actionAt =
           type === "returned"
             ? formatDateTime(req.returnedAt)
+            : type === "override"
+            ? formatDateTime(req.overriddenAt)
             : formatDateTime(req.createdAt);
         return {
           id: req.id,
@@ -316,7 +351,15 @@ const AdminDashboard: React.FC = () => {
       };
 
       const seedHistory = () => {
-        const initialEntries = requests.map((req) => makeEntry(req, (req.status || "").toLowerCase() === "returned" ? "returned" : "new"));
+        const initialEntries = requests.flatMap((req) => {
+          const entries: NotificationEntry[] = [
+            makeEntry(req, (req.status || "").toLowerCase() === "returned" ? "returned" : "new"),
+          ];
+          if (req.overriddenAt) {
+            entries.push(makeEntry(req, "override"));
+          }
+          return entries;
+        });
         const unique = new Map<string, any>();
         [...history, ...initialEntries].forEach(entry => {
           const key = `${entry.type}-${entry.id}`;
@@ -329,10 +372,13 @@ const AdminDashboard: React.FC = () => {
 
       if (!storedRaw) {
         const initialMap: Record<string, string> = {};
+        const initialOverrideMap: Record<string, string> = {};
         requests.forEach((req) => {
           initialMap[req.id] = (req.status || "pending").toString();
+          initialOverrideMap[req.id] = req.overriddenAt ? String(req.overriddenAt) : "";
         });
         localStorage.setItem("adminSeenRequestStatuses", JSON.stringify(initialMap));
+        localStorage.setItem("adminSeenRequestOverrides", JSON.stringify(initialOverrideMap));
         const combined = seedHistory();
         setRecentNotifications([]);
         setNotifications(combined.slice().sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)));
@@ -340,10 +386,11 @@ const AdminDashboard: React.FC = () => {
       }
 
       const stored: Record<string, string> = JSON.parse(storedRaw || "{}");
+      const storedOverrides: Record<string, string> = JSON.parse(overrideStoredRaw || "{}");
       if (!history.length) {
         history = seedHistory();
       }
-      const changes: Array<any> = [];
+      const changes: NotificationEntry[] = [];
       requests.forEach((req) => {
         const now = (req.status || "pending").toString();
         const prev = stored[req.id];
@@ -355,6 +402,13 @@ const AdminDashboard: React.FC = () => {
           const entry = makeEntry(req, "returned");
           changes.push(entry);
           historyKeys.add(`returned-${req.id}`);
+        }
+        const nowOverride = req.overriddenAt ? String(req.overriddenAt) : "";
+        const prevOverride = storedOverrides[req.id] || "";
+        if (nowOverride && prevOverride !== nowOverride && !historyKeys.has(`override-${req.id}`)) {
+          const entry = makeEntry(req, "override");
+          changes.push(entry);
+          historyKeys.add(`override-${req.id}`);
         }
       });
 
@@ -376,10 +430,13 @@ const AdminDashboard: React.FC = () => {
   const markNotificationsSeen = React.useCallback(() => {
     try {
       const map: Record<string, string> = {};
+      const overrideMap: Record<string, string> = {};
       requests.forEach((req) => {
         map[req.id] = (req.status || "pending").toString();
+        overrideMap[req.id] = req.overriddenAt ? String(req.overriddenAt) : "";
       });
       localStorage.setItem("adminSeenRequestStatuses", JSON.stringify(map));
+      localStorage.setItem("adminSeenRequestOverrides", JSON.stringify(overrideMap));
       setRecentNotifications([]);
     } catch (e) {
       console.warn("Failed to mark admin notifications seen", e);
@@ -773,13 +830,13 @@ const AdminDashboard: React.FC = () => {
                           }}
                         >
                           <div className="flex items-center gap-2">
-                            <span className={`badge badge-xs ${n.type === 'new' ? 'badge-primary' : 'badge-info'}`}>
-                              {n.type === 'new' ? 'New' : 'Returned'}
+                            <span className={`badge badge-xs ${getNotificationBadgeClass(n.type)}`}>
+                              {getNotificationLabel(n.type)}
                             </span>
                             <span className="font-medium text-sm">{n.purpose}</span>
                           </div>
                           <div className="text-xs text-base-content/70 mt-1">
-                            {n.type === 'new' ? `Submitted by ${n.requester}` : `Marked returned by ${n.requester}`}
+                            {getNotificationDetail(n)}
                             {n.actionAt ? ` • ${n.actionAt}` : ''}
                           </div>
                         </div>
@@ -796,11 +853,11 @@ const AdminDashboard: React.FC = () => {
                         }}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="badge badge-warning badge-xs">New</span>
+                          <span className={`badge badge-xs ${getNotificationBadgeClass(n.type)}`}>{getNotificationLabel(n.type)}</span>
                           <span className="font-medium text-sm">{n.purpose}</span>
                         </div>
                         <div className="text-xs text-base-content/70 mt-1">
-                          {n.type === 'new' ? `Submitted by ${n.requester}` : `Marked returned by ${n.requester}`}
+                          {getNotificationDetail(n)}
                           {n.actionAt ? ` • ${n.actionAt}` : ''}
                         </div>
                       </div>
@@ -903,7 +960,8 @@ const AdminDashboard: React.FC = () => {
                       <td className="max-w-xs truncate">{req.purpose}</td>
                       <td>{req.startDate} → {req.endDate}</td>
                       <td>
-                        <span className={`badge ${
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`badge ${
                           (req.status || '').toString().toLowerCase() === 'approved'
                             ? 'badge-success'
                             : (req.status || '').toString().toLowerCase() === 'returned'
@@ -917,7 +975,11 @@ const AdminDashboard: React.FC = () => {
                             : 'badge-warning'
                         }`}>
                           {req.status || 'Pending'}
-                        </span>
+                          </span>
+                          {req.overriddenAt && (
+                            <span className="badge badge-secondary">Super Admin</span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <button className="btn btn-ghost btn-sm btn-circle" onClick={() => { setViewRequest(req); setViewOpen(true); }}>
@@ -977,7 +1039,7 @@ const AdminDashboard: React.FC = () => {
               <div>
                 <div className="text-xs text-base-content/60">Status</div>
                 <div className="font-medium capitalize">{viewRequest.status || 'Pending'}</div>
-                {isSuperAdmin && (
+                {viewRequest.overriddenAt && (
                   <div className="mt-2">
                     <span className="badge badge-secondary badge-sm">Super Admin</span>
                   </div>
@@ -1338,13 +1400,13 @@ const AdminDashboard: React.FC = () => {
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className={`badge ${n.type === 'new' ? 'badge-primary' : 'badge-info'} badge-sm`}>
-                        {n.type === 'new' ? 'New Request' : 'Returned'}
+                      <span className={`badge ${getNotificationBadgeClass(n.type)} badge-sm`}>
+                        {n.type === 'new' ? 'New Request' : n.type === 'override' ? 'Super Admin Override' : 'Returned'}
                       </span>
                       <span className="font-medium">{n.purpose}</span>
                     </div>
                     <div className="text-sm text-base-content/70 mt-1">
-                      {n.type === 'new' ? `Submitted by ${n.requester}` : `Marked returned by ${n.requester}`}
+                      {getNotificationDetail(n)}
                       {n.actionAt ? ` • ${n.actionAt}` : ''}
                     </div>
                   </div>
