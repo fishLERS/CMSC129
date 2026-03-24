@@ -14,6 +14,7 @@ export default function TrackingPage(){
   const [showRemarksText, setShowRemarksText] = React.useState('')
   const [highlightedId, setHighlightedId] = React.useState<string | null>(null)
   const [copiedId, setCopiedId] = React.useState<string | null>(null)
+  const [showAllCount, setShowAllCount] = React.useState(5)
 
   /**
    * Transform API requests into row format for display.
@@ -187,7 +188,7 @@ export default function TrackingPage(){
           {/* Filter Tabs */}
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300 w-fit">
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('all')}>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => { setFilter('all'); setShowAllCount(5); }}>
                 All ({rows.length})
               </a>
               <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('pending')}>
@@ -235,7 +236,7 @@ export default function TrackingPage(){
                     </td>
                   </tr>
                 ) : (
-                  filteredRows.map((r, idx) => (
+                  (filter === 'all' ? filteredRows.slice(0, showAllCount) : filteredRows).map((r, idx) => (
                     <tr
                       key={r.requestId || idx}
                       id={`req-${r.requestId}`}
@@ -284,6 +285,16 @@ export default function TrackingPage(){
               </tbody>
             </table>
           </div>
+          {filter === 'all' && filteredRows.length > showAllCount && (
+            <div className="p-4 border-t border-base-300 flex justify-center">
+              <button 
+                className="btn btn-primary btn-outline"
+                onClick={() => setShowAllCount(showAllCount + 5)}
+              >
+                Show more
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
