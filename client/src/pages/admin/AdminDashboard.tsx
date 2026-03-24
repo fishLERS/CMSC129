@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { auth, db } from "../../firebase";
+import { db } from "../../firebase";
 import { collection, query, orderBy, limit, onSnapshot, updateDoc, doc, getDoc, serverTimestamp, addDoc } from "firebase/firestore";
-import { onIdTokenChanged } from "firebase/auth";
 import { Bell, Eye, X } from "lucide-react";
 import { logicEquipment } from "../equipment/logicEquipment";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { overrideApproveRequest, overrideRejectRequest } from "../../api/requests.api";
+import { useAuth } from "../../hooks/useAuth";
 
 type ItemCondition = "functional" | "damaged" | "missing" | "consumed";
 
@@ -49,7 +49,7 @@ const AdminDashboard: React.FC = () => {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewRequest, setViewRequest] = useState<Request | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const { isSuperAdmin } = useAuth();
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideId, setOverrideId] = useState<string | null>(null);
   const [overrideAction, setOverrideAction] = useState<"approve" | "reject" | null>(null);
@@ -182,23 +182,6 @@ const AdminDashboard: React.FC = () => {
     }
     return '';
   }
-
-  useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (!user) {
-        setIsSuperAdmin(false);
-        return;
-      }
-      try {
-        const token = await user.getIdTokenResult();
-        setIsSuperAdmin(!!token.claims.superAdmin);
-      } catch (error) {
-        console.warn("Failed to read super admin claim", error);
-        setIsSuperAdmin(false);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     setLoading(true);

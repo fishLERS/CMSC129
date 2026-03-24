@@ -23,7 +23,7 @@ interface AdminProfile {
 }
 
 export default function ProfileAdmin() {
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const [loading, setLoading] = React.useState(true);
   const [profile, setProfile] = React.useState<AdminProfile | null>(null);
   const [editing, setEditing] = React.useState(false);
@@ -37,7 +37,6 @@ export default function ProfileAdmin() {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [passwordError, setPasswordError] = React.useState("");
   const [passwordSuccess, setPasswordSuccess] = React.useState("");
-  const isSuperAdmin = !!(profile?.isSuperAdmin || user?.isSuperAdmin);
   const roleLabel = formatRoleLabel(profile?.role || "admin", isSuperAdmin);
 
   React.useEffect(() => {

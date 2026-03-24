@@ -19,6 +19,7 @@ type AuthContextType = {
   loading: boolean;
   error: string | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   signup: (email: string, password: string, displayName: string) => Promise<User>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   /**
    * Subscribe to Firebase auth state changes and verify user data.
@@ -54,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (mounted) {
             setUser(null);
             setIsAdmin(false);
+            setIsSuperAdmin(false);
             localStorage.removeItem("authToken");
             localStorage.removeItem("userRole");
           }
@@ -80,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (mounted) {
             setUser(resolvedUser);
             setIsAdmin(hasAdminClaim && resolvedUser.role === "admin");
+            setIsSuperAdmin(!!resolvedUser.isSuperAdmin);
             localStorage.setItem("userRole", resolvedUser.role);
             setError(null);
           }
@@ -91,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem("userRole");
             setUser(null);
             setIsAdmin(false);
+            setIsSuperAdmin(false);
             setError(err.message);
           }
         }
@@ -113,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       const userData = await authApi.signup(email, password, displayName);
       setUser(userData);
+      setIsSuperAdmin(!!userData.isSuperAdmin);
       setError(null);
       return userData;
     } catch (err: any) {
@@ -156,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear state
       setUser(null);
       setIsAdmin(false);
+      setIsSuperAdmin(false);
       setError(null);
     } catch (err: any) {
       setError(err.message);
@@ -170,7 +177,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const updated = await authApi.updateProfile(displayName);
-      setUser(updated);
+      setUser((prev) => ({
+        ...(prev || updated),
+        ...updated,
+        isSuperAdmin: prev?.isSuperAdmin ?? !!updated.isSuperAdmin,
+      }));
       setError(null);
       return updated;
     } catch (err: any) {
@@ -187,7 +198,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const getCurrentUser = async () => {
     try {
       const userData = await authApi.getCurrentUser();
-      setUser(userData);
+      setUser((prev) => ({
+        ...(prev || userData),
+        ...userData,
+        isSuperAdmin: prev?.isSuperAdmin ?? !!userData.isSuperAdmin,
+      }));
       return userData;
     } catch (err: any) {
       setError(err.message);
@@ -213,6 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     isAdmin,
+    isSuperAdmin,
     signup,
     login,
     logout,
