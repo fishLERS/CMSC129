@@ -460,7 +460,7 @@ export default function HomeStudent() {
           <p className="text-base-content/70">Welcome, {user?.displayName ?? user?.email?.split('@')[0] ?? 'Student'}! Today is {formatDate(new Date())}</p>
         </div>
                 
-        <button className="btn btn-primary btn-sm" onClick={() => nav("/requestpage")}>
+        <button className="btn btn-primary btn-sm ml-auto" onClick={() => nav("/requestpage")}>
           + Request Equipment
         </button>
 
