@@ -1,3 +1,5 @@
+// TODO: unify table into one component with tracking page
+
 import React from 'react';
 import { logicEquipment } from './equipment/logicEquipment';
 import { useNavigate } from 'react-router-dom';
@@ -220,6 +222,14 @@ export default function HomeStudent() {
 
   const nav = useNavigate();
 
+  // Stats
+  const pendingCount = rows.filter(r => r.status?.toLowerCase() === 'pending').length
+  const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
+  const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && !isOngoing(r)).length
+  const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
+  const rejectedCancelledCount = rows.filter(r => ['declined', 'rejected', 'cancelled'].includes((r.status || '').toLowerCase())).length
+  const completedCount = rows.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length
+
   // Status badge helper
   const getStatusBadge = (r: any) => {
     const s = (r.status || '').toLowerCase();
@@ -232,7 +242,6 @@ export default function HomeStudent() {
     return <span className="badge">{r.status}</span>;
   };
 
-  const ongoingCount = trackingRequests.filter( r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
   const parseAccountabilityDetails = (details: string) => {
     return (details || '')
       .split(/[\n,]+/)
@@ -480,13 +489,24 @@ export default function HomeStudent() {
           {/* Tabs Header */}
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300">
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('all')}>All</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('pending')}>Pending</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'approved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('approved')}>Approved</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'ongoing' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'completed' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('completed')}>Completed</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'rejected_cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
-              {/* <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a> */}
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => { setFilter('all'); setShowAllCount(5); }}>
+                All ({rows.length})
+              </a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('pending')}>
+                Pending ({pendingCount})
+              </a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'ongoing' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('ongoing')}>
+                Ongoing ({ongoingCount})
+              </a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'approved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('approved')}>
+                Approved ({approvedCount})
+              </a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'completed' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('completed')}>
+                Completed ({completedCount})
+              </a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'rejected_cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setFilter('rejected_cancelled')}>
+                Unfulfilled ({rejectedCancelledCount})
+              </a>
             </div>
           </div>
 
