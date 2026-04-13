@@ -5,8 +5,9 @@ import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase';
 import { isOngoing } from "../utils/requestTime"
 import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { Bell, X, Eye, XCircle, RotateCcw } from 'lucide-react';
+import { Bell, X, Eye, XCircle, RotateCcw, Copy, MapPin, Clock } from 'lucide-react';
 import LoadingOverlay from '../components/LoadingOverlay';
+import { useRequests } from '../hooks/useRequests'
 
 function formatDate(d: Date) {
   return d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -24,8 +25,12 @@ function formatDateTime(v: any) {
 
 export default function HomeStudent() {
   const { user } = useAuth();
+  const { requests: trackingRequests } = useRequests(user?.uid)
+  const [rows, setRows] = React.useState<any[]>([])
+  const [copiedId, setCopiedId] = React.useState<string | null>(null)
   const [requests, setRequests] = React.useState<any[]>([]);
   const [tab, setTab] = React.useState<'all'|'pending'| 'ongoing' | 'approved' |'completed'|'rejected'|'cancelled'|'accountability'>('all');
+  const [filter, setFilter] = React.useState<'all' | 'pending'| 'ongoing' | 'completed' | 'approved' | 'declined' | 'rejected_cancelled'>('all')
   const [notifOpen, setNotifOpen] = React.useState(false)
   const [notifAllOpen, setNotifAllOpen] = React.useState(false)
   const [notifications, setNotifications] = React.useState<Array<any>>([])
@@ -33,177 +38,90 @@ export default function HomeStudent() {
   const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
   const [accountabilities, setAccountabilities] = React.useState<any[]>([])
   const [accountabilityRequestInfo, setAccountabilityRequestInfo] = React.useState<Record<string, { purpose?: string; createdAt?: any }>>({})
+  const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment()
+  const [highlightedId, setHighlightedId] = React.useState<string | null>(null)
+  const [showAllCount, setShowAllCount] = React.useState(5)
+  const [showRemarksText, setShowRemarksText] = React.useState('')
+  const [showRemarksOpen, setShowRemarksOpen] = React.useState(false)
 
   React.useEffect(() => {
-    if (!user) {
-      setRequests([]);
-      return;
+    if (!trackingRequests || trackingRequests.length === 0) {
+      setRows([])
+      return
     }
 
-    // process snapshot into request objects and sort by available timestamps
-    const processSnapshot = (snap: any) => {
-      const docs: any[] = []
-      snap.forEach((d: any) => {
-        const data = d.data()
-        const id = d.id
-        // compute sort key from client timestamp or server timestamp fallback
-        let sortKey = ''
-        if (data && data.createdAtClient) sortKey = data.createdAtClient
-        else if (data && data.createdAt && typeof data.createdAt.toDate === 'function') sortKey = data.createdAt.toDate().toISOString()
-        else if (data && data.createdAt) {
-          try { sortKey = new Date(data.createdAt).toISOString() } catch { sortKey = '' }
-        }
-        docs.push({ id, ...data, sortKey })
-      })
-      docs.sort((a,b) => (b.sortKey || '').localeCompare(a.sortKey || ''))
-      console.info('HomeStudent requests snapshot count:', docs.length)
-      setRequests(docs)
+    const docs = trackingRequests.map((req: any) => {
+      const purpose = req.purpose || ''
+      const status = req.status || 'pending'
+      const remarks = req.rejectionReason || ''
+
+      const totalQuantity = Array.isArray(req.items)
+        ? req.items.reduce((s: any, i: any) => s + (i.qty || 0), 0)
+        : 0
+
+      const itemsList = Array.isArray(req.items)
+        ? req.items.map((item: any) => {
+            const equipment = equipmentList.find((e: any) => e.equipmentID === item.equipmentID)
+            const itemName = equipment?.name || item.name || item.equipmentID || 'Unknown'
+            return `${itemName}: ${item.qty || 0}`
+          }).join(', ')
+        : ''
+
+      let duration = ''
       try {
-        const storedStatusRaw = localStorage.getItem('studentSeenStatuses')
-        const historyRaw = localStorage.getItem('studentNotificationHistory')
-        let history: any[] = []
-        try {
-          const parsed = JSON.parse(historyRaw || '[]')
-          if (Array.isArray(parsed)) history = parsed
-        } catch {
-          history = []
-        }
-        const historyKeys = new Set(
-          history.map(entry => `${entry.id}-${(entry.oldStatus ?? 'NEW')}->${entry.status}`)
-        )
+        const sDate = req.startDate || ''
+        const eDate = req.endDate || ''
+        if (sDate || eDate) {
+          const sd = new Date((sDate || eDate) + 'T00:00')
+          const ed = new Date((eDate || sDate) + 'T23:59')
 
-        const makeEntry = (d: any, prev: string | null, now: string) => {
-          let adminRemarks = d.declinedRemarks || d.remarks || null
-          let actionAt: string | null = null
-          try {
-            if (d.declinedAt && typeof d.declinedAt.toDate === 'function') actionAt = d.declinedAt.toDate().toLocaleString()
-            else if (d.approvedAt && typeof d.approvedAt.toDate === 'function') actionAt = d.approvedAt.toDate().toLocaleString()
-            else if (d.returnedAt && typeof d.returnedAt.toDate === 'function') actionAt = d.returnedAt.toDate().toLocaleString()
-            else if (d.cancelledAt && typeof d.cancelledAt.toDate === 'function') actionAt = d.cancelledAt.toDate().toLocaleString()
-          } catch {
-            actionAt = null
-          }
-          return {
-            id: d.id,
-            purpose: d.purpose,
-            oldStatus: prev,
-            status: now,
-            adminRemarks,
-            actionAt,
-            timestamp: Date.now(),
-            transitionKey: `${prev ?? 'NEW'}->${now}`
-          }
-        }
+          if (!isNaN(sd.getTime()) && !isNaN(ed.getTime())) {
+            const diffMs = Math.max(0, ed.getTime() - sd.getTime())
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60)) % 24
 
-        const seedHistoryFromDocs = () => {
-          const entries = docs.map(d => makeEntry(d, null, (d.status || 'ongoing').toString()))
-          const combined = [...history]
-          entries.forEach(entry => {
-            const key = `${entry.id}-${entry.transitionKey}`
-            if (!historyKeys.has(key)) {
-              historyKeys.add(key)
-              combined.push(entry)
-            }
-          })
-          const trimmed = combined.slice(-200)
-          localStorage.setItem('studentNotificationHistory', JSON.stringify(trimmed))
-          return trimmed
-        }
+            const parts: string[] = []
+            if (diffDays > 0) parts.push(`${diffDays}d`)
+            if (diffHours > 0) parts.push(`${diffHours}h`)
 
-        if (!storedStatusRaw) {
-          const initialMap: any = {}
-          docs.forEach(d => { initialMap[d.id] = (d.status || 'ongoing').toString() })
-          localStorage.setItem('studentSeenStatuses', JSON.stringify(initialMap))
-          const seeded = seedHistoryFromDocs()
-          setRecentNotifications([])
-          setNotifications(seeded.slice().sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0)))
-        } else {
-          const stored: any = JSON.parse(storedStatusRaw || '{}')
-          if (!history.length) {
-            history = seedHistoryFromDocs()
+            duration = `${sd.toLocaleString()} → ${ed.toLocaleString()}${parts.length ? ` (${parts.join(' ')})` : ''}`
           }
-          const changes: any[] = []
-          docs.forEach(d => {
-            const prev = stored[d.id]
-            const now = (d.status || 'ongoing').toString()
-            const transitionKey = `${prev ?? 'NEW'}->${now}`
-            if ((typeof prev === 'undefined' || prev !== now) && !historyKeys.has(`${d.id}-${transitionKey}`)) {
-              const entry = makeEntry(d, prev, now)
-              changes.push(entry)
-              historyKeys.add(`${d.id}-${transitionKey}`)
-            }
-          })
-          let updatedHistory = history
-          if (changes.length) {
-            updatedHistory = [...history, ...changes].slice(-200)
-            localStorage.setItem('studentNotificationHistory', JSON.stringify(updatedHistory))
-          }
-          setRecentNotifications(changes)
-          setNotifications(updatedHistory.slice().sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0)))
         }
-      } catch (e) {
-        console.warn('Failed to compute notifications', e)
-        setRecentNotifications([])
-        setNotifications([])
+      } catch {}
+
+      return {
+        purpose,
+        requestId: req.requestID || req.id, // IMPORTANT FIX
+        status,
+        remarks,
+        sortKey: req.createdAt || '',
+        duration,
+        totalQuantity,
+        itemsList,
       }
-    }
+    })
 
-    let unsubMain: (() => void) | null = null
-    let unsubFallback: (() => void) | null = null
+    docs.sort((a, b) => (b.sortKey || '').localeCompare(a.sortKey || ''))
+    setRows(docs)
+  }, [trackingRequests, equipmentList])
 
-    console.log('HomeStudent: Loading requests for user:', user.uid)
-    
-    try {
-      const q = query(
-        collection(db, 'requests'),
-        where('createdBy', '==', user.uid),
-        orderBy('createdAtClient', 'desc'),
-        limit(20)
-      )
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedId(text)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
-      unsubMain = onSnapshot(q, (snap) => {
-        console.log('HomeStudent: Got snapshot with', snap.docs.length, 'documents')
-        processSnapshot(snap)
-      }, (err) => {
-        console.error('HomeStudent snapshot error', err)
-        console.log('HomeStudent: Falling back to unordered query...')
-        // fall back to unordered query
-        try {
-          const qf = query(collection(db, 'requests'), where('createdBy', '==', user.uid), limit(20))
-          unsubFallback = onSnapshot(qf, (snap) => {
-            console.log('HomeStudent: Fallback query returned', snap.docs.length, 'documents')
-            processSnapshot(snap)
-          }, (err2) => console.error('HomeStudent fallback error', err2))
-        } catch (e) {
-          console.error('HomeStudent failed to subscribe fallback', e)
-        }
-      })
-    } catch (e) {
-      console.error('HomeStudent failed to subscribe main', e)
-      const qf = query(collection(db, 'requests'), where('createdBy', '==', user.uid), limit(20))
-      unsubFallback = onSnapshot(qf, (snap) => {
-        console.log('HomeStudent: Direct fallback returned', snap.docs.length, 'documents')
-        processSnapshot(snap)
-      }, (err2) => console.error('HomeStudent fallback error', err2))
-    }
-
-    return () => { if (unsubMain) unsubMain(); if (unsubFallback) unsubFallback() }
-  }, [user]);
-
-  let filteredRequests = requests.filter(r => {
-    const s = (r.status || '').toLowerCase()
-
-    if (tab === 'all') return true
-    if (tab === 'pending') return s === 'pending'
-    if (tab === 'ongoing') return s === 'approved' && isOngoing(r)
-    if (tab === 'approved') return s === 'approved' && !isOngoing(r)
-    if (tab === 'completed') return ['completed', 'returned'].includes(s)
-    if (tab === 'rejected') return ['declined', 'rejected'].includes(s)
-    if (tab === 'cancelled') return s === 'cancelled'
-
-    return true
-  })
-
+  // Filter rows
+    const filteredRows = rows.filter(r => {
+      const s = (r.status || '').toLowerCase()
+      if (filter === 'all') return true
+      if (filter === 'pending') return s === 'pending'
+      if (filter === 'ongoing') return s === 'approved' && isOngoing(r)
+      if (filter === 'approved') return s === 'approved' && !isOngoing(r)
+      if (filter === 'declined') return s === 'declined' || s === 'rejected'
+      if (filter === 'rejected_cancelled') return s === 'declined' || s === 'rejected' || s === 'cancelled'
+      return true
+    })
 
   // When showing "All", order groups as: approved -> ongoing/pending -> declined/rejected -> returned -> cancelled
   if (tab === 'all') {
@@ -217,22 +135,11 @@ export default function HomeStudent() {
       return 5;
     }
 
-    filteredRequests = filteredRequests.slice().sort((a,b) => {
-      const pa = priority((a.status || 'ongoing').toString());
-      const pb = priority((b.status || 'ongoing').toString());
-      if (pa !== pb) return pa - pb;
-      // same group -> newest first by sortKey
-      const ka = a.sortKey || '';
-      const kb = b.sortKey || '';
-      return kb.localeCompare(ka);
-    });
-  }
-
   const [busyId, setBusyId] = React.useState<string | null>(null)
   const [showModalRequest, setShowModalRequest] = React.useState<any | null>(null)
   const [showAccountabilityModal, setShowAccountabilityModal] = React.useState<any | null>(null)
-  const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment();
-  const isAccountabilityTab = tab === 'accountability'
+  // const { equipmentList, isLoading: isEquipmentLoading } = logicEquipment();
+  // const isAccountabilityTab = tab === 'accountability'
 
   // reuse admin-style time formatter so modal matches admin modal formatting
   const formatTime = (t: any) => {
@@ -325,7 +232,7 @@ export default function HomeStudent() {
     return <span className="badge">{r.status}</span>;
   };
 
-  const ongoingCount = requests.filter( r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
+  const ongoingCount = trackingRequests.filter( r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
   const parseAccountabilityDetails = (details: string) => {
     return (details || '')
       .split(/[\n,]+/)
@@ -535,22 +442,22 @@ export default function HomeStudent() {
       <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
         <div className="stat">
           <div className="stat-title">Total Requests</div>
-          <div className="stat-value">{requests.length}</div>
+          <div className="stat-value">{trackingRequests.length}</div>
           <div className="stat-desc">All time</div>
         </div>
         <div className="stat">
           <div className="stat-title">Pending</div>
-          <div className="stat-value text-warning">{requests.filter(r => (r.status).toLowerCase() === 'pending').length}</div>
+          <div className="stat-value text-warning">{trackingRequests.filter(r => (r.status).toLowerCase() === 'pending').length}</div>
           <div className="stat-desc">Pending approval</div>
         </div>
         <div className="stat">
           <div className="stat-title">Approved</div>
-          <div className="stat-value text-success">{requests.filter(r => r.status?.toLowerCase() === 'approved').length}</div>
+          <div className="stat-value text-success">{trackingRequests.filter(r => r.status?.toLowerCase() === 'approved').length}</div>
           <div className="stat-desc">Ready for use</div>
         </div>
         <div className="stat">
           <div className="stat-title">Completed</div>
-          <div className="stat-value text-info">{requests.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length}</div>
+          <div className="stat-value text-info">{trackingRequests.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length}</div>
           <div className="stat-desc">Items returned</div>
         </div>
         <div className="stat cursor-pointer hover:bg-base-300 hover:scale-100 active:scale-95 transition-all duration-200 overflow-hidden" onClick={() => nav('/accountabilities')}>
@@ -560,7 +467,7 @@ export default function HomeStudent() {
             { accountabilities.filter(a => {
               const s = (a.status || '').toLowerCase()
               return s !== 'resolved' && s !== 'completed'
-             }).length
+              }).length
             }
           </div>
         <div className="stat-desc">Unresolved issues</div>
@@ -573,13 +480,13 @@ export default function HomeStudent() {
           {/* Tabs Header */}
           <div className="p-4 border-b border-base-300">
             <div role="tablist" className="tabs tabs-boxed bg-base-300">
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('all')}>All</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('pending')}>Pending</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'approved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('approved')}>Approved</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'ongoing' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'completed' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('completed')}>Completed</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'rejected' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
-              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('all')}>All</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('pending')}>Pending</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'approved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('approved')}>Approved</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'ongoing' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('ongoing')}>Ongoing</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'completed' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('completed')}>Completed</a>
+              <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'rejected_cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('rejected')}>Rejected</a>
+              {/* <a role="tab" className={`tab transition-all duration-300 ease-in-out ${filter === 'cancelled' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('cancelled')}>Cancelled</a> */}
             </div>
           </div>
 
@@ -596,70 +503,78 @@ export default function HomeStudent() {
                 </tr>
               </thead>
               <tbody>
-                {(isAccountabilityTab ? accountabilities.length === 0 : filteredRequests.length === 0) ? (
+                {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-base-content/60">
-                      {isAccountabilityTab ? 'No accountabilities found' : 'No requests found'}
+                    <td colSpan={5} className="text-center py-12">
+                      <div className="flex flex-col items-center gap-2 text-base-content/60">
+                        <MapPin className="w-12 h-12 opacity-30" />
+                        <p className="font-medium">No requests found</p>
+                        <p className="text-sm">
+                          {filter === 'all' 
+                            ? "You haven't made any requests yet" 
+                            : filter === 'rejected_cancelled'
+                            ? 'No rejected or cancelled requests'
+                            : `No ${filter} requests`}
+                        </p>
+                      </div>
                     </td>
                   </tr>
-                ) : isAccountabilityTab ? (
-                  accountabilities.map((acc) => (
-                    <tr key={acc.id} className="hover">
-                      <td>
-                        <div className="font-medium">{getAccountabilityPurpose(acc)}</div>
-                        <div className="text-xs text-base-content/60">{getAccountabilityRequestedAt(acc)}</div>
-                      </td>
-                      <td></td>
-                      <td></td>
-                      <td></td>
-                      <td>
-                        <button className="btn btn-ghost btn-sm btn-circle" onClick={() => setShowAccountabilityModal(acc)}>
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
                 ) : (
-                  filteredRequests.map((r) => (
-                    <tr key={r.id} className="hover">
-                      <td>
-                        <div className="font-medium">{r.purpose || 'Item Request'}</div>
-                        <div className="text-xs text-base-content/60">
-                          {r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString() : (r.createdAt ? new Date(r.createdAt).toLocaleString() : '')}
-                        </div>
+                  (filter === 'all' ? filteredRows.slice(0, showAllCount) : filteredRows).map((r, idx) => (
+                    <tr
+                      key={r.requestId || idx}
+                      id={`req-${r.requestId}`}
+                      className={`hover ${highlightedId === r.requestId ? 'bg-primary/20 animate-pulse' : ''}`}
+                    >
+                      <td className="max-w-md">
+                        <div className="font-medium">{r.purpose || 'Untitled Request'}</div>
+                        {r.duration && (
+                          <div className="text-xs text-base-content/60 mt-1 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {r.duration}
+                          </div>
+                        )}
                       </td>
                       <td>
-                        <span className="badge badge-ghost">
-                          {Array.isArray(r.items) ? r.items.reduce((s: any, i: any) => s + (i.qty || 0), 0) : '-'}
-                        </span>
+                        {r.itemsList ? (
+                          <div className="tooltip" data-tip={r.itemsList}>
+                            <span className="badge badge-ghost cursor-help">
+                              {r.totalQuantity || '-'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="badge badge-ghost">
+                            {r.totalQuantity || '-'}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs bg-base-300 px-2 py-1 rounded font-mono">
+                            {r.requestId?.slice(0, 8)}...
+                          </code>
+                          <button
+                            className="btn btn-ghost btn-xs btn-circle tooltip"
+                            data-tip={copiedId === r.requestId ? 'Copied!' : 'Copy ID'}
+                            onClick={() => copyToClipboard(r.requestId)}
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
                       </td>
                       <td>{getStatusBadge(r)}</td>
                       <td>
-                        {((r.status || '').toString().toLowerCase() === 'pending') && (
+                        {r.remarks ? (
                           <button 
-                            className="btn btn-error btn-sm gap-1" 
-                            disabled={busyId === r.id} 
-                            onClick={() => handleCancel(r.id)}
+                            className="btn btn-ghost btn-sm gap-1" 
+                            onClick={() => { setShowRemarksText(r.remarks); setShowRemarksOpen(true); }}
                           >
-                            {busyId === r.id ? <span className="loading loading-spinner loading-xs"></span> : <XCircle className="w-4 h-4" />}
-                            Cancel
+                            <Eye className="w-4 h-4" />
+                            View
                           </button>
+                        ) : (
+                          <span className="text-sm text-base-content/40">—</span>
                         )}
-                        {tab === 'ongoing' && isOngoing(r) && (
-                          <button 
-                            className="btn btn-primary btn-sm gap-1" 
-                            disabled={busyId === r.id} 
-                            onClick={() => handleReturn(r.id)}
-                          >
-                            {busyId === r.id ? <span className="loading loading-spinner loading-xs"></span> : <RotateCcw className="w-4 h-4" />}
-                            Return
-                          </button>
-                        )}
-                      </td>
-                      <td>
-                        <button className="btn btn-ghost btn-sm btn-circle" onClick={() => setShowModalRequest(r)}>
-                          <Eye className="w-4 h-4" />
-                        </button>
                       </td>
                     </tr>
                   ))
@@ -667,6 +582,16 @@ export default function HomeStudent() {
               </tbody>
             </table>
           </div>
+          {filter === 'all' && filteredRows.length > showAllCount && (
+            <div className="p-4 border-t border-base-300 flex justify-center">
+              <button 
+                className="btn btn-primary btn-outline"
+                onClick={() => setShowAllCount(showAllCount + 5)}
+              >
+                Show more
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -834,4 +759,5 @@ export default function HomeStudent() {
     </div>
     </>
   );
+  }
 }

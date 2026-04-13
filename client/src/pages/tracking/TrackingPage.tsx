@@ -125,7 +125,6 @@ export default function TrackingPage(){
 
   // Stats
   const pendingCount = rows.filter(r => r.status?.toLowerCase() === 'pending').length
-  
   const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
   const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && !isOngoing(r)).length
   const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
