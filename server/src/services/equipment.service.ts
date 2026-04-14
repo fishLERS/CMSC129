@@ -1,6 +1,7 @@
 import { Equipment, EquipmentUpdateInput, EquipmentResponse } from "../models/equipment.js";
 import { EquipmentRepository } from "../repositories/equipment.repo.js";
-
+import { Category, CategoryResponse } from "../models/category.js";
+import { CategoryRepository } from "../repositories/category.repo.js";
 /**
  * Equipment Service.
  * Contains business logic related to equipment.
@@ -193,6 +194,10 @@ export class EquipmentService {
     if (typeof data.isDisposable !== "boolean") {
       throw new Error("Invalid input: isDisposable must be a boolean");
     }
+    
+    if (!data.categoryID) {
+      throw new Error("Invalid input: categoryID is required");
+    }
   }
 
   /**
@@ -217,5 +222,21 @@ export class EquipmentService {
         throw new Error("Invalid input: isDisposable must be a boolean");
       }
     }
+  }
+  
+  static async createCategory(data: Omit<Category, "categoryID">): Promise<CategoryResponse> {
+    if (!data.name) throw new Error("Category name is required");
+    const id = await CategoryRepository.create(data);
+    return { ...data, categoryID: id };
+  }
+
+  static async getAllCategories(): Promise<CategoryResponse[]> {
+    const categories = await CategoryRepository.getAll();
+    return categories.map(c => ({ ...c, categoryID: c.categoryID! }));
+  }
+
+  static async deleteCategory(id: string): Promise<void> {
+    // Optional: Check if any equipment is still using this category before deleting
+    await CategoryRepository.delete(id);
   }
 }
