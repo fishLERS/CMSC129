@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Boxes, Package, Recycle, AlertTriangle } from "lucide-react";
 import { collection, onSnapshot } from "firebase/firestore";
-
+import CategoryDialog from "./CategoryDialog";
 import { db } from "../../firebase";
 import { Equipment, Category } from "../../db";
 import { logicEquipment } from "./logicEquipment";
@@ -130,6 +130,7 @@ export default function Dashboard() {
             <p className="text-base-content/70">Manage your lab assets and dynamic categories.</p>
           </div>
           <div className="flex gap-2">
+            <CategoryDialog categories={categories} />
             <AddEquipmentDialog onAdd={handleAdd} categories={categories} />
           </div>
         </div>
