@@ -2,9 +2,9 @@ import { getFirestore } from '../config/firebase.js';
 import { UserBackup } from '../models/backup/userBackup.js';
 import { EquipmentBackup } from '../models/backup/equipmentBackup.js';
 import { RequestBackup } from '../models/backup/requestBackup.js';
-import mongoose from 'mongoose'; // 👈 add this
+import mongoose from 'mongoose'; 
 
-const listeners: Array<{ collection: string; model: mongoose.Model<any> }> = [ // 👈 type this
+const listeners: Array<{ collection: string; model: mongoose.Model<any> }> = [ 
   { collection: 'users',     model: UserBackup },
   { collection: 'equipment', model: EquipmentBackup },
   { collection: 'requests',  model: RequestBackup },
