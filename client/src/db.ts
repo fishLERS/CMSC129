@@ -3,7 +3,7 @@ export interface Equipment {
     imageLink?: string;
     name: string;
     totalInventory: number;
-    category?: string;
+    categoryID: string;
     isDisposable: boolean;
     isDeleted?: boolean;
     deletedAt?: string;
@@ -25,4 +25,11 @@ export interface EquipmentIssue {
     // issueStatus: string;
     // reportedAt: Date;
     // resolvedAt?: Date;
+}
+
+export interface Category {
+    categoryID?: string;
+    name: string;
+    description?: string;
+    createdAt?: string;
 }
