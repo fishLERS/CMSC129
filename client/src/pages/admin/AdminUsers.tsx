@@ -1,8 +1,8 @@
 import React from 'react'
-import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore'
+import { collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatRoleLabel } from '../../utils/roleLabel'
-import { setSuperAdmin } from '../../api/auth.api'
+import { setSuperAdmin, setUserRole } from '../../api/auth.api'
 import { useTelemetry } from '../../hooks/useTelemetry'
 
 interface UserData {
@@ -18,6 +18,7 @@ interface UserData {
 export default function AdminUsers() {
   const [users, setUsers] = React.useState<UserData[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [superAdminCount, setSuperAdminCount] = React.useState(0)
   const [updating, setUpdating] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState('')
   const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
@@ -36,8 +37,13 @@ export default function AdminUsers() {
       usersRef,
       (snapshot) => {
         const list: UserData[] = []
+        let superCount = 0
         snapshot.forEach((docSnap) => {
           const data = docSnap.data()
+          if (data.isSuperAdmin) {
+            superCount += 1
+            return
+          }
           if (data.role === 'admin' || data.requestedAdmin) {
             list.push({
               uid: docSnap.id,
@@ -55,6 +61,7 @@ export default function AdminUsers() {
           if (a.role !== 'admin' && b.role === 'admin') return 1
           return (a.email || '').localeCompare(b.email || '')
         })
+        setSuperAdminCount(superCount)
         setUsers(list)
         setLoading(false)
       },
@@ -71,8 +78,8 @@ export default function AdminUsers() {
     try {
       setUpdating(user.uid)
       await measureActionLatency(
-        'admin_users.set_role_firestore',
-        () => updateDoc(doc(db, 'users', user.uid), { role: newRole, requestedAdmin: false }),
+        'admin_users.set_role_api',
+        () => setUserRole(user.uid, newRole),
         { uid: user.uid, newRole }
       )
       setUsers((prev) =>
@@ -152,35 +159,28 @@ export default function AdminUsers() {
     }
   }
 
-  async function toggleAdmin(user: UserData) {
-    const newRole = user.role === 'admin' ? 'student' : 'admin'
+  async function revokeAdmin(user: UserData) {
+    const newRole: 'student' = 'student'
     const displayName = user.email || user.displayName || user.uid
 
-    if (newRole === 'student') {
-      openTypedConfirm(
-        'Confirm Admin Revocation',
-        `You are about to revoke admin privileges from ${displayName}. Type CONFIRM to continue.`,
-        () => applyAdminRoleChange(user, newRole)
-      )
-      return
-    }
-
-    if (!confirm(`Grant admin privileges to ${displayName}?`)) return
-    await applyAdminRoleChange(user, newRole)
+    openTypedConfirm(
+      'Confirm Admin Revocation',
+      `You are about to revoke admin privileges from ${displayName}. Type CONFIRM to continue.`,
+      () => applyAdminRoleChange(user, newRole)
+    )
+    return
   }
 
-  async function toggleSuperAdmin(user: UserData) {
-    const nextValue = !user.isSuperAdmin
+  async function grantAdmin(user: UserData) {
     const displayName = user.email || user.displayName || user.uid
 
-    if (!nextValue) {
-      openTypedConfirm(
-        'Confirm Super Admin Demotion',
-        `You are about to remove Super Admin access from ${displayName}. Type CONFIRM to continue.`,
-        () => applySuperAdminChange(user, nextValue)
-      )
-      return
-    }
+    if (!confirm(`Grant admin privileges to ${displayName}?`)) return
+    await applyAdminRoleChange(user, 'admin')
+  }
+
+  async function makeSuperAdmin(user: UserData) {
+    const nextValue = true
+    const displayName = user.email || user.displayName || user.uid
 
     if (!confirm(`Promote ${displayName} to Super Admin?`)) return
     await applySuperAdminChange(user, nextValue)
@@ -209,7 +209,6 @@ export default function AdminUsers() {
   })
 
   const adminCount = users.filter((u) => u.role === 'admin').length
-  const superAdminCount = users.filter((u) => u.role === 'admin' && u.isSuperAdmin).length
   const pendingCount = users.filter((u) => u.role !== 'admin' && u.requestedAdmin).length
 
   return (
@@ -334,28 +333,32 @@ export default function AdminUsers() {
                         <td className="text-sm">{formatDate(user.createdAt) || '—'}</td>
                         <td>
                           <div className="flex flex-wrap gap-2">
-                            <button
-                              className={`btn btn-sm ${user.role === 'admin' ? 'btn-error' : 'btn-primary'}`}
-                              onClick={() => toggleAdmin(user)}
-                              disabled={updating === user.uid}
-                            >
-                              {updating === user.uid
-                                ? 'Updating...'
-                                : user.role === 'admin'
-                                ? 'Revoke Admin'
-                                : 'Grant Admin'}
-                            </button>
-                            {user.role === 'admin' && (
+                            {user.requestedAdmin ? (
                               <button
-                                className={`btn btn-sm ${user.isSuperAdmin ? 'btn-warning' : 'btn-accent'}`}
-                                onClick={() => toggleSuperAdmin(user)}
+                                className='btn btn-sm btn-primary'
+                                onClick={() => grantAdmin(user)}
                                 disabled={updating === user.uid}
                               >
-                                {updating === user.uid
-                                  ? 'Updating...'
-                                  : user.isSuperAdmin
-                                  ? 'Remove Super'
-                                  : 'Make Super'}
+                                {updating === user.uid ? 'Updating...' : 'Grant Admin'}
+                              </button>
+                            ) : null }
+                            {user.role === 'admin' && !user.requestedAdmin ? (
+                              <button
+                                className="btn btn-sm btn-error"
+                                onClick={() => revokeAdmin(user)}
+                                disabled={updating === user.uid}
+                              >
+
+                                {updating === user.uid ? 'Updating...' : 'Revoke Admin'}
+                              </button>
+                            ) : null }
+                            {user.role === 'admin' && !user.isSuperAdmin && !user.requestedAdmin && (
+                              <button
+                                className="btn btn-sm btn-accent"
+                                onClick={() => makeSuperAdmin(user)}
+                                disabled={updating === user.uid}
+                              >
+                                {updating === user.uid ? 'Updating...' : 'Make Super'}
                               </button>
                             )}
                           </div>
@@ -375,8 +378,8 @@ export default function AdminUsers() {
           <h3 className="card-title text-lg">About Admin Management</h3>
           <ul className="text-sm text-base-content/70 list-disc list-inside space-y-1">
             <li>This list shows current admins plus users who requested elevated access.</li>
-            <li>Granting access promotes the user and clears their pending flag.</li>
-            <li>Use Make Super/Remove Super to manage super-admin access through backend claims.</li>
+            <li>Grant Admin approves pending admin requests and clears the request flag.</li>
+            <li>Use Make Super to promote approved admins to super admin access.</li>
             <li>Revoking access demotes the user back to student immediately.</li>
             <li>All changes are applied in real time via Firestore snapshots.</li>
           </ul>

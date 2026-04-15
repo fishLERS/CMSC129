@@ -136,7 +136,7 @@ export class AuthService {
     });
 
     // Update Firestore document
-    await UserRepository.update(uid, { role, isSuperAdmin });
+    await UserRepository.update(uid, { role, isSuperAdmin, requestedAdmin: false });
   }
 
   /**
@@ -164,6 +164,7 @@ export class AuthService {
     await UserRepository.update(uid, {
       role: nextRole,
       isSuperAdmin,
+      requestedAdmin: false,
     });
   }
 
