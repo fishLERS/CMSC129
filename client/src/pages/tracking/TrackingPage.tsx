@@ -1,3 +1,5 @@
+// TODO: unify table into one component with home-student
+
 import React from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { useRequests } from '../../hooks/useRequests'
@@ -125,7 +127,6 @@ export default function TrackingPage(){
 
   // Stats
   const pendingCount = rows.filter(r => r.status?.toLowerCase() === 'pending').length
-  
   const ongoingCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && isOngoing(r)).length
   const approvedCount = rows.filter(r => r.status?.toLowerCase() === 'approved' && !isOngoing(r)).length
   const declinedCount = rows.filter(r => ['declined', 'rejected'].includes((r.status || '').toLowerCase())).length
