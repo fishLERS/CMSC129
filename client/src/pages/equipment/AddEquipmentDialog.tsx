@@ -1,23 +1,35 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { Equipment } from "../../db";
-import EquipmentForm, { CATEGORY_OPTIONS } from "./EquipmentForm";
+import { Equipment, Category } from "../../db"; // Import Category interface
+import EquipmentForm from "./EquipmentForm";
 
 interface AddEquipmentDialogConfig {
   onAdd: (equipment: Omit<Equipment, "equipmentID">) => Promise<void>;
+  categories: Category[]; // Receive dynamic categories from Dashboard
 }
 
-const initialForm: Omit<Equipment, "equipmentID"> = {
+// Helper to create a fresh initial state
+const getInitialForm = (defaultCategoryID: string): Omit<Equipment, "equipmentID"> => ({
   name: "",
   totalInventory: 1,
-  category: CATEGORY_OPTIONS[0],
+  categoryID: defaultCategoryID, // Use ID instead of name
   isDisposable: false,
   imageLink: "",
-};
+});
 
-export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) {
+export default function AddEquipmentDialog({ onAdd, categories }: AddEquipmentDialogConfig) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<Omit<Equipment, "equipmentID">>(initialForm);
+
+  // Set the default selection to the first category ID available, or empty string
+  const defaultID = categories.length > 0 ? (categories[0].categoryID || "") : "";
+
+  const [form, setForm] = useState<Omit<Equipment, "equipmentID">>(getInitialForm(defaultID));
+
+  // Reset form when dialog opens to ensure it picks up any new default category logic
+  const handleOpen = () => {
+    setForm(getInitialForm(defaultID));
+    setOpen(true);
+  };
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -39,16 +51,18 @@ export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) 
   }
 
   async function handleSubmit() {
-    const isValid = form.name.trim() !== "" && form.totalInventory > 0;
+    // Validation: name is required, inventory > 0, and a category must be selected
+    const isValid = form.name.trim() !== "" && form.totalInventory > 0 && form.categoryID !== "";
+
     if (!isValid) {
-      console.log("Invalid form");
+      console.log("Invalid form submission attempt");
       return;
     }
 
     try {
-      await onAdd(form); // save to Firebase
-      setForm(initialForm); // reset form
-      setOpen(false); // close modal
+      await onAdd(form); // Save to Firebase via the logicEquipment handler
+      setOpen(false); // Close modal
+      setForm(getInitialForm(defaultID)); // Reset form for next use
     } catch (error) {
       console.error("Error saving equipment:", error);
     }
@@ -56,7 +70,7 @@ export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) 
 
   return (
     <>
-      <button className="btn btn-primary btn-sm gap-2" onClick={() => setOpen(true)}>
+      <button className="btn btn-primary btn-sm gap-2" onClick={handleOpen}>
         <Plus className="w-4 h-4" />
         <span>Add New Equipment</span>
       </button>
@@ -66,13 +80,18 @@ export default function AddEquipmentDialog({ onAdd }: AddEquipmentDialogConfig) 
           <div className="modal-box">
             <h3 className="font-bold text-lg mb-4">Add New Equipment</h3>
 
-            <EquipmentForm form={form} onChange={handleChange} />
+            {/* Pass the dynamic categories to the form */}
+            <EquipmentForm
+              form={form}
+              categories={categories}
+              onChange={handleChange}
+            />
 
             <div className="modal-action">
               <button
                 className="btn btn-success"
                 onClick={handleSubmit}
-                disabled={!form.name.trim() || form.totalInventory <= 0}
+                disabled={!form.name.trim() || form.totalInventory <= 0 || !form.categoryID}
               >
                 Add
               </button>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Equipment, AvailableEquipmentItem } from "../../db";
 import * as equipmentApi from "../../api/equipment.api";
 
@@ -16,22 +16,37 @@ export function logicEquipment() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Ref to track the latest request to prevent race conditions
+  const lastFetchId = useRef(0);
+
   /**
    * Fetch equipment from API.
    * Called on mount and periodically.
+   * * Added isBackground parameter to avoid flickering loaders during polling.
    */
-  const fetchEquipment = async () => {
+  const fetchEquipment = useCallback(async (isBackground = false) => {
+    const fetchId = ++lastFetchId.current;
+    if (!isBackground) setIsLoading(true);
+
     try {
       const items = await equipmentApi.listEquipment();
-      setEquipmentList(items);
-      setError(null);
+
+      // Only update state if this is still the most recent request
+      if (fetchId === lastFetchId.current) {
+        setEquipmentList(items);
+        setError(null);
+      }
     } catch (err: any) {
       console.error("Failed to fetch equipment:", err);
-      setError(err.message);
+      if (fetchId === lastFetchId.current) {
+        setError(err.message);
+      }
     } finally {
-      setIsLoading(false);
+      if (fetchId === lastFetchId.current) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, []);
 
   /**
    * Setup polling to refetch equipment every 5 seconds.
@@ -48,7 +63,7 @@ export function logicEquipment() {
     // Poll every 5 seconds
     const interval = setInterval(() => {
       if (isMounted) {
-        fetchEquipment();
+        fetchEquipment(true); // Silent background fetch
       }
     }, 5000);
 
@@ -56,7 +71,7 @@ export function logicEquipment() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [fetchEquipment]);
 
   /**
    * REPLACEMENT for old handleAdd.
@@ -66,7 +81,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.createEquipment(equipment);
       // Refetch to get the new item in the list
-      await fetchEquipment();
+      await fetchEquipment(true);
     } catch (err: any) {
       console.error("Failed to create equipment:", err);
       setError(err.message);
@@ -85,7 +100,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.updateEquipment(equipmentID, info);
       // Refetch to get the updated item
-      await fetchEquipment();
+      await fetchEquipment(true);
     } catch (err: any) {
       console.error("Failed to update equipment:", err);
       setError(err.message);
@@ -101,7 +116,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.deleteEquipment(equipmentID);
       // Refetch to remove from list
-      await fetchEquipment();
+      await fetchEquipment(true);
     } catch (err: any) {
       console.error("Failed to delete equipment:", err);
       setError(err.message);
@@ -118,7 +133,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.deleteEquipment(item.equipmentID);
       // Refetch to remove from list
-      await fetchEquipment();
+      await fetchEquipment(true);
     } catch (err: any) {
       console.error("Failed to purge equipment:", err);
       setError(err.message);
@@ -134,7 +149,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.archiveEquipment(equipmentID);
       // Refetch to remove from active list
-      await fetchEquipment();
+      await fetchEquipment(true);
     } catch (err: any) {
       console.error("Failed to archive equipment:", err);
       setError(err.message);
@@ -150,7 +165,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.restoreEquipment(equipmentID);
       // Refetch to add back to active list
-      await fetchEquipment();
+      await fetchEquipment(true);
     } catch (err: any) {
       console.error("Failed to restore equipment:", err);
       setError(err.message);
@@ -187,53 +202,66 @@ export function useFetchAvailableItems(
   _startDate?: string,
   _endDate?: string
 ) {
-  const [availableEquipment, setAvailableEquipment] = useState<AvailableEquipmentItem[]>([]);
   const [activeReservations, setActiveReservations] = useState<Record<string, number>>({});
 
   // TODO: For now, this still uses Firestore directly for requests.
   // After requests are migrated to the API, replace with API call.
   useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
     // TEMPORARY: Still using Firestore for requests
     // This will be replaced with API call in Phase X (requests migration)
-    import("firebase/firestore").then(({ collection, onSnapshot }) => {
-      import("../../firebase").then(({ db }) => {
-        const unsubscribe = onSnapshot(collection(db, "requests"), (snapshot) => {
-          const reservedTotals: Record<string, number> = {};
-          snapshot.forEach((doc) => {
-            const data = doc.data() as any;
-            const status = (data.status || "").toString().toLowerCase();
-            if (status !== "ongoing") return;
-            const reqStart = data.startDate;
-            const reqEnd = data.endDate;
+    const setupListener = async () => {
+      const { collection, onSnapshot, query, where } = await import("firebase/firestore");
+      const { db } = await import("../../firebase");
 
-            if (_startDate && _endDate && reqStart && reqEnd) {
-              const userStart = new Date(_startDate);
-              const userEnd = new Date(_endDate);
-              const existingStart = new Date(reqStart);
-              const existingEnd = new Date(reqEnd);
+      // Optimization: Filter by status 'ongoing' at the query level
+      const q = query(collection(db, "requests"), where("status", "==", "ongoing"));
 
-              const overlaps = userStart <= existingEnd && userEnd >= existingStart;
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        const reservedTotals: Record<string, number> = {};
 
-              if (!overlaps) return;
-            }
-            const items = Array.isArray(data.items) ? data.items : [];
-            items.forEach((item: any) => {
-              const equipmentID = item?.equipmentID;
-              const qty = Number(item?.qty) || 0;
-              if (!equipmentID || qty <= 0) return;
-              reservedTotals[equipmentID] = (reservedTotals[equipmentID] || 0) + qty;
-            });
+        snapshot.forEach((doc) => {
+          const data = doc.data() as any;
+          const reqStart = data.startDate;
+          const reqEnd = data.endDate;
+
+          if (_startDate && _endDate && reqStart && reqEnd) {
+            const userStart = new Date(_startDate);
+            const userEnd = new Date(_endDate);
+            const existingStart = new Date(reqStart);
+            const existingEnd = new Date(reqEnd);
+
+            const overlaps = userStart <= existingEnd && userEnd >= existingStart;
+
+            if (!overlaps) return;
+          }
+
+          const items = Array.isArray(data.items) ? data.items : [];
+          items.forEach((item: any) => {
+            const equipmentID = item?.equipmentID;
+            const qty = Number(item?.qty) || 0;
+            if (!equipmentID || qty <= 0) return;
+            reservedTotals[equipmentID] = (reservedTotals[equipmentID] || 0) + qty;
           });
-          setActiveReservations(reservedTotals);
         });
-        return () => unsubscribe();
+        setActiveReservations(reservedTotals);
       });
-    });
-  }, []);
+    };
 
-  useEffect(() => {
+    setupListener();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [_startDate, _endDate]);
+
+  /**
+   * Memoize calculations to prevent recalculating on every parent render
+   * unless the equipmentList or activeReservations actually change.
+   */
+  const availableEquipment = useMemo(() => {
     const activeEquipment = (equipmentList || []).filter((item) => !item.isDeleted);
-    const available = activeEquipment.map((eq) => {
+    return activeEquipment.map((eq) => {
       const reserved = activeReservations[eq.equipmentID || ""] || 0;
       const availableCount = (eq.totalInventory || 0) - reserved;
       return {
@@ -241,9 +269,8 @@ export function useFetchAvailableItems(
         available: Math.max(0, availableCount),
         reserved,
         isAvailable: availableCount > 0,
-      };
+      } as AvailableEquipmentItem;
     });
-    setAvailableEquipment(available);
   }, [equipmentList, activeReservations]);
 
   return { availableEquipment, activeReservations };

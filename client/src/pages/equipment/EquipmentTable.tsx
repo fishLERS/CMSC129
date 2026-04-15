@@ -1,10 +1,11 @@
 import React from "react";
 import EditEquipmentDialog from "./EditEquipmentDialog";
-import { Equipment } from "../../db";
+import { Equipment, Category } from "../../db";
 
 interface EquipmentTableProps {
   equipmentList: Equipment[];
-  onEdit: (id: string, info: Partial<Omit<Equipment, "equipmentID">>) => void;
+  categories: Category[]; // Added categories for lookup
+  onEdit: (id: string, info: Partial<Omit<Equipment, "equipmentID">>) => Promise<void>
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
   onRestore: (id: string) => void;
@@ -18,6 +19,7 @@ const LOW_STOCK_THRESHOLD = 5;
 
 export default function EquipmentTable({
   equipmentList,
+  categories,
   onEdit,
   onDelete,
   onArchive,
@@ -30,6 +32,14 @@ export default function EquipmentTable({
   const [selectedItem, setSelectedItem] = React.useState<Equipment | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [inlineEditItem, setInlineEditItem] = React.useState<Equipment | null>(null);
+
+  // Helper to resolve ID to Name
+  const getCategoryName = React.useCallback((id?: string) => {
+    if (!id) return "Uncategorized";
+    const found = categories.find(c => c.categoryID === id);
+    return found ? found.name : "Uncategorized";
+  }, [categories]);
+
   const getSerialNumbers = React.useCallback((item: Equipment | null) => {
     if (!item || item.isDisposable) return [];
     if (Array.isArray(item.serialNumbers) && item.serialNumbers.length > 0) {
@@ -93,113 +103,113 @@ export default function EquipmentTable({
               const purgedAt = (item as any).purgedAt ? new Date((item as any).purgedAt).toLocaleDateString() : null;
               const statusLabel = view === "purged" ? "Purged" : "Archived";
               return (
-              <tr
-                key={item.equipmentID}
-                className={`transition-colors cursor-pointer ${
-                  !archived ? "hover:bg-primary/10" : ""
-                }`}
-                onClick={() => openDetails(item)}
-              >
-                <td>
-                  <div className="font-semibold">{item.name}</div>
-                  {item.equipmentID && (
-                    <div className="text-xs text-base-content/60">ID: {item.equipmentID}</div>
-                  )}
-                  {archived && (
-                    <div className="text-xs flex items-center gap-2 mt-1 text-warning">
-                      <span className={`badge ${view === "purged" ? "badge-error" : "badge-warning"} badge-outline`}>
-                        {statusLabel}
-                      </span>
-                      {(view === "purged" ? purgedAt : archivedAt) && (
-                        <span>since {view === "purged" ? purgedAt : archivedAt}</span>
-                      )}
-                    </div>
-                  )}
-                </td>
-                <td>
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{item.totalInventory ?? 0}</span>
-                      {(item.totalInventory ?? 0) <= LOW_STOCK_THRESHOLD && (
-                        <span className="badge badge-warning badge-sm">Low</span>
-                      )}
-                    </div>
-                    <div className="text-xs text-base-content/60">
-                      Pending: {(item as any).reserved ?? 0} · Available now:{" "}
-                      {Math.max((item.totalInventory ?? 0) - ((item as any).reserved ?? 0), 0)}
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span className="badge badge-outline">
-                    {item.category?.trim() || "Uncategorized"}
-                  </span>
-                </td>
-                <td>
-                  {item.isDisposable ? (
-                    <span className="badge badge-success">Disposable</span>
-                  ) : (
-                    <span className="badge badge-neutral">Durable</span>
-                  )}
-                </td>
-                <td>
-                  {item.imageLink ? (
-                    <img
-                      src={item.imageLink}
-                      alt={item.name}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                  ) : (
-                    <span className="text-base-content/60">No image</span>
-                  )}
-                </td>
-                <td className="justify-center items-center gap-2">
-                  <div
-                    className="flex flex-wrap gap-2 justify-center"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {view === "active" && !archived && (
-                      <>
-                        <EditEquipmentDialog item={item} onEdit={onEdit} />
-                        <button
-                          className="btn btn-xs"
-                          onClick={() => {
-                            if (!confirm(`Archive ${item.name}? This hides it from requests but keeps history.`)) return;
-                            onArchive(item.equipmentID!);
-                          }}
-                        >
-                          Archive
-                        </button>
-                      </>
+                <tr
+                  key={item.equipmentID}
+                  className={`transition-colors cursor-pointer ${!archived ? "hover:bg-primary/10" : ""
+                    }`}
+                  onClick={() => openDetails(item)}
+                >
+                  <td>
+                    <div className="font-semibold">{item.name}</div>
+                    {item.equipmentID && (
+                      <div className="text-xs text-base-content/60">ID: {item.equipmentID}</div>
                     )}
-                    {view === "archived" && archived && (
-                      <>
-                        <button
-                          className="btn btn-xs btn-ghost"
-                          onClick={() => onRestore(item.equipmentID!)}
-                        >
-                          Restore
-                        </button>
-                        <button
-                          className="btn btn-xs btn-error"
-                          onClick={() => {
-                            if (!confirm(`Permanently delete ${item.name}? This cannot be undone.`)) return;
-                            onPurge(item);
-                          }}
-                        >
-                          Purge
-                        </button>
-                      </>
-                    )}
-                    {view === "purged" && (
-                      <div className="text-xs text-base-content/60">
-                        History record
+                    {archived && (
+                      <div className="text-xs flex items-center gap-2 mt-1 text-warning">
+                        <span className={`badge ${view === "purged" ? "badge-error" : "badge-warning"} badge-outline`}>
+                          {statusLabel}
+                        </span>
+                        {(view === "purged" ? purgedAt : archivedAt) && (
+                          <span>since {view === "purged" ? purgedAt : archivedAt}</span>
+                        )}
                       </div>
                     )}
-                  </div>
-                </td>
-              </tr>
-            )})
+                  </td>
+                  <td>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{item.totalInventory ?? 0}</span>
+                        {(item.totalInventory ?? 0) <= LOW_STOCK_THRESHOLD && (
+                          <span className="badge badge-warning badge-sm">Low</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-base-content/60">
+                        Pending: {(item as any).reserved ?? 0} · Available now:{" "}
+                        {Math.max((item.totalInventory ?? 0) - ((item as any).reserved ?? 0), 0)}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="badge badge-outline">
+                      {getCategoryName(item.categoryID)}
+                    </span>
+                  </td>
+                  <td>
+                    {item.isDisposable ? (
+                      <span className="badge badge-success">Disposable</span>
+                    ) : (
+                      <span className="badge badge-neutral">Durable</span>
+                    )}
+                  </td>
+                  <td>
+                    {item.imageLink ? (
+                      <img
+                        src={item.imageLink}
+                        alt={item.name}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    ) : (
+                      <span className="text-base-content/60">No image</span>
+                    )}
+                  </td>
+                  <td className="justify-center items-center gap-2">
+                    <div
+                      className="flex flex-wrap gap-2 justify-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {view === "active" && !archived && (
+                        <>
+                          <EditEquipmentDialog item={item} categories={categories} onEdit={onEdit} />
+                          <button
+                            className="btn btn-xs"
+                            onClick={() => {
+                              if (!confirm(`Archive ${item.name}? This hides it from requests but keeps history.`)) return;
+                              onArchive(item.equipmentID!);
+                            }}
+                          >
+                            Archive
+                          </button>
+                        </>
+                      )}
+                      {view === "archived" && archived && (
+                        <>
+                          <button
+                            className="btn btn-xs btn-ghost"
+                            onClick={() => onRestore(item.equipmentID!)}
+                          >
+                            Restore
+                          </button>
+                          <button
+                            className="btn btn-xs btn-error"
+                            onClick={() => {
+                              if (!confirm(`Permanently delete ${item.name}? This cannot be undone.`)) return;
+                              onPurge(item);
+                            }}
+                          >
+                            Purge
+                          </button>
+                        </>
+                      )}
+                      {view === "purged" && (
+                        <div className="text-xs text-base-content/60">
+                          History record
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })
           )}
         </tbody>
       </table>
@@ -255,7 +265,7 @@ export default function EquipmentTable({
                     <div>
                       <p className="text-xs text-base-content/60 uppercase tracking-wide">Category</p>
                       <p className="text-lg font-semibold">
-                        {selectedItem.category?.trim() || "Uncategorized"}
+                        {getCategoryName(selectedItem.categoryID)}
                       </p>
                     </div>
                     <div>
@@ -389,6 +399,7 @@ export default function EquipmentTable({
       {inlineEditItem && (
         <EditEquipmentDialog
           item={inlineEditItem}
+          categories={categories}
           onEdit={onEdit}
           openImmediately
           onClose={() => setInlineEditItem(null)}
