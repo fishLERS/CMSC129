@@ -120,6 +120,7 @@ export default function TrackingPage(){
     if (filter === 'pending') return s === 'pending'
     if (filter === 'ongoing') return s === 'approved' && isOngoing(r)
     if (filter === 'approved') return s === 'approved' && !isOngoing(r)
+    if (filter === 'completed') return s === 'completed' || s === 'returned'
     if (filter === 'declined') return s === 'declined' || s === 'rejected'
     if (filter === 'rejected_cancelled') return s === 'declined' || s === 'rejected' || s === 'cancelled'
     return true
