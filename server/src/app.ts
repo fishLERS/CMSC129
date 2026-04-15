@@ -1,15 +1,13 @@
+// src/app.ts
 import express from "express";
 import cors from "cors";
 import { AppConfig } from "./config/env.js";
-import { errorHandler } from "./middleware/auth.js";
+import { errorHandler } from "./middleware/auth.js"; 
+import mongoose from 'mongoose';
 import equipmentRoutes from "./routes/equipment.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import requestRoutes from "./routes/requests.routes.js";
 
-/**
- * Create and configure the Express app.
- * NOTE: Does NOT start the server. Call listen() separately.
- */
 export function createApp(config: AppConfig): express.Application {
   const app = express();
 
@@ -21,9 +19,6 @@ export function createApp(config: AppConfig): express.Application {
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:5174",
-      "http://127.0.0.1:5175",
     ])
   );
 
@@ -34,9 +29,7 @@ export function createApp(config: AppConfig): express.Application {
 
   const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
-      // Allow requests with no origin (like curl or server-to-server)
       if (!origin) return callback(null, true);
-
       if (allowedOrigins.includes(origin) || isLocalDevOrigin(origin) || isLanDevOrigin(origin)) {
         callback(null, true);
       } else {
@@ -58,7 +51,14 @@ export function createApp(config: AppConfig): express.Application {
 
   // ============ ROUTES ============
   app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "OK", timestamp: new Date().toISOString() });
+    // Helpful to check both DB statuses in health check
+    res.status(200).json({
+      status: "OK",
+      timestamp: new Date().toISOString(),
+      databases: {
+        mongodb: mongoose.connection.readyState === 1 ? "Connected" : "Disconnected"
+      }
+    });
   });
 
   app.use("/api/equipment", equipmentRoutes);
@@ -70,19 +70,14 @@ export function createApp(config: AppConfig): express.Application {
     res.status(404).json({ error: "Route not found" });
   });
 
-  // ============ ERROR HANDLING (must be last) ============
+  // ============ ERROR HANDLING ============
   app.use(errorHandler);
 
   return app;
 }
 
-/**
- * Start the server.
- */
 export function startServer(app: express.Application, config: AppConfig): void {
   app.listen(config.port, () => {
-    const configuredOrigins = [config.clientUrl, ...config.clientUrls].filter(Boolean);
     console.log(`Server running on http://localhost:${config.port}`);
-    console.log(`CORS configured origins: ${configuredOrigins.join(", ") || "(none)"}`);
   });
 }

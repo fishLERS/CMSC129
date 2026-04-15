@@ -2,118 +2,89 @@ import { Equipment, EquipmentUpdateInput, EquipmentResponse } from "../models/eq
 import { EquipmentRepository } from "../repositories/equipment.repo.js";
 import { Category, CategoryResponse } from "../models/category.js";
 import { CategoryRepository } from "../repositories/category.repo.js";
+import { getCollection, getDocument } from "../services/db.service.js";
+
 /**
  * Equipment Service.
- * Contains business logic related to equipment.
- * Does NOT directly access Firestore; uses EquipmentRepository instead.
- *
- * Purpose: Business logic layer. Centralize equipment rules, validation, and transformations here.
- * Example: If you later need approval workflows, audit trails, or cascading deletes, implement them here.
+ * Refactored for Hybrid Database Architecture (Firestore Primary, MongoDB Backup).
+ * * - Reads: Use failover-safe helpers (getDocument/getCollection).
+ * - Writes: Use Repositories (Firestore) to trigger mirroring listeners.
  */
 export class EquipmentService {
+
+  // ============ EQUIPMENT OPERATIONS ============
+
   /**
    * Create new equipment.
-   * Validates input and stores in database via repository.
+   * Target: Primary (Firestore). Sync to Mongo happens via listeners.
    */
   static async createEquipment(data: Omit<Equipment, "equipmentID">): Promise<EquipmentResponse> {
     this.validateEquipmentInput(data);
-    
-    const equipmentID = await EquipmentRepository.create(data);
-    const equipment = await EquipmentRepository.getById(equipmentID);
-    
-    if (!equipment) {
-      throw new Error("Failed to retrieve created equipment");
-    }
 
-    return {
-      ...equipment,
-      equipmentID: equipment.equipmentID!,
-    } as EquipmentResponse;
+    // Create always hits primary (Firestore)
+    const equipmentID = await EquipmentRepository.create(data);
+
+    // Fetch using failover-safe method to return created object
+    return await this.getEquipmentById(equipmentID);
   }
 
   /**
-   * Get all active (non-deleted) equipment.
-   * Filters out soft-deleted items.
+   * Get all active equipment.
+   * RESILIENCE: Reads from MongoDB if Firestore is down.
    */
   static async getActiveEquipment(): Promise<EquipmentResponse[]> {
-    const all = await EquipmentRepository.getAll();
+    const all = await getCollection('equipment');
     return all
       .filter((e) => !e.isDeleted)
-      .map((e) => ({
-        ...e,
-        equipmentID: e.equipmentID!,
-      } as EquipmentResponse));
+      .map((e) => this.mapToEquipmentResponse(e));
   }
 
   /**
    * Get all equipment including archived.
-   * For admin dashboards that need full visibility.
    */
   static async getAllEquipment(): Promise<EquipmentResponse[]> {
-    const all = await EquipmentRepository.getAll();
-    return all.map((e) => ({
-      ...e,
-      equipmentID: e.equipmentID!,
-    } as EquipmentResponse));
+    const all = await getCollection('equipment');
+    return all.map((e) => this.mapToEquipmentResponse(e));
   }
 
   /**
-   * Get a single equipment by ID.
+   * Get single equipment by ID.
+   * RESILIENCE: Reads from MongoDB if Firestore is down.
    */
   static async getEquipmentById(equipmentID: string): Promise<EquipmentResponse> {
-    const equipment = await EquipmentRepository.getById(equipmentID);
-    
+    const equipment = await getDocument('equipment', equipmentID);
+
     if (!equipment) {
       throw new Error(`Equipment not found: ${equipmentID}`);
     }
 
-    return {
-      ...equipment,
-      equipmentID: equipment.equipmentID!,
-    } as EquipmentResponse;
+    return this.mapToEquipmentResponse(equipment);
   }
 
   /**
    * Update equipment.
-   * Validates input before updating.
+   * Target: Primary (Firestore).
    */
   static async updateEquipment(
     equipmentID: string,
     data: Partial<EquipmentUpdateInput>
   ): Promise<EquipmentResponse> {
-    // Verify it exists
-    const existing = await EquipmentRepository.getById(equipmentID);
-    if (!existing) {
-      throw new Error(`Equipment not found: ${equipmentID}`);
-    }
+    // Check existence via failover-safe method
+    await this.getEquipmentById(equipmentID);
 
-    // Validate what we're updating
     this.validateEquipmentUpdate(data);
 
     await EquipmentRepository.update(equipmentID, data);
-    
-    const updated = await EquipmentRepository.getById(equipmentID);
-    if (!updated) {
-      throw new Error("Failed to retrieve updated equipment");
-    }
 
-    return {
-      ...updated,
-      equipmentID: updated.equipmentID!,
-    } as EquipmentResponse;
+    // Return the updated state
+    return await this.getEquipmentById(equipmentID);
   }
 
   /**
-   * Soft delete equipment (archive).
-   * Equipment remains in database, marked as deleted.
-   * Can be restored later.
+   * Soft delete (archive).
    */
   static async archiveEquipment(equipmentID: string): Promise<void> {
-    const exists = await EquipmentRepository.getById(equipmentID);
-    if (!exists) {
-      throw new Error(`Equipment not found: ${equipmentID}`);
-    }
-
+    await this.getEquipmentById(equipmentID);
     await EquipmentRepository.softDelete(equipmentID);
   }
 
@@ -121,122 +92,110 @@ export class EquipmentService {
    * Restore archived equipment.
    */
   static async restoreEquipment(equipmentID: string): Promise<EquipmentResponse> {
-    const exists = await EquipmentRepository.getById(equipmentID);
-    if (!exists) {
-      throw new Error(`Equipment not found: ${equipmentID}`);
-    }
-
+    await this.getEquipmentById(equipmentID);
     await EquipmentRepository.restore(equipmentID);
-    
-    const restored = await EquipmentRepository.getById(equipmentID);
-    if (!restored) {
-      throw new Error("Failed to retrieve restored equipment");
-    }
-
-    return {
-      ...restored,
-      equipmentID: restored.equipmentID!,
-    } as EquipmentResponse;
+    return await this.getEquipmentById(equipmentID);
   }
 
   /**
-   * Hard delete equipment.
-   * Permanently removes from database and logs to purged collection.
-   * This is irreversible.
+   * Hard delete (purge).
    */
   static async deleteEquipment(equipmentID: string): Promise<void> {
-    const exists = await EquipmentRepository.getById(equipmentID);
-    if (!exists) {
-      throw new Error(`Equipment not found: ${equipmentID}`);
-    }
-
+    await this.getEquipmentById(equipmentID);
     await EquipmentRepository.delete(equipmentID);
   }
 
   /**
-   * Get all purged (permanently deleted) equipment records.
+   * Get all purged equipment records.
    */
-  static async getPurgedEquipment() {
-    return await EquipmentRepository.getPurged();
+  static async getPurgedEquipment(): Promise<EquipmentResponse[]> {
+    const purged = await getCollection('purged_equipment');
+    return purged.map(e => this.mapToEquipmentResponse(e));
   }
 
   /**
    * Restore equipment from purged state.
-   * Should be restricted to authorized admins only.
    */
   static async restorePurgedEquipment(equipmentID: string): Promise<EquipmentResponse> {
     await EquipmentRepository.restorePurged(equipmentID);
-    
-    const restored = await EquipmentRepository.getById(equipmentID);
-    if (!restored) {
-      throw new Error("Failed to retrieve restored equipment");
-    }
+    return await this.getEquipmentById(equipmentID);
+  }
 
-    return {
-      ...restored,
-      equipmentID: restored.equipmentID!,
-    } as EquipmentResponse;
+  // ============ CATEGORY OPERATIONS ============
+
+  /**
+   * Create new category.
+   */
+  static async createCategory(data: Omit<Category, "categoryID">): Promise<CategoryResponse> {
+    if (!data.name) throw new Error("Category name is required");
+
+    const id = await CategoryRepository.create(data);
+
+    // Retrieve via failover-safe getDocument
+    const category = await getDocument('categories', id);
+    return this.mapToCategoryResponse({ ...data, id, ...category });
   }
 
   /**
-   * Validate equipment creation input.
-   * Throws if required fields are missing or invalid.
+   * Get all categories.
+   * RESILIENCE: Reads from MongoDB if Firestore is down.
    */
+  static async getAllCategories(): Promise<CategoryResponse[]> {
+    const categories = await getCollection('categories');
+    return categories.map(c => this.mapToCategoryResponse(c));
+  }
+
+  /**
+   * Delete category.
+   */
+  static async deleteCategory(id: string): Promise<void> {
+    await CategoryRepository.delete(id);
+  }
+
+  // ============ PRIVATE HELPERS & VALIDATION ============
+
+  /**
+   * Maps database objects to consistent response types.
+   * Handles ID differences between Firestore (id) and MongoDB (docId).
+   */
+  private static mapToEquipmentResponse(data: any): EquipmentResponse {
+    return {
+      ...data,
+      equipmentID: data.id || data.docId || data.equipmentID,
+    } as EquipmentResponse;
+  }
+
+  private static mapToCategoryResponse(data: any): CategoryResponse {
+    return {
+      ...data,
+      categoryID: data.id || data.docId || data.categoryID,
+    } as CategoryResponse;
+  }
+
   private static validateEquipmentInput(data: any): void {
     if (!data.name || typeof data.name !== "string" || data.name.trim().length === 0) {
       throw new Error("Invalid input: name is required and must be a non-empty string");
     }
-
     if (typeof data.totalInventory !== "number" || data.totalInventory < 0) {
       throw new Error("Invalid input: totalInventory must be a non-negative number");
     }
-
     if (typeof data.isDisposable !== "boolean") {
       throw new Error("Invalid input: isDisposable must be a boolean");
     }
-    
     if (!data.categoryID) {
       throw new Error("Invalid input: categoryID is required");
     }
   }
 
-  /**
-   * Validate equipment update input.
-   * Throws if any field is invalid.
-   */
   private static validateEquipmentUpdate(data: any): void {
-    if (data.name !== undefined) {
-      if (typeof data.name !== "string" || data.name.trim().length === 0) {
-        throw new Error("Invalid input: name must be a non-empty string");
-      }
+    if (data.name !== undefined && (typeof data.name !== "string" || data.name.trim().length === 0)) {
+      throw new Error("Invalid input: name must be a non-empty string");
     }
-
-    if (data.totalInventory !== undefined) {
-      if (typeof data.totalInventory !== "number" || data.totalInventory < 0) {
-        throw new Error("Invalid input: totalInventory must be a non-negative number");
-      }
+    if (data.totalInventory !== undefined && (typeof data.totalInventory !== "number" || data.totalInventory < 0)) {
+      throw new Error("Invalid input: totalInventory must be a non-negative number");
     }
-
-    if (data.isDisposable !== undefined) {
-      if (typeof data.isDisposable !== "boolean") {
-        throw new Error("Invalid input: isDisposable must be a boolean");
-      }
+    if (data.isDisposable !== undefined && typeof data.isDisposable !== "boolean") {
+      throw new Error("Invalid input: isDisposable must be a boolean");
     }
-  }
-  
-  static async createCategory(data: Omit<Category, "categoryID">): Promise<CategoryResponse> {
-    if (!data.name) throw new Error("Category name is required");
-    const id = await CategoryRepository.create(data);
-    return { ...data, categoryID: id };
-  }
-
-  static async getAllCategories(): Promise<CategoryResponse[]> {
-    const categories = await CategoryRepository.getAll();
-    return categories.map(c => ({ ...c, categoryID: c.categoryID! }));
-  }
-
-  static async deleteCategory(id: string): Promise<void> {
-    // Optional: Check if any equipment is still using this category before deleting
-    await CategoryRepository.delete(id);
   }
 }

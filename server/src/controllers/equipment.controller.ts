@@ -3,17 +3,18 @@ import { EquipmentService } from "../services/equipment.service.js";
 
 /**
  * Equipment Controller.
- * Handles HTTP request/response for equipment endpoints.
- * Delegates business logic to EquipmentService.
- *
- * Purpose: HTTP layer. Converts HTTP requests to service calls and formats responses.
- * All error handling should result in appropriate HTTP status codes.
+ * Handles HTTP layer for equipment and categories.
+ * * Strategy:
+ * - READS: Utilize failover logic via Service (Firestore -> MongoDB).
+ * - WRITES: Target Primary database (Firestore) via Service to ensure sync listeners trigger.
  */
 export class EquipmentController {
+
+  // ============ EQUIPMENT ENDPOINTS ============
+
   /**
    * POST /api/equipment
    * Create new equipment.
-   * Body: { name, totalInventory, category, isDisposable, imageLink }
    */
   static async createEquipment(req: Request, res: Response): Promise<void> {
     try {
@@ -26,8 +27,8 @@ export class EquipmentController {
 
   /**
    * GET /api/equipment
-   * Retrieve all equipment (active only by default).
-   * Query param: ?includeArchived=true to include deleted items.
+   * Retrieve all equipment.
+   * RESILIENCE: Auto-fallback to MongoDB if Firestore is unreachable.
    */
   static async listEquipment(req: Request, res: Response): Promise<void> {
     try {
@@ -35,10 +36,10 @@ export class EquipmentController {
       const equipment = includeArchived
         ? await EquipmentService.getAllEquipment()
         : await EquipmentService.getActiveEquipment();
-      
+
       res.status(200).json({ success: true, data: equipment });
     } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+      res.status(500).json({ success: false, error: "Database service temporarily unavailable." });
     }
   }
 
@@ -57,8 +58,7 @@ export class EquipmentController {
 
   /**
    * PATCH /api/equipment/:id
-   * Update equipment.
-   * Body: partial equipment object { name?, category?, totalInventory?, ... }
+   * Update equipment details.
    */
   static async updateEquipment(req: Request, res: Response): Promise<void> {
     try {
@@ -71,13 +71,12 @@ export class EquipmentController {
 
   /**
    * PUT /api/equipment/:id/archive
-   * Soft delete (archive) equipment.
-   * Equipment can be restored later.
+   * Soft delete logic.
    */
   static async archiveEquipment(req: Request, res: Response): Promise<void> {
     try {
       await EquipmentService.archiveEquipment(req.params.id);
-      res.status(200).json({ success: true, message: "Equipment archived" });
+      res.status(200).json({ success: true, message: "Equipment archived successfully" });
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
     }
@@ -85,7 +84,7 @@ export class EquipmentController {
 
   /**
    * PUT /api/equipment/:id/restore
-   * Restore archived equipment.
+   * Restore from soft-deleted state.
    */
   static async restoreEquipment(req: Request, res: Response): Promise<void> {
     try {
@@ -98,13 +97,12 @@ export class EquipmentController {
 
   /**
    * DELETE /api/equipment/:id
-   * Hard delete equipment.
-   * This is irreversible. Equipment is moved to purged collection.
+   * Permanent removal (purged).
    */
   static async deleteEquipment(req: Request, res: Response): Promise<void> {
     try {
       await EquipmentService.deleteEquipment(req.params.id);
-      res.status(200).json({ success: true, message: "Equipment deleted" });
+      res.status(200).json({ success: true, message: "Equipment permanently deleted" });
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
     }
@@ -112,8 +110,7 @@ export class EquipmentController {
 
   /**
    * GET /api/equipment/purged
-   * Retrieve all purged equipment records.
-   * Admin/audit purposes only.
+   * Audit trail for deleted items.
    */
   static async getPurgedEquipment(req: Request, res: Response): Promise<void> {
     try {
@@ -126,8 +123,6 @@ export class EquipmentController {
 
   /**
    * PUT /api/equipment/:id/restore-purged
-   * Restore equipment from purged state.
-   * Dangerous operation - should be restricted to super admins.
    */
   static async restorePurgedEquipment(req: Request, res: Response): Promise<void> {
     try {
@@ -138,6 +133,11 @@ export class EquipmentController {
     }
   }
 
+  // ============ CATEGORY ENDPOINTS ============
+
+  /**
+   * POST /api/categories
+   */
   static async createCategory(req: Request, res: Response): Promise<void> {
     try {
       const category = await EquipmentService.createCategory(req.body);
@@ -147,6 +147,10 @@ export class EquipmentController {
     }
   }
 
+  /**
+   * GET /api/categories
+   * RESILIENCE: Failover to MongoDB backup enabled.
+   */
   static async listCategories(req: Request, res: Response): Promise<void> {
     try {
       const categories = await EquipmentService.getAllCategories();
@@ -156,10 +160,13 @@ export class EquipmentController {
     }
   }
 
+  /**
+   * DELETE /api/categories/:id
+   */
   static async deleteCategory(req: Request, res: Response): Promise<void> {
     try {
       await EquipmentService.deleteCategory(req.params.id);
-      res.status(200).json({ success: true, message: "Category deleted" });
+      res.status(200).json({ success: true, message: "Category deleted successfully" });
     } catch (error: any) {
       res.status(400).json({ success: false, error: error.message });
     }
