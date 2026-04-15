@@ -8,7 +8,8 @@ export interface Equipment {
   imageLink?: string;
   name: string;
   totalInventory: number;
-  category?: string;
+  // category?: string;
+  categoryID: string;
   isDisposable: boolean;
   isDeleted?: boolean;
   deletedAt?: string;

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import EquipmentForm from "./EquipmentForm";
-import { Equipment } from "../../db";
+import { Equipment, Category } from "../../db"; // Added Category import
 
 interface EditEquipmentDialogProps {
   item: Equipment;
-  onEdit: (id: string, info: Partial<Omit<Equipment, "equipmentID">>) => void;
+  categories: Category[]; // Added categories prop
+  onEdit: (id: string, info: Partial<Omit<Equipment, "equipmentID">>) => Promise<void>;
   renderTrigger?: (open: () => void) => React.ReactNode;
   openImmediately?: boolean;
   onClose?: () => void;
@@ -12,6 +13,7 @@ interface EditEquipmentDialogProps {
 
 export default function EditEquipmentDialog({
   item,
+  categories, // Destructured categories
   onEdit,
   renderTrigger,
   openImmediately,
@@ -20,6 +22,7 @@ export default function EditEquipmentDialog({
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(item);
 
+  // Sync internal form state if the item prop changes
   useEffect(() => {
     setForm(item);
   }, [item]);
@@ -59,24 +62,30 @@ export default function EditEquipmentDialog({
 
   const handleEdit = async () => {
     try {
+      // Destructure using categoryID now
       const {
         equipmentID,
         name,
         totalInventory,
-        category,
+        categoryID,
         isDisposable,
         imageLink,
       } = form;
-      await onEdit(equipmentID!, {
+
+      // Ensure we don't send undefined/null IDs to the backend
+      if (!equipmentID) return;
+
+      await onEdit(equipmentID, {
         name,
         totalInventory,
-        category,
+        categoryID,
         isDisposable,
         imageLink,
       });
+
       closeModal();
     } catch (err) {
-      console.error("Failed to save equipment:", err);
+      console.error("Failed to save equipment changes:", err);
     }
   };
 
@@ -97,11 +106,20 @@ export default function EditEquipmentDialog({
           <div className="modal-box">
             <h3 className="font-bold text-lg mb-4">Edit Equipment</h3>
 
-            <EquipmentForm form={form} onChange={handleChange} />
+            {/* Pass categories down to the shared form */}
+            <EquipmentForm
+              form={form}
+              categories={categories}
+              onChange={handleChange}
+            />
 
             <div className="modal-action">
-              <button className="btn btn-primary" onClick={handleEdit}>
-                Save
+              <button
+                className="btn btn-primary"
+                onClick={handleEdit}
+                disabled={!form.name.trim() || !form.categoryID}
+              >
+                Save Changes
               </button>
               <button className="btn" onClick={closeModal}>
                 Cancel

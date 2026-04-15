@@ -1,40 +1,60 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Boxes, Package, Recycle, AlertTriangle } from "lucide-react";
+import { collection, onSnapshot } from "firebase/firestore";
 
+import { db } from "../../firebase";
+import { Equipment, Category } from "../../db";
 import { logicEquipment } from "./logicEquipment";
 import AddEquipmentDialog from "./AddEquipmentDialog";
 import EquipmentTable from "./EquipmentTable";
-import { CATEGORY_OPTIONS } from "./EquipmentForm";
 import LoadingOverlay from "../../components/LoadingOverlay";
-import { collection, onSnapshot } from "firebase/firestore";
-import { db } from "../../firebase";
-import { Equipment } from "../../db";
 
 const LOW_STOCK_THRESHOLD = 5;
 
 export default function Dashboard() {
-  const { equipmentList, handleAdd, handleEdit, handleDelete, handleArchive, handleRestore, handlePurge, isLoading } = logicEquipment();
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [categoryFilter, setCategoryFilter] = React.useState("all");
-  const [typeFilter, setTypeFilter] = React.useState<"all" | "disposable" | "durable">("all");
-  const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("asc");
-  const [tab, setTab] = React.useState<"active" | "archived" | "purged">("active");
-  const [purgedEquipment, setPurgedEquipment] = React.useState<Equipment[]>([]);
+  const {
+    equipmentList,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    handleArchive,
+    handleRestore,
+    handlePurge,
+    isLoading
+  } = logicEquipment();
 
-  React.useEffect(() => {
+  // --- STATE ---
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "disposable" | "durable">("all");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [tab, setTab] = useState<"active" | "archived" | "purged">("active");
+  const [purgedEquipment, setPurgedEquipment] = useState<Equipment[]>([]);
+
+  // --- FIRESTORE SUBSCRIPTIONS ---
+
+  // Listen for Customizable Categories
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "categories"), (snapshot) => {
+      const list = snapshot.docs.map((doc) => ({
+        categoryID: doc.id,
+        ...doc.data(),
+      })) as Category[];
+      setCategories(list);
+    });
+    return () => unsub();
+  }, []);
+
+  // Listen for Purged Equipment (History)
+  useEffect(() => {
     const unsub = onSnapshot(collection(db, "equipment_purged"), (snapshot) => {
       const list: Equipment[] = snapshot.docs.map((doc) => {
         const data = doc.data() as any;
         return {
           equipmentID: doc.id,
-          imageLink: data.imageLink,
-          name: data.name,
-          totalInventory: data.totalInventory,
-          category: data.category,
-          isDisposable: data.isDisposable,
+          ...data,
           isDeleted: true,
-          deletedAt: data.deletedAt,
-          purgedAt: data.purgedAt,
         };
       });
       setPurgedEquipment(list);
@@ -42,47 +62,22 @@ export default function Dashboard() {
     return () => unsub();
   }, []);
 
-  const categories = React.useMemo(() => {
-    const baseCategories = CATEGORY_OPTIONS as readonly string[];
-    const extraCategories = new Set<string>();
-    let hasUncategorized = false;
+  // --- COMPUTED VALUES ---
 
-    equipmentList.forEach((item) => {
-      const label = item.category?.trim() || "Uncategorized";
-      if (baseCategories.includes(label)) {
-        return;
-      }
-      if (label === "Uncategorized") {
-        hasUncategorized = true;
-        return;
-      }
-      extraCategories.add(label);
-    });
-
-    return [
-      ...baseCategories,
-      ...Array.from(extraCategories).sort((a, b) => a.localeCompare(b)),
-      ...(hasUncategorized ? ["Uncategorized"] : []),
-    ];
-  }, [equipmentList]);
-
-  const stats = React.useMemo(() => {
+  const stats = useMemo(() => {
     const totalQuantity = equipmentList.reduce((sum, item) => sum + (item.totalInventory ?? 0), 0);
     const disposableCount = equipmentList.filter((item) => item.isDisposable).length;
     const lowStockCount = equipmentList.filter(
       (item) => (item.totalInventory ?? 0) <= LOW_STOCK_THRESHOLD
     ).length;
 
-    return {
-      totalQuantity,
-      disposableCount,
-      lowStockCount,
-    };
+    return { totalQuantity, disposableCount, lowStockCount };
   }, [equipmentList]);
 
-  const filteredEquipment = React.useMemo(() => {
+  const filteredEquipment = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
     let baseList = equipmentList;
+
     if (tab === "active") {
       baseList = equipmentList.filter(item => !item.isDeleted);
     } else if (tab === "archived") {
@@ -90,15 +85,17 @@ export default function Dashboard() {
     } else {
       baseList = purgedEquipment;
     }
+
     const filtered = baseList.filter((item) => {
+      // Search by Name or Category ID
       const matchesSearch =
         !search ||
-        item.name?.toLowerCase().includes(search) ||
-        item.category?.toLowerCase().includes(search);
+        item.name?.toLowerCase().includes(search);
 
-      const categoryLabel = item.category?.trim() || "Uncategorized";
-      const matchesCategory = categoryFilter === "all" || categoryLabel === categoryFilter;
+      // Filter by Category ID
+      const matchesCategory = categoryFilter === "all" || item.categoryID === categoryFilter;
 
+      // Filter by Item Type
       const matchesType =
         typeFilter === "all" ||
         (typeFilter === "disposable" ? item.isDisposable : !item.isDisposable);
@@ -106,20 +103,14 @@ export default function Dashboard() {
       return matchesSearch && matchesCategory && matchesType;
     });
 
-    const sorted = filtered.slice().sort((a, b) => {
+    return filtered.sort((a, b) => {
       const nameA = (a.name || "").toLowerCase();
       const nameB = (b.name || "").toLowerCase();
-      if (sortOrder === "asc") {
-        return nameA.localeCompare(nameB);
-      }
-      return nameB.localeCompare(nameA);
+      return sortOrder === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
     });
-
-    return sorted;
   }, [equipmentList, purgedEquipment, searchTerm, categoryFilter, typeFilter, sortOrder, tab]);
 
-  const filtersActive =
-    searchTerm.trim().length > 0 || categoryFilter !== "all" || typeFilter !== "all";
+  const filtersActive = searchTerm.trim().length > 0 || categoryFilter !== "all" || typeFilter !== "all";
 
   const resetFilters = () => {
     setSearchTerm("");
@@ -129,142 +120,135 @@ export default function Dashboard() {
 
   return (
     <>
-      <LoadingOverlay show={isLoading} message="Loading equipment inventory..." />
+      <LoadingOverlay show={isLoading} message="Synchronizing inventory..." />
+
       <div className="p-6 space-y-6">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Equipment Inventory</h1>
-          <p className="text-base-content/70">Monitor, add, and update equipment.</p>
-        </div>
-        <div className="flex gap-2">
-          <AddEquipmentDialog onAdd={handleAdd} />
-        </div>
-      </div>
-
-      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
-        <div className="stat">
-          <div className="stat-figure text-primary">
-            <Boxes className="w-8 h-8" />
+        {/* Header */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Equipment Inventory</h1>
+            <p className="text-base-content/70">Manage your lab assets and dynamic categories.</p>
           </div>
-          <div className="stat-title">Unique Items</div>
-          <div className="stat-value">{equipmentList.length}</div>
-          <div className="stat-desc">Active records</div>
-        </div>
-
-        <div className="stat">
-          <div className="stat-figure text-secondary">
-            <Package className="w-8 h-8" />
-          </div>
-          <div className="stat-title">Total Quantity</div>
-          <div className="stat-value">{stats.totalQuantity}</div>
-          <div className="stat-desc">Items on-hand</div>
-        </div>
-
-        <div className="stat">
-          <div className="stat-figure text-success">
-            <Recycle className="w-8 h-8" />
-          </div>
-          <div className="stat-title">Disposable</div>
-          <div className="stat-value">{stats.disposableCount}</div>
-          <div className="stat-desc">Single-use supplies</div>
-        </div>
-
-        <div className="stat">
-          <div className="stat-figure text-warning">
-            <AlertTriangle className="w-8 h-8" />
-          </div>
-          <div className="stat-title">Low Stock (&le;{LOW_STOCK_THRESHOLD})</div>
-          <div className="stat-value">{stats.lowStockCount}</div>
-          <div className="stat-desc">Needs restock soon</div>
-        </div>
-      </div>
-
-      <div className="card bg-base-200 shadow-xl">
-        <div className="card-body p-0">
-          <div className="tabs tabs-boxed bg-base-300 p-2 flex flex-wrap">
-            <button className={`tab transition-all duration-300 ease-in-out ${tab === "active" ? "tab-active bg-primary text-white font-semibold" : ""}`} onClick={() => setTab("active")}>Active</button>
-            <button className={`tab transition-all duration-300 ease-in-out ${tab === "archived" ? "tab-active bg-primary text-white font-semibold" : ""}`} onClick={() => setTab("archived")}>Archived</button>
-            <button className={`tab transition-all duration-300 ease-in-out ${tab === "purged" ? "tab-active bg-primary text-white font-semibold" : ""}`} onClick={() => setTab("purged")}>Purged</button>
+          <div className="flex gap-2">
+            <AddEquipmentDialog onAdd={handleAdd} categories={categories} />
           </div>
         </div>
-        <div className="card-body space-y-4">
-          {tab === "purged" && (
-            <div className="alert alert-info">
-              <span>Purged items are read-only history of equipment that was permanently removed.</span>
+
+        {/* Stats Cards */}
+        <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+          <div className="stat">
+            <div className="stat-figure text-primary"><Boxes className="w-8 h-8" /></div>
+            <div className="stat-title">Unique Items</div>
+            <div className="stat-value">{equipmentList.length}</div>
+            <div className="stat-desc">Tracking {categories.length} categories</div>
+          </div>
+
+          <div className="stat">
+            <div className="stat-figure text-secondary"><Package className="w-8 h-8" /></div>
+            <div className="stat-title">Total Quantity</div>
+            <div className="stat-value">{stats.totalQuantity}</div>
+            <div className="stat-desc">Physical items on-hand</div>
+          </div>
+
+          <div className="stat">
+            <div className="stat-figure text-success"><Recycle className="w-8 h-8" /></div>
+            <div className="stat-title">Disposable</div>
+            <div className="stat-value">{stats.disposableCount}</div>
+            <div className="stat-desc">Consumable supplies</div>
+          </div>
+
+          <div className="stat">
+            <div className="stat-figure text-warning"><AlertTriangle className="w-8 h-8" /></div>
+            <div className="stat-title">Low Stock</div>
+            <div className="stat-value">{stats.lowStockCount}</div>
+            <div className="stat-desc">Below threshold ({LOW_STOCK_THRESHOLD})</div>
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <div className="card bg-base-200 shadow-xl">
+          <div className="card-body p-0">
+            <div className="tabs tabs-boxed bg-base-300 p-2 flex flex-wrap">
+              {["active", "archived", "purged"].map((t) => (
+                <button
+                  key={t}
+                  className={`tab capitalize transition-all ${tab === t ? "tab-active bg-primary text-white font-semibold" : ""}`}
+                  onClick={() => setTab(t as any)}
+                >
+                  {t}
+                </button>
+              ))}
             </div>
-          )}
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-            <label className="form-control w-full">
-              <div className="label">
-                <span className="label-text">Search equipment</span>
-              </div>
-              <input
-                type="text"
-                placeholder="Search by name or category"
-                className="input input-bordered w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </label>
+          </div>
 
-            <label className="form-control w-full lg:w-56">
-              <div className="label">
-                <span className="label-text">Category</span>
+          <div className="card-body space-y-4">
+            {tab === "purged" && (
+              <div className="alert alert-info py-2">
+                <span>Purged items are read-only history of permanently removed equipment.</span>
               </div>
-              <select
-                className="select select-bordered"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                <option value="all">All categories</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="form-control w-full lg:w-48">
-              <div className="label">
-                <span className="label-text">Item Type</span>
-              </div>
-              <select
-                className="select select-bordered"
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as "all" | "disposable" | "durable")}
-              >
-                <option value="all">All items</option>
-                <option value="disposable">Disposable only</option>
-                <option value="durable">Durable only</option>
-              </select>
-            </label>
-
-            {filtersActive && (
-              <button className="btn btn-ghost lg:self-center" onClick={resetFilters}>
-                Reset filters
-              </button>
             )}
-          </div>
 
-          <div className="text-sm text-base-content/70 flex flex-wrap items-center justify-between gap-2">
-            <span>
-              {tab === "purged"
-                ? `Archived records available for purge: ${filteredEquipment.length}`
-                : (
-                  <>
-                    Showing <span className="font-semibold">{filteredEquipment.length}</span> of{" "}
-                    {equipmentList.length} records
-                  </>
-                )}
-            </span>
-            <span className="badge badge-outline">
-              {stats.totalQuantity} total pieces • {stats.disposableCount} disposable
-            </span>
-          </div>
+            {/* Filters */}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+              <label className="form-control w-full">
+                <div className="label"><span className="label-text">Search equipment</span></div>
+                <input
+                  type="text"
+                  placeholder="Search by name..."
+                  className="input input-bordered w-full"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </label>
 
+              <label className="form-control w-full lg:w-64">
+                <div className="label"><span className="label-text">Category Filter</span></div>
+                <select
+                  className="select select-bordered"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                  <option value="all">All categories</option>
+                  {categories.map((cat) => (
+                    <option key={cat.categoryID} value={cat.categoryID}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="form-control w-full lg:w-48">
+                <div className="label"><span className="label-text">Item Type</span></div>
+                <select
+                  className="select select-bordered"
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as any)}
+                >
+                  <option value="all">All items</option>
+                  <option value="disposable">Disposable only</option>
+                  <option value="durable">Durable only</option>
+                </select>
+              </label>
+
+              {filtersActive && (
+                <button className="btn btn-ghost lg:self-center" onClick={resetFilters}>Reset</button>
+              )}
+            </div>
+
+            {/* Table Metadata */}
+            <div className="text-sm text-base-content/70 flex flex-wrap items-center justify-between gap-2">
+              <span>
+                Showing <b>{filteredEquipment.length}</b> records in <b>{tab}</b> view
+              </span>
+              <span className="badge badge-outline">
+                {stats.totalQuantity} total pieces • {stats.disposableCount} disposable
+              </span>
+            </div>
+
+            {/* Equipment Table */}
             <EquipmentTable
               equipmentList={filteredEquipment}
+              categories={categories} // Required to map categoryID to Name for display
               onEdit={handleEdit}
               onDelete={handleDelete}
               onArchive={handleArchive}
@@ -274,9 +258,9 @@ export default function Dashboard() {
               onSortOrderChange={setSortOrder}
               view={tab}
             />
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

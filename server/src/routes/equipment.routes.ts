@@ -29,5 +29,7 @@ router.delete("/:id", /* requireAuth, requireAdmin, */ EquipmentController.delet
 router.put("/:id/archive", /* requireAuth, requireAdmin, */ EquipmentController.archiveEquipment);
 router.put("/:id/restore", /* requireAuth, requireAdmin, */ EquipmentController.restoreEquipment);
 router.put("/:id/restore-purged", /* requireAuth, requireAdmin, */ EquipmentController.restorePurgedEquipment);
-
+router.get("/categories", EquipmentController.listCategories);
+router.post("/categories", EquipmentController.createCategory);
+router.delete("/categories/:id", EquipmentController.deleteCategory);
 export default router;

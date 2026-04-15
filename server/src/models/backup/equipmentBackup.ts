@@ -6,7 +6,7 @@ const EquipmentBackupSchema = new Schema({
   imageLink:      { type: String },
   name:           { type: String, required: true },
   totalInventory: { type: Number },
-  category:       { type: String },
+  categoryID:       { type: String },
   isDisposable:   { type: Boolean },
   isDeleted:      { type: Boolean },
   deletedAt:      { type: String },

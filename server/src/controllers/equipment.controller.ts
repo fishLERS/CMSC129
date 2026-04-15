@@ -137,4 +137,31 @@ export class EquipmentController {
       res.status(400).json({ success: false, error: error.message });
     }
   }
+
+  static async createCategory(req: Request, res: Response): Promise<void> {
+    try {
+      const category = await EquipmentService.createCategory(req.body);
+      res.status(201).json({ success: true, data: category });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
+
+  static async listCategories(req: Request, res: Response): Promise<void> {
+    try {
+      const categories = await EquipmentService.getAllCategories();
+      res.status(200).json({ success: true, data: categories });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  static async deleteCategory(req: Request, res: Response): Promise<void> {
+    try {
+      await EquipmentService.deleteCategory(req.params.id);
+      res.status(200).json({ success: true, message: "Category deleted" });
+    } catch (error: any) {
+      res.status(400).json({ success: false, error: error.message });
+    }
+  }
 }

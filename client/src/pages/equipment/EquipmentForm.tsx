@@ -1,22 +1,12 @@
-import { Equipment } from "../../db";
-
-export const CATEGORY_OPTIONS = [
-  "Supplies and Chemistry",
-  "Live Specimen",
-  "Instruments",
-  "Rearing Units",
-] as const;
-export type CategoryOption = typeof CATEGORY_OPTIONS[number];
+import { Equipment, Category } from "../../db";
 
 interface EquipmentFormProps {
   form: Omit<Equipment, "equipmentID">;
+  categories: Category[]; // Dynamic categories from DB
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
 }
 
-export default function EquipmentForm({ form, onChange }: EquipmentFormProps) {
-  const categoryValue: CategoryOption =
-    CATEGORY_OPTIONS.find((option) => option === form.category) ?? CATEGORY_OPTIONS[0];
-
+export default function EquipmentForm({ form, categories, onChange }: EquipmentFormProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -40,23 +30,23 @@ export default function EquipmentForm({ form, onChange }: EquipmentFormProps) {
           type="number"
           value={form.totalInventory}
           onChange={onChange}
-          placeholder="Total inventory"
           className="input input-bordered w-full"
         />
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="category" className="text-sm font-medium">Category</label>
+        <label htmlFor="categoryID" className="text-sm font-medium">Category</label>
         <select
-          id="category"
-          name="category"
-          value={categoryValue}
+          id="categoryID"
+          name="categoryID"
+          value={form.categoryID || ""}
           onChange={onChange}
           className="select select-bordered w-full"
         >
-          {CATEGORY_OPTIONS.map((option) => (
-            <option key={option} value={option}>
-              {option}
+          <option value="" disabled>Select a category</option>
+          {categories.map((cat) => (
+            <option key={cat.categoryID} value={cat.categoryID}>
+              {cat.name}
             </option>
           ))}
         </select>
