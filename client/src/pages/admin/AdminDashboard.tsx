@@ -805,7 +805,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <p className="text-base-content/70">Manage and review equipment requests.</p>
