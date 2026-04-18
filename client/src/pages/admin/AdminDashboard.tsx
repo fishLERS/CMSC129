@@ -1008,12 +1008,12 @@ const AdminDashboard: React.FC = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p
-                        className="font-semibold truncate"
+                        className="text-[15px] font-semibold leading-tight truncate text-base-content"
                         title={req.createdByName || req.createdBy || req.id}
                       >
                         {req.createdByName || req.createdBy || req.id}
                       </p>
-                      <p className="text-xs text-base-content/60 truncate" title={req.purpose}>
+                      <p className="mt-0.5 text-sm font-medium leading-tight text-base-content/80 truncate" title={req.purpose}>
                         {req.purpose || "No purpose"}
                       </p>
                     </div>
@@ -1024,9 +1024,9 @@ const AdminDashboard: React.FC = () => {
 
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-xs text-base-content/60">Date of Usage</p>
-                      <p className="text-sm font-medium truncate">{formatUsageDate(req.startDate)}</p>
-                      <p className="text-xs text-base-content/70 truncate">to {formatUsageDate(req.endDate)}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-base-content/55">Date of Usage</p>
+                      <p className="text-xs font-semibold leading-tight text-base-content/75 truncate">{formatUsageDate(req.startDate)}</p>
+                      <p className="text-[11px] leading-tight text-base-content/60 truncate">to {formatUsageDate(req.endDate)}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       {req.overriddenAt && (
