@@ -80,39 +80,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        // Use cached token when possible; force-refresh only when explicitly needed.
+        // Use cached token by default; force-refresh only when claims look out of sync.
         try {
-          // Force-refresh to avoid stale custom claims after role/claim updates.
-          const idTokenResult = await firebaseUser.getIdTokenResult(true);
-          const token = idTokenResult.token;
+          const getVerifiedUser = async (currentToken: string, forceVerify = false) => {
+            const now = Date.now();
+            const cachedVerification = lastVerifiedUser.current;
+            const canReuseVerifiedUser =
+              !forceVerify &&
+              !!cachedVerification &&
+              cachedVerification.token === currentToken &&
+              now - cachedVerification.verifiedAt < VERIFY_TTL_MS;
+
+            if (canReuseVerifiedUser) {
+              return cachedVerification.user;
+            }
+
+            const verifiedUser = await authApi.verifyToken(currentToken);
+            lastVerifiedUser.current = { token: currentToken, verifiedAt: now, user: verifiedUser };
+            return verifiedUser;
+          };
+
+          let idTokenResult = await firebaseUser.getIdTokenResult();
+          let token = idTokenResult.token;
           localStorage.setItem("authToken", token);
-          const now = Date.now();
-          const cachedVerification = lastVerifiedUser.current;
-          const canReuseVerifiedUser =
-            !!cachedVerification &&
-            cachedVerification.token === token &&
-            now - cachedVerification.verifiedAt < VERIFY_TTL_MS;
 
-          const userData = canReuseVerifiedUser
-            ? cachedVerification.user
-            : await authApi.verifyToken(token);
+          let userData = await getVerifiedUser(token);
+          let hasAdminClaim = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
+          let hasSuperAdminClaim = !!idTokenResult.claims.superAdmin;
+          let roleClaimMismatch =
+            (userData.role === "admin" && !hasAdminClaim) ||
+            (userData.role === "student" && hasAdminClaim);
+          let superClaimMismatch = !!userData.isSuperAdmin !== hasSuperAdminClaim;
 
-          if (!canReuseVerifiedUser) {
-            lastVerifiedUser.current = { token, verifiedAt: now, user: userData };
+          if (roleClaimMismatch || superClaimMismatch) {
+            // Claims may be stale after permission updates; force refresh once.
+            idTokenResult = await firebaseUser.getIdTokenResult(true);
+            token = idTokenResult.token;
+            localStorage.setItem("authToken", token);
+            userData = await getVerifiedUser(token, true);
+            hasAdminClaim = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
+            hasSuperAdminClaim = !!idTokenResult.claims.superAdmin;
+            roleClaimMismatch =
+              (userData.role === "admin" && !hasAdminClaim) ||
+              (userData.role === "student" && hasAdminClaim);
+            superClaimMismatch = !!userData.isSuperAdmin !== hasSuperAdminClaim;
           }
 
-          // Check Firebase custom claims for admin status (admin OR superAdmin).
-          const hasAdminClaim = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
-          const hasSuperAdminClaim = !!idTokenResult.claims.superAdmin;
           const resolvedUser: User = {
             ...userData,
             // Claims are the runtime source of truth; fallback to API payload for compatibility.
             isSuperAdmin: hasSuperAdminClaim || !!userData.isSuperAdmin,
           };
-          const roleClaimMismatch =
-            (resolvedUser.role === "admin" && !hasAdminClaim) ||
-            (resolvedUser.role === "student" && hasAdminClaim);
-          const superClaimMismatch = !!userData.isSuperAdmin !== hasSuperAdminClaim;
           const currentSignature = {
             uid: resolvedUser.uid,
             role: resolvedUser.role,
