@@ -39,6 +39,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * Wraps the app and manages auth state.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const VERIFY_TTL_MS = 60_000;
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     adminClaim: boolean;
     superAdminClaim: boolean;
   } | null>(null);
+  const lastVerifiedUser = useRef<{ token: string; verifiedAt: number; user: User } | null>(null);
 
   /**
    * Subscribe to Firebase auth state changes and verify user data.
@@ -71,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setClaimRoleLabel("Claim: Student");
             setPermissionNotice(null);
             lastPermissionSignature.current = null;
+            lastVerifiedUser.current = null;
             localStorage.removeItem("authToken");
             localStorage.removeItem("userRole");
           }
@@ -83,7 +86,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const idTokenResult = await firebaseUser.getIdTokenResult(true);
           const token = idTokenResult.token;
           localStorage.setItem("authToken", token);
-          const userData = await authApi.verifyToken(token);
+          const now = Date.now();
+          const cachedVerification = lastVerifiedUser.current;
+          const canReuseVerifiedUser =
+            !!cachedVerification &&
+            cachedVerification.token === token &&
+            now - cachedVerification.verifiedAt < VERIFY_TTL_MS;
+
+          const userData = canReuseVerifiedUser
+            ? cachedVerification.user
+            : await authApi.verifyToken(token);
+
+          if (!canReuseVerifiedUser) {
+            lastVerifiedUser.current = { token, verifiedAt: now, user: userData };
+          }
 
           // Check Firebase custom claims for admin status (admin OR superAdmin).
           const hasAdminClaim = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
@@ -149,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setClaimRoleLabel("Claim: Student");
             setPermissionNotice(null);
             lastPermissionSignature.current = null;
+            lastVerifiedUser.current = null;
             setError(err.message);
           }
         }
@@ -222,6 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setClaimRoleLabel("Claim: Student");
       setPermissionNotice(null);
       lastPermissionSignature.current = null;
+      lastVerifiedUser.current = null;
       setError(null);
     } catch (err: any) {
       setError(err.message);
