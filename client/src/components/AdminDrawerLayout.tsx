@@ -58,6 +58,7 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
     { icon: <BarChart2 size={20} />, text: "Analytics", path: "/analytics", active: location.pathname.startsWith("/analytics") },
     { icon: <Users size={20} />, text: "Admin", path: "/admin/users", active: location.pathname.startsWith("/admin/users") },
   ];
+  const displayClaim = claimRoleLabel.replace(/^Claim:\s*/i, "");
 
   const drawerOpen = isLargeScreen || isOpen;
 
@@ -99,10 +100,12 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
               </div>
             </button>
           </div>
-          <div className="navbar-end gap-1 sm:gap-2">
-            <span className="hidden sm:inline-flex badge badge-outline badge-sm text-primary-content border-primary-content/40">
-              {claimRoleLabel}
-            </span>
+          <div className="navbar-end gap-1 sm:gap-2 min-w-0">
+            <div className="hidden sm:flex items-center rounded-full border border-primary-content/30 bg-primary-content/10 px-3 py-1 text-xs text-primary-content max-w-[20rem]">
+              <span className="truncate">
+                Welcome, {displayClaim} {user?.displayName ?? (user?.email ? user.email.split("@")[0] : "Admin")}
+              </span>
+            </div>
             <ThemeToggle className="text-primary-content" />
           </div>
         </nav>

@@ -53,6 +53,7 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
     { icon: <ClipboardList size={20} />, text: "Accountabilities", path: "/accountabilities", active: location.pathname.startsWith("/accountabilities") },
     { icon: <MapPin size={20} />, text: "Tracking", path: "/tracking", active: location.pathname.startsWith("/tracking") },
   ];
+  const displayClaim = claimRoleLabel.replace(/^Claim:\s*/i, "");
 
   const drawerOpen = isLargeScreen || isOpen;
 
@@ -94,10 +95,12 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
               </div>
             </button>
           </div>
-          <div className="navbar-end gap-1 sm:gap-2">
-            <span className="hidden sm:inline-flex badge badge-outline badge-sm text-primary-content border-primary-content/40">
-              {claimRoleLabel}
-            </span>
+          <div className="navbar-end gap-1 sm:gap-2 min-w-0">
+            <div className="hidden sm:flex items-center rounded-full border border-primary-content/30 bg-primary-content/10 px-3 py-1 text-xs text-primary-content max-w-[18rem]">
+              <span className="truncate">
+                Welcome, {displayClaim} {user?.displayName ?? (user?.email ? user.email.split("@")[0] : "User")}
+              </span>
+            </div>
             <ThemeToggle className="text-primary-content" />
           </div>
         </nav>
