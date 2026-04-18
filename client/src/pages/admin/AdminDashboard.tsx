@@ -892,7 +892,38 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="stats stats-horizontal shadow bg-base-200 w-full overflow-hidden">
+      <div className="sm:hidden grid grid-cols-4 gap-2">
+        <div className="rounded-box bg-base-200 border border-base-300 p-2">
+          <p className="text-[10px] text-base-content/70 truncate">Total</p>
+          <p className="text-2xl font-bold leading-tight">{requests.length}</p>
+        </div>
+        <div className="rounded-box bg-base-200 border border-base-300 p-2">
+          <p className="text-[10px] text-base-content/70 truncate">Pending</p>
+          <p className="text-2xl font-bold leading-tight text-warning">{pendingCount}</p>
+        </div>
+        <div className="rounded-box bg-base-200 border border-base-300 p-2">
+          <p className="text-[10px] text-base-content/70 truncate">Approved</p>
+          <p className="text-2xl font-bold leading-tight text-success">{approvedCount}</p>
+        </div>
+        <div className="rounded-box bg-base-200 border border-base-300 p-2">
+          <p className="text-[10px] text-base-content/70 truncate">Returned</p>
+          <p className="text-2xl font-bold leading-tight text-info">{returnedCount}</p>
+        </div>
+        <div className="rounded-box bg-base-200 border border-base-300 p-2">
+          <p className="text-[10px] text-base-content/70 truncate">Cleared</p>
+          <p className="text-2xl font-bold leading-tight text-secondary">{clearedCount}</p>
+        </div>
+        <div className="rounded-box bg-base-200 border border-base-300 p-2">
+          <p className="text-[10px] text-base-content/70 truncate">Declined</p>
+          <p className="text-2xl font-bold leading-tight text-error">{declinedCount}</p>
+        </div>
+        <div className="rounded-box bg-base-200 border border-base-300 p-2 col-span-2">
+          <p className="text-[10px] text-base-content/70 truncate">Cancelled</p>
+          <p className="text-2xl font-bold leading-tight text-info">{cancelledCount}</p>
+        </div>
+      </div>
+
+      <div className="hidden sm:flex stats stats-horizontal shadow bg-base-200 w-full overflow-hidden">
         <div className="stat min-w-0 px-3 sm:px-4">
           <div className="stat-title text-xs truncate">Total Requests</div>
           <div className="stat-value text-4xl">{requests.length}</div>
