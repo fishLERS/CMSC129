@@ -935,7 +935,26 @@ const AdminDashboard: React.FC = () => {
         <div className="card-body p-0">
           {/* Tabs Header */}
           <div className="p-4 border-b border-base-300">
-            <div role="tablist" className="tabs tabs-boxed bg-base-300">
+            <div className="sm:hidden">
+              <label className="form-control w-full">
+                <span className="label-text text-xs uppercase tracking-wide text-base-content/60 mb-1">Filter status</span>
+                <select
+                  className="select select-bordered w-full min-h-11"
+                  value={tab}
+                  onChange={(e) => setTab(e.target.value as 'all'|'pending'|'approved'|'declined'|'cancelled'|'returned'|'cleared')}
+                >
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="declined">Declined</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="returned">Returned</option>
+                  <option value="cleared">Cleared</option>
+                </select>
+              </label>
+            </div>
+
+            <div role="tablist" className="hidden sm:flex tabs tabs-boxed bg-base-300">
               <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'all' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('all')}>All</a>
               <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'pending' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('pending')}>Pending</a>
               <a role="tab" className={`tab transition-all duration-300 ease-in-out ${tab === 'approved' ? 'tab-active bg-primary text-white font-semibold' : ''}`} onClick={() => setTab('approved')}>Approved</a>
