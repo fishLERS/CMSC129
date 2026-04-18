@@ -46,12 +46,30 @@ export function useRequests(userID?: string) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isFetchingRef = useRef(false);
+  const cacheRef = useRef<{ key: string; data: Request[]; timestamp: number } | null>(null);
+  const CACHE_TTL_MS = 7000;
 
   /**
    * Fetch requests from API.
    * Called on mount and periodically.
    */
-  const fetchRequests = async () => {
+  const fetchRequests = async (force = false) => {
+    const cacheKey = userID || "__all__";
+    const cached = cacheRef.current;
+    const now = Date.now();
+
+    if (
+      !force &&
+      cached &&
+      cached.key === cacheKey &&
+      now - cached.timestamp < CACHE_TTL_MS
+    ) {
+      setRequests(cached.data);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     if (isFetchingRef.current) {
       return;
     }
@@ -69,6 +87,7 @@ export function useRequests(userID?: string) {
       }
 
       setRequests(items);
+      cacheRef.current = { key: cacheKey, data: items, timestamp: Date.now() };
       setError(null);
     } catch (err: any) {
       console.error("Failed to fetch requests:", err);
@@ -138,7 +157,7 @@ export function useRequests(userID?: string) {
     try {
       await requestsApi.createRequest(request);
       // Refetch to get the new request in the list
-      await fetchRequests();
+      await fetchRequests(true);
     } catch (err: any) {
       console.error("Failed to create request:", err);
       setError(err.message);
@@ -153,7 +172,7 @@ export function useRequests(userID?: string) {
     try {
       await requestsApi.approveRequest(requestID);
       // Refetch to update list
-      await fetchRequests();
+      await fetchRequests(true);
     } catch (err: any) {
       console.error("Failed to approve request:", err);
       setError(err.message);
@@ -168,7 +187,7 @@ export function useRequests(userID?: string) {
     try {
       await requestsApi.rejectRequest(requestID, reason);
       // Refetch to update list
-      await fetchRequests();
+      await fetchRequests(true);
     } catch (err: any) {
       console.error("Failed to reject request:", err);
       setError(err.message);
@@ -182,7 +201,7 @@ export function useRequests(userID?: string) {
   const overrideApproveRequest = async (requestID: string, reason?: string) => {
     try {
       await requestsApi.overrideApproveRequest(requestID, reason);
-      await fetchRequests();
+      await fetchRequests(true);
     } catch (err: any) {
       console.error("Failed to override request to approved:", err);
       setError(err.message);
@@ -196,7 +215,7 @@ export function useRequests(userID?: string) {
   const overrideRejectRequest = async (requestID: string, reason: string) => {
     try {
       await requestsApi.overrideRejectRequest(requestID, reason);
-      await fetchRequests();
+      await fetchRequests(true);
     } catch (err: any) {
       console.error("Failed to override request to rejected:", err);
       setError(err.message);
@@ -211,7 +230,7 @@ export function useRequests(userID?: string) {
     try {
       await requestsApi.markOngoing(requestID);
       // Refetch to update list
-      await fetchRequests();
+      await fetchRequests(true);
     } catch (err: any) {
       console.error("Failed to mark request as ongoing:", err);
       setError(err.message);
@@ -226,7 +245,7 @@ export function useRequests(userID?: string) {
     try {
       await requestsApi.markReturned(requestID);
       // Refetch to update list
-      await fetchRequests();
+      await fetchRequests(true);
     } catch (err: any) {
       console.error("Failed to mark request as returned:", err);
       setError(err.message);

@@ -19,13 +19,24 @@ export function logicEquipment() {
   // Ref to track the latest request to prevent race conditions
   const lastFetchId = useRef(0);
   const isFetchingRef = useRef(false);
+  const cacheRef = useRef<{ data: Equipment[]; timestamp: number } | null>(null);
+  const CACHE_TTL_MS = 7000;
 
   /**
    * Fetch equipment from API.
    * Called on mount and periodically.
    * * Added isBackground parameter to avoid flickering loaders during polling.
    */
-  const fetchEquipment = useCallback(async (isBackground = false) => {
+  const fetchEquipment = useCallback(async (isBackground = false, force = false) => {
+    const cached = cacheRef.current;
+    const now = Date.now();
+    if (!force && cached && now - cached.timestamp < CACHE_TTL_MS) {
+      setEquipmentList(cached.data);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     if (isFetchingRef.current) {
       return;
     }
@@ -40,6 +51,7 @@ export function logicEquipment() {
       // Only update state if this is still the most recent request
       if (fetchId === lastFetchId.current) {
         setEquipmentList(items);
+        cacheRef.current = { data: items, timestamp: Date.now() };
         setError(null);
       }
     } catch (err: any) {
@@ -117,7 +129,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.createEquipment(equipment);
       // Refetch to get the new item in the list
-      await fetchEquipment(true);
+      await fetchEquipment(true, true);
     } catch (err: any) {
       console.error("Failed to create equipment:", err);
       setError(err.message);
@@ -136,7 +148,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.updateEquipment(equipmentID, info);
       // Refetch to get the updated item
-      await fetchEquipment(true);
+      await fetchEquipment(true, true);
     } catch (err: any) {
       console.error("Failed to update equipment:", err);
       setError(err.message);
@@ -152,7 +164,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.deleteEquipment(equipmentID);
       // Refetch to remove from list
-      await fetchEquipment(true);
+      await fetchEquipment(true, true);
     } catch (err: any) {
       console.error("Failed to delete equipment:", err);
       setError(err.message);
@@ -169,7 +181,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.deleteEquipment(item.equipmentID);
       // Refetch to remove from list
-      await fetchEquipment(true);
+      await fetchEquipment(true, true);
     } catch (err: any) {
       console.error("Failed to purge equipment:", err);
       setError(err.message);
@@ -185,7 +197,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.archiveEquipment(equipmentID);
       // Refetch to remove from active list
-      await fetchEquipment(true);
+      await fetchEquipment(true, true);
     } catch (err: any) {
       console.error("Failed to archive equipment:", err);
       setError(err.message);
@@ -201,7 +213,7 @@ export function logicEquipment() {
     try {
       await equipmentApi.restoreEquipment(equipmentID);
       // Refetch to add back to active list
-      await fetchEquipment(true);
+      await fetchEquipment(true, true);
     } catch (err: any) {
       console.error("Failed to restore equipment:", err);
       setError(err.message);
