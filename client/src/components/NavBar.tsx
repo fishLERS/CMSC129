@@ -1,30 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../firebase";
+import { useAuth } from "../hooks/useAuth";
 
 const Navbar: React.FC = () => {
-  const [role, setRole] = useState<string | null>(null);
+  const { user, logout } = useAuth();
+  const role = user?.role ?? null;
   const nav = useNavigate();
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        setRole(userDoc.data()?.role || null);
-      } else {
-        setRole(null);
-      }
-    });
-
-    return unsubscribe;
-  }, []);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      setRole(null);
+      await logout();
       nav("/login");
     } catch (error) {
       console.error("Logout failed:", error);
