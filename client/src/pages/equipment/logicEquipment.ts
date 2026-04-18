@@ -56,6 +56,26 @@ export function logicEquipment() {
    */
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const MIN_POLL_MS = 4500;
+    const MAX_POLL_MS = 6500;
+
+    const getJitteredDelay = () =>
+      Math.floor(Math.random() * (MAX_POLL_MS - MIN_POLL_MS + 1)) + MIN_POLL_MS;
+
+    const scheduleNextPoll = () => {
+      timeoutId = setTimeout(() => {
+        if (!isMounted) return;
+
+        if (document.visibilityState === "visible") {
+          fetchEquipment(true);
+        }
+
+        if (isMounted) {
+          scheduleNextPoll();
+        }
+      }, getJitteredDelay());
+    };
 
     // Fetch immediately on mount
     fetchEquipment();
@@ -63,22 +83,22 @@ export function logicEquipment() {
     const handleVisibilityChange = () => {
       if (isMounted && document.visibilityState === "visible") {
         fetchEquipment(true);
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        scheduleNextPoll();
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // Poll every 5 seconds
-    const interval = setInterval(() => {
-      if (isMounted && document.visibilityState === "visible") {
-        fetchEquipment(true); // Silent background fetch
-      }
-    }, 5000);
+    scheduleNextPoll();
 
     return () => {
       isMounted = false;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      clearInterval(interval);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [fetchEquipment]);
 
