@@ -183,7 +183,7 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
                   {user?.displayName ?? (user?.email ? user.email.split("@")[0] : "Admin")}
                 </h4>
                 <span
-                  className={`badge badge-sm shrink-0 ${
+                  className={`badge badge-xs text-[10px] shrink-0 ${
                     user?.isSuperAdmin ? "badge-accent" : "badge-secondary"
                   }`}
                 >
@@ -191,7 +191,6 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
                 </span>
               </div>
               <span className="text-xs text-base-content/60 truncate block">{user?.email ?? ""}</span>
-              <span className="text-[10px] text-base-content/50 truncate block">{claimRoleLabel}</span>
             </div>
           </button>
         </div>

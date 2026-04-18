@@ -178,10 +178,9 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
                 <h4 className="font-semibold truncate">
                   {user?.displayName ?? (user?.email ? user.email.split("@")[0] : "User")}
                 </h4>
-                <span className="badge badge-primary badge-sm shrink-0">Student</span>
+                <span className="badge badge-primary badge-xs text-[10px] shrink-0">Student</span>
               </div>
               <span className="text-xs text-base-content/60 truncate block">{user?.email ?? ""}</span>
-              <span className="text-[10px] text-base-content/50 truncate block">{claimRoleLabel}</span>
             </div>
           </button>
         </div>
