@@ -221,6 +221,16 @@ const AdminDashboard: React.FC = () => {
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
   };
 
+  const getRequestStatusBadgeClass = (value?: string) => {
+    const normalized = (value || "").toString().toLowerCase();
+    if (normalized === "approved") return "badge-success";
+    if (normalized === "returned") return "badge-info";
+    if (normalized === "cleared") return "badge-secondary";
+    if (normalized === "declined" || normalized === "rejected") return "badge-error";
+    if (normalized === "cancelled") return "badge-info";
+    return "badge-warning";
+  };
+
   const getNotificationBadgeClass = (type: NotificationType) => {
     if (type === "new") return "badge-primary";
     if (type === "override") return "badge-secondary";
@@ -972,8 +982,61 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
+          {/* Table / Mobile List */}
+          <div className="sm:hidden p-3 space-y-3">
+            {visible.length === 0 ? (
+              <div className="text-center py-8 text-base-content/60">No requests found</div>
+            ) : (
+              visible.map((req) => (
+                <div
+                  key={req.id}
+                  id={`request-row-${req.id}`}
+                  className={`rounded-box border border-base-300 bg-base-100 p-3 space-y-2 ${
+                    highlightRequestId === req.id ? "ring-2 ring-primary/40 bg-primary/5" : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p
+                        className="font-semibold truncate"
+                        title={req.createdByName || req.createdBy || req.id}
+                      >
+                        {req.createdByName || req.createdBy || req.id}
+                      </p>
+                      <p className="text-xs text-base-content/60 truncate" title={req.purpose}>
+                        {req.purpose || "No purpose"}
+                      </p>
+                    </div>
+                    <button
+                      className="btn btn-ghost btn-sm btn-circle shrink-0"
+                      onClick={() => { setViewRequest(req); setViewOpen(true); }}
+                      aria-label="View request details"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs text-base-content/60">Date of Usage</p>
+                      <p className="text-sm font-medium truncate">{formatUsageDate(req.startDate)}</p>
+                      <p className="text-xs text-base-content/70 truncate">to {formatUsageDate(req.endDate)}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className={`badge ${getRequestStatusBadgeClass(req.status)}`}>
+                        {req.status || "Pending"}
+                      </span>
+                      {req.overriddenAt && (
+                        <span className="badge badge-secondary badge-xs">Super Admin</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto">
             <table className="table w-full table-fixed">
               <thead>
                 <tr>
@@ -1015,19 +1078,7 @@ const AdminDashboard: React.FC = () => {
                       </td>
                       <td>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={`badge ${
-                          (req.status || '').toString().toLowerCase() === 'approved'
-                            ? 'badge-success'
-                            : (req.status || '').toString().toLowerCase() === 'returned'
-                            ? 'badge-info'
-                            : (req.status || '').toString().toLowerCase() === 'cleared'
-                            ? 'badge-secondary'
-                            : (req.status || '').toString().toLowerCase() === 'declined' || (req.status || '').toString().toLowerCase() === 'rejected'
-                            ? 'badge-error'
-                            : (req.status || '').toString().toLowerCase() === 'cancelled'
-                            ? 'badge-info'
-                            : 'badge-warning'
-                        }`}>
+                          <span className={`badge ${getRequestStatusBadgeClass(req.status)}`}>
                           {req.status || 'Pending'}
                           </span>
                           {req.overriddenAt && (
