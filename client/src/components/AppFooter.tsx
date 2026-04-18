@@ -30,7 +30,7 @@ export default function AppFooter() {
           <span className="text-primary-content/30 hidden sm:inline">|</span>
           <span className="text-primary-content/70">UPV CFOS IA-MSH</span>
           <span className="text-primary-content/30 hidden sm:inline">|</span>
-          <span className="text-primary-content/50">Ac {currentYear} Laboratory Equipment Reservation System</span>
+          <span className="text-primary-content/50">&copy; {currentYear} Laboratory Equipment Reservation System</span>
         </div>
       </div>
     </footer>
