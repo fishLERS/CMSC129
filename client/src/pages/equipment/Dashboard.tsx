@@ -8,6 +8,7 @@ import { logicEquipment } from "./logicEquipment";
 import AddEquipmentDialog from "./AddEquipmentDialog";
 import EquipmentTable from "./EquipmentTable";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -26,6 +27,7 @@ export default function Dashboard() {
   // --- STATE ---
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<"all" | "disposable" | "durable">("all");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -75,7 +77,7 @@ export default function Dashboard() {
   }, [equipmentList]);
 
   const filteredEquipment = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
+    const search = debouncedSearchTerm.trim().toLowerCase();
     let baseList = equipmentList;
 
     if (tab === "active") {
@@ -108,7 +110,7 @@ export default function Dashboard() {
       const nameB = (b.name || "").toLowerCase();
       return sortOrder === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
     });
-  }, [equipmentList, purgedEquipment, searchTerm, categoryFilter, typeFilter, sortOrder, tab]);
+  }, [equipmentList, purgedEquipment, debouncedSearchTerm, categoryFilter, typeFilter, sortOrder, tab]);
 
   const filtersActive = searchTerm.trim().length > 0 || categoryFilter !== "all" || typeFilter !== "all";
 

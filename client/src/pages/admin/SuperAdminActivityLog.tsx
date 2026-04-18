@@ -4,6 +4,7 @@ import { Activity, Calendar, Filter, ShieldCheck } from "lucide-react";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { db } from "../../firebase";
 import { formatRoleLabel } from "../../utils/roleLabel";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 type RequestDoc = {
   id: string;
@@ -65,6 +66,7 @@ const SuperAdminActivityLog: React.FC = () => {
   const [requests, setRequests] = React.useState<RequestDoc[]>([]);
   const [users, setUsers] = React.useState<UserDoc[]>([]);
   const [search, setSearch] = React.useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [typeFilter, setTypeFilter] = React.useState<"all" | ActivityType>("all");
   const [fromDate, setFromDate] = React.useState("");
   const [toDate, setToDate] = React.useState("");
@@ -175,7 +177,7 @@ const SuperAdminActivityLog: React.FC = () => {
   }, [allEvents]);
 
   const filteredEvents = React.useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = debouncedSearch.trim().toLowerCase();
     const from = fromDate ? new Date(`${fromDate}T00:00:00`) : null;
     const to = toDate ? new Date(`${toDate}T23:59:59`) : null;
 
@@ -206,7 +208,7 @@ const SuperAdminActivityLog: React.FC = () => {
       const bVal = b.occurredAt ? b.occurredAt.getTime() : 0;
       return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
     });
-  }, [allEvents, search, typeFilter, fromDate, toDate, sortOrder]);
+  }, [allEvents, debouncedSearch, typeFilter, fromDate, toDate, sortOrder]);
 
   const hasFilters =
     !!search.trim() || typeFilter !== "all" || !!fromDate || !!toDate || sortOrder !== "desc";

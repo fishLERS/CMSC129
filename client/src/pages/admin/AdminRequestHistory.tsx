@@ -18,6 +18,7 @@ import {
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { db } from "../../firebase";
 import { logicEquipment } from "../equipment/logicEquipment";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 type RequestItem = {
   equipmentID: string;
@@ -99,6 +100,7 @@ const AdminRequestHistory: React.FC = () => {
   const [requests, setRequests] = React.useState<AdminRequestRecord[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [statusFilter, setStatusFilter] = React.useState<"all" | string>("all");
   const [yearFilter, setYearFilter] = React.useState<"all" | string>("all");
   const [quickFilter, setQuickFilter] = React.useState<"all" | "overridden" | "super-admin-actions">("all");
@@ -281,7 +283,7 @@ const AdminRequestHistory: React.FC = () => {
   }, [selectedRequest, nameMap]);
 
   const filtered = React.useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = debouncedSearch.trim().toLowerCase();
     const hasOverride = (req: AdminRequestRecord) =>
       !!req.overriddenAt || !!req.overriddenBy || !!req.overrideReason;
     const isSuperAdminActor = (uid?: string) => !!uid && !!superAdminMap[uid];
@@ -319,7 +321,7 @@ const AdminRequestHistory: React.FC = () => {
       const diff = getSortValue(a) - getSortValue(b);
       return sortOrder === "asc" ? diff : -diff;
     });
-  }, [requests, search, statusFilter, yearFilter, sortOrder, nameMap, quickFilter, superAdminMap]);
+  }, [requests, debouncedSearch, statusFilter, yearFilter, sortOrder, nameMap, quickFilter, superAdminMap]);
 
   const grouped = React.useMemo(() => {
     const buckets: Record<string, AdminRequestRecord[]> = {};

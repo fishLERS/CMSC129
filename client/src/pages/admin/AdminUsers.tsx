@@ -4,6 +4,7 @@ import { db } from '../../firebase'
 import { formatRoleLabel } from '../../utils/roleLabel'
 import { setSuperAdmin, setUserRole } from '../../api/auth.api'
 import { useTelemetry } from '../../hooks/useTelemetry'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 
 interface UserData {
   uid: string
@@ -21,6 +22,7 @@ export default function AdminUsers() {
   const [superAdminCount, setSuperAdminCount] = React.useState(0)
   const [updating, setUpdating] = React.useState<string | null>(null)
   const [searchTerm, setSearchTerm] = React.useState('')
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300)
   const [alertMessage, setAlertMessage] = React.useState<string | null>(null)
   const [alertType, setAlertType] = React.useState<'success' | 'error' | 'info'>('info')
   const [confirmOpen, setConfirmOpen] = React.useState(false)
@@ -199,7 +201,7 @@ export default function AdminUsers() {
   }
 
   const filteredUsers = users.filter((user) => {
-    const term = searchTerm.trim().toLowerCase()
+    const term = debouncedSearchTerm.trim().toLowerCase()
     if (!term) return true
     return (
       (user.email || '').toLowerCase().includes(term) ||
@@ -287,7 +289,7 @@ export default function AdminUsers() {
                   {filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="text-center py-8 text-base-content/60">
-                        {searchTerm ? 'No users match your search.' : 'No eligible users found.'}
+                        {debouncedSearchTerm ? 'No users match your search.' : 'No eligible users found.'}
                       </td>
                     </tr>
                   ) : (
