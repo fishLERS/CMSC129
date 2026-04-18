@@ -59,7 +59,7 @@ export class RequestRepository {
 
     const offset = (options.page - 1) * options.limit;
     query = query.limit(options.limit);
-    if (offset > 0) {
+    if (offset > 0 && typeof query.offset === "function") {
       query = query.offset(offset);
     }
 
@@ -82,7 +82,7 @@ export class RequestRepository {
       .where("userID", "==", userID)
       .orderBy("createdAt", "desc")
       .limit(options.limit);
-    if (offset > 0) {
+    if (offset > 0 && typeof query.offset === "function") {
       query = query.offset(offset);
     }
     const snapshot = await query.get();
@@ -104,7 +104,7 @@ export class RequestRepository {
       .where("status", "==", "pending")
       .orderBy("createdAt", "asc")
       .limit(options.limit);
-    if (offset > 0) {
+    if (offset > 0 && typeof query.offset === "function") {
       query = query.offset(offset);
     }
     const snapshot = await query.get();

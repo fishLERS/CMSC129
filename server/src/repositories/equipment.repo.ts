@@ -59,7 +59,7 @@ export class EquipmentRepository {
     const db = getFirestore();
     const offset = (options.page - 1) * options.limit;
     let query: any = db.collection(EQUIPMENT_COLLECTION).limit(options.limit);
-    if (offset > 0) {
+    if (offset > 0 && typeof query.offset === "function") {
       query = query.offset(offset);
     }
     const snapshot = await query.get();
