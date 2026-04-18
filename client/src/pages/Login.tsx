@@ -89,12 +89,18 @@ export default function Login() {
       }
       
       // Use current token and claims from this fresh sign-in.
-      const idTokenResult = await cred.user.getIdTokenResult();
-      const token = idTokenResult.token;
+      let idTokenResult = await cred.user.getIdTokenResult();
+      let token = idTokenResult.token;
       
       // For admin accounts, verify they have the Firebase custom claim
       if (firestoreRole === "admin") {
-        const hasAdminAccess = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
+        let hasAdminAccess = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
+        if (!hasAdminAccess) {
+          // Claims can be briefly stale right after role updates; force-refresh once before failing.
+          idTokenResult = await cred.user.getIdTokenResult(true);
+          token = idTokenResult.token;
+          hasAdminAccess = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
+        }
         if (!hasAdminAccess) {
           setErr("Your admin account is awaiting approval. An administrator must approve your request first.");
           return;
