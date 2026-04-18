@@ -991,9 +991,19 @@ const AdminDashboard: React.FC = () => {
                 <div
                   key={req.id}
                   id={`request-row-${req.id}`}
-                  className={`rounded-box border border-base-300 bg-base-100 p-3 space-y-2 ${
+                  className={`rounded-box border border-base-300 bg-base-100 p-3 space-y-2 cursor-pointer transition-colors hover:bg-base-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                     highlightRequestId === req.id ? "ring-2 ring-primary/40 bg-primary/5" : ""
                   }`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { setViewRequest(req); setViewOpen(true); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setViewRequest(req);
+                      setViewOpen(true);
+                    }
+                  }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -1024,7 +1034,11 @@ const AdminDashboard: React.FC = () => {
                       )}
                       <button
                         className="btn btn-xs gap-1 min-h-8 px-2 bg-[#4F46E5] border-[#4F46E5] text-white hover:bg-[#4338CA] hover:border-[#4338CA]"
-                        onClick={() => { setViewRequest(req); setViewOpen(true); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewRequest(req);
+                          setViewOpen(true);
+                        }}
                         aria-label="View request details"
                       >
                         <Eye className="w-3.5 h-3.5" />
