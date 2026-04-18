@@ -198,6 +198,22 @@ const AdminDashboard: React.FC = () => {
     return '';
   }
 
+  const formatUsageDate = (value?: string) => {
+    if (!value) return "—";
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return value;
+    const year = Number(match[1]);
+    const month = Number(match[2]) - 1;
+    const day = Number(match[3]);
+    const parsed = new Date(year, month, day);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   const formatStatusLabel = (value?: string) => {
     const normalized = (value || "").toString().trim().toLowerCase();
     if (!normalized) return "Unknown";
@@ -958,7 +974,12 @@ const AdminDashboard: React.FC = () => {
                     >
                       <td>{req.createdByName || req.createdBy || req.id}</td>
                       <td className="max-w-xs truncate">{req.purpose}</td>
-                      <td>{req.startDate} → {req.endDate}</td>
+                      <td>
+                        <div className="min-w-0 leading-tight">
+                          <p className="text-sm font-medium truncate">{formatUsageDate(req.startDate)}</p>
+                          <p className="text-xs text-base-content/60 truncate">to {formatUsageDate(req.endDate)}</p>
+                        </div>
+                      </td>
                       <td>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={`badge ${
@@ -1054,11 +1075,11 @@ const AdminDashboard: React.FC = () => {
 
               <div>
                 <div className="text-xs text-base-content/60">Start</div>
-                <div className="font-medium">{viewRequest.startDate} {formatTime(viewRequest.start)}</div>
+                    <div className="font-medium">{formatUsageDate(viewRequest.startDate)} {formatTime(viewRequest.start)}</div>
               </div>
               <div>
                 <div className="text-xs text-base-content/60">End</div>
-                <div className="font-medium">{viewRequest.endDate} {formatTime(viewRequest.end)}</div>
+                    <div className="font-medium">{formatUsageDate(viewRequest.endDate)} {formatTime(viewRequest.end)}</div>
               </div>
 
               <div className="md:col-span-2 space-y-2">
