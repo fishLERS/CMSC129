@@ -60,15 +60,24 @@ export function logicEquipment() {
     // Fetch immediately on mount
     fetchEquipment();
 
+    const handleVisibilityChange = () => {
+      if (isMounted && document.visibilityState === "visible") {
+        fetchEquipment(true);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     // Poll every 5 seconds
     const interval = setInterval(() => {
-      if (isMounted) {
+      if (isMounted && document.visibilityState === "visible") {
         fetchEquipment(true); // Silent background fetch
       }
     }, 5000);
 
     return () => {
       isMounted = false;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(interval);
     };
   }, [fetchEquipment]);

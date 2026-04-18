@@ -82,15 +82,24 @@ export function useRequests(userID?: string) {
     // Fetch immediately on mount
     fetchRequests();
 
+    const handleVisibilityChange = () => {
+      if (isMounted && document.visibilityState === "visible") {
+        fetchRequests();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     // Poll every 5 seconds
     const interval = setInterval(() => {
-      if (isMounted) {
+      if (isMounted && document.visibilityState === "visible") {
         fetchRequests();
       }
     }, 5000);
 
     return () => {
       isMounted = false;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(interval);
     };
   }, [userID]);
