@@ -101,7 +101,7 @@ const AdminDrawerLayout: React.FC<AdminDrawerLayoutProps> = ({ children }) => {
             </button>
           </div>
           <div className="navbar-end gap-1 sm:gap-2 min-w-0">
-            <div className="hidden sm:flex items-center rounded-full border border-primary-content/30 bg-primary-content/10 px-3 py-1 text-xs text-primary-content max-w-[20rem]">
+            <div className="flex items-center text-[10px] sm:text-xs text-primary-content max-w-[9.5rem] sm:max-w-[20rem]">
               <span className="truncate">
                 Welcome, {displayClaim} {user?.displayName ?? (user?.email ? user.email.split("@")[0] : "Admin")}
               </span>
