@@ -55,6 +55,7 @@ type NotificationEntry = {
 };
 
 const AdminDashboard: React.FC = () => {
+  const MOBILE_CARD_BATCH = 5;
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'all'|'pending'|'approved'|'declined'|'cancelled'|'returned'|'cleared'>('all');
@@ -79,6 +80,7 @@ const AdminDashboard: React.FC = () => {
   const [notifAllOpen, setNotifAllOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationEntry[]>([]);
   const [recentNotifications, setRecentNotifications] = useState<NotificationEntry[]>([]);
+  const [mobileVisibleCount, setMobileVisibleCount] = useState(MOBILE_CARD_BATCH);
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
   const highlightTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const userNameCacheRef = React.useRef<Record<string, string>>({});
@@ -805,6 +807,12 @@ const AdminDashboard: React.FC = () => {
     })
   }
 
+  useEffect(() => {
+    setMobileVisibleCount(MOBILE_CARD_BATCH);
+  }, [tab]);
+
+  const mobileVisible = visible.slice(0, mobileVisibleCount);
+
   return (
     <>
       <LoadingOverlay show={loading || isEquipmentLoading} message="Loading requests..." />
@@ -987,7 +995,7 @@ const AdminDashboard: React.FC = () => {
             {visible.length === 0 ? (
               <div className="text-center py-8 text-base-content/60">No requests found</div>
             ) : (
-              visible.map((req) => (
+              mobileVisible.map((req) => (
                 <div
                   key={req.id}
                   id={`request-row-${req.id}`}
@@ -1047,6 +1055,15 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               ))
+            )}
+            {mobileVisibleCount < visible.length && (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm w-full"
+                onClick={() => setMobileVisibleCount((prev) => prev + MOBILE_CARD_BATCH)}
+              >
+                Show more
+              </button>
             )}
           </div>
 
