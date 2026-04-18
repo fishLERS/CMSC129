@@ -1024,7 +1024,6 @@ const AdminDashboard: React.FC = () => {
 
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-wide text-base-content/55">Date of Usage</p>
                       <p className="text-xs font-semibold leading-tight text-base-content/75 truncate">{formatUsageDate(req.startDate)}</p>
                       <p className="text-[11px] leading-tight text-base-content/60 truncate">to {formatUsageDate(req.endDate)}</p>
                     </div>
