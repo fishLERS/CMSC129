@@ -11,6 +11,30 @@ import { CategoryRepository } from "../repositories/category.repo.js";
  * Example: If you later need approval workflows, audit trails, or cascading deletes, implement them here.
  */
 export class EquipmentService {
+  private static readonly LIST_CACHE_TTL_MS = 10_000;
+  private static readonly listCache = new Map<string, { expiresAt: number; data: EquipmentResponse[] }>();
+
+  private static getCachedList(key: string): EquipmentResponse[] | null {
+    const cached = this.listCache.get(key);
+    if (!cached) return null;
+    if (cached.expiresAt <= Date.now()) {
+      this.listCache.delete(key);
+      return null;
+    }
+    return cached.data;
+  }
+
+  private static setCachedList(key: string, data: EquipmentResponse[]): void {
+    this.listCache.set(key, {
+      data,
+      expiresAt: Date.now() + this.LIST_CACHE_TTL_MS,
+    });
+  }
+
+  private static invalidateListCache(): void {
+    this.listCache.clear();
+  }
+
   /**
    * Create new equipment.
    * Validates input and stores in database via repository.
@@ -25,6 +49,7 @@ export class EquipmentService {
       throw new Error("Failed to retrieve created equipment");
     }
 
+    this.invalidateListCache();
     return {
       ...equipment,
       equipmentID: equipment.equipmentID!,
@@ -36,13 +61,19 @@ export class EquipmentService {
    * Filters out soft-deleted items.
    */
   static async getActiveEquipment(): Promise<EquipmentResponse[]> {
+    const cacheKey = "active";
+    const cached = this.getCachedList(cacheKey);
+    if (cached) return cached;
+
     const all = await EquipmentRepository.getAll();
-    return all
+    const data = all
       .filter((e) => !e.isDeleted)
       .map((e) => ({
         ...e,
         equipmentID: e.equipmentID!,
       } as EquipmentResponse));
+    this.setCachedList(cacheKey, data);
+    return data;
   }
 
   /**
@@ -50,11 +81,17 @@ export class EquipmentService {
    * For admin dashboards that need full visibility.
    */
   static async getAllEquipment(): Promise<EquipmentResponse[]> {
+    const cacheKey = "all";
+    const cached = this.getCachedList(cacheKey);
+    if (cached) return cached;
+
     const all = await EquipmentRepository.getAll();
-    return all.map((e) => ({
+    const data = all.map((e) => ({
       ...e,
       equipmentID: e.equipmentID!,
     } as EquipmentResponse));
+    this.setCachedList(cacheKey, data);
+    return data;
   }
 
   /**
@@ -97,6 +134,7 @@ export class EquipmentService {
       throw new Error("Failed to retrieve updated equipment");
     }
 
+    this.invalidateListCache();
     return {
       ...updated,
       equipmentID: updated.equipmentID!,
@@ -115,6 +153,7 @@ export class EquipmentService {
     }
 
     await EquipmentRepository.softDelete(equipmentID);
+    this.invalidateListCache();
   }
 
   /**
@@ -133,6 +172,7 @@ export class EquipmentService {
       throw new Error("Failed to retrieve restored equipment");
     }
 
+    this.invalidateListCache();
     return {
       ...restored,
       equipmentID: restored.equipmentID!,
@@ -151,6 +191,7 @@ export class EquipmentService {
     }
 
     await EquipmentRepository.delete(equipmentID);
+    this.invalidateListCache();
   }
 
   /**
@@ -172,6 +213,7 @@ export class EquipmentService {
       throw new Error("Failed to retrieve restored equipment");
     }
 
+    this.invalidateListCache();
     return {
       ...restored,
       equipmentID: restored.equipmentID!,

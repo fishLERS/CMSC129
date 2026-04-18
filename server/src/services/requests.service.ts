@@ -9,6 +9,30 @@ import { RequestRepository } from "../repositories/requests.repo.js";
  * Purpose: Business logic layer for request operations.
  */
 export class RequestService {
+  private static readonly LIST_CACHE_TTL_MS = 10_000;
+  private static readonly listCache = new Map<string, { expiresAt: number; data: Request[] }>();
+
+  private static getCachedList(key: string): Request[] | null {
+    const cached = this.listCache.get(key);
+    if (!cached) return null;
+    if (cached.expiresAt <= Date.now()) {
+      this.listCache.delete(key);
+      return null;
+    }
+    return cached.data;
+  }
+
+  private static setCachedList(key: string, data: Request[]): void {
+    this.listCache.set(key, {
+      data,
+      expiresAt: Date.now() + this.LIST_CACHE_TTL_MS,
+    });
+  }
+
+  private static invalidateListCache(): void {
+    this.listCache.clear();
+  }
+
   /**
    * Create a new request.
    * Validates that user exists and equipment is available.
@@ -36,6 +60,7 @@ export class RequestService {
       throw new Error("Failed to create request");
     }
 
+    this.invalidateListCache();
     return request;
   }
 
@@ -56,21 +81,39 @@ export class RequestService {
    * Get all requests (paginated/filtered).
    */
   static async getAllRequests(status?: string): Promise<Request[]> {
-    return await RequestRepository.getAll(status);
+    const cacheKey = `all:${status || "__all__"}`;
+    const cached = this.getCachedList(cacheKey);
+    if (cached) return cached;
+
+    const data = await RequestRepository.getAll(status);
+    this.setCachedList(cacheKey, data);
+    return data;
   }
 
   /**
    * Get pending requests (awaiting approval).
    */
   static async getPendingRequests(): Promise<Request[]> {
-    return await RequestRepository.getPending();
+    const cacheKey = "pending";
+    const cached = this.getCachedList(cacheKey);
+    if (cached) return cached;
+
+    const data = await RequestRepository.getPending();
+    this.setCachedList(cacheKey, data);
+    return data;
   }
 
   /**
    * Get requests by user.
    */
   static async getRequestsByUser(userID: string): Promise<Request[]> {
-    return await RequestRepository.getByUserId(userID);
+    const cacheKey = `user:${userID}`;
+    const cached = this.getCachedList(cacheKey);
+    if (cached) return cached;
+
+    const data = await RequestRepository.getByUserId(userID);
+    this.setCachedList(cacheKey, data);
+    return data;
   }
 
   /**
@@ -96,6 +139,7 @@ export class RequestService {
       throw new Error("Failed to update request");
     }
 
+    this.invalidateListCache();
     return updated;
   }
 
@@ -120,6 +164,7 @@ export class RequestService {
       throw new Error("Failed to approve request");
     }
 
+    this.invalidateListCache();
     return updated;
   }
 
@@ -144,6 +189,7 @@ export class RequestService {
       throw new Error("Failed to reject request");
     }
 
+    this.invalidateListCache();
     return updated;
   }
 
@@ -178,6 +224,7 @@ export class RequestService {
       throw new Error("Failed to override request to approved");
     }
 
+    this.invalidateListCache();
     return updated;
   }
 
@@ -211,6 +258,7 @@ export class RequestService {
       throw new Error("Failed to override request to rejected");
     }
 
+    this.invalidateListCache();
     return updated;
   }
 
@@ -235,6 +283,7 @@ export class RequestService {
       throw new Error("Failed to mark request as ongoing");
     }
 
+    this.invalidateListCache();
     return updated;
   }
 
@@ -259,6 +308,7 @@ export class RequestService {
       throw new Error("Failed to mark request as returned");
     }
 
+    this.invalidateListCache();
     return updated;
   }
 
@@ -277,6 +327,7 @@ export class RequestService {
     }
 
     await RequestRepository.delete(requestID);
+    this.invalidateListCache();
   }
 
   /**
