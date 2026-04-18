@@ -87,7 +87,7 @@ export class RequestRepository {
     }
     const snapshot = await query.get();
 
-    return snapshot.docs.map((doc) => ({
+    return snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>) => ({
       requestID: doc.id,
       ...doc.data(),
     } as Request));
@@ -109,7 +109,7 @@ export class RequestRepository {
     }
     const snapshot = await query.get();
 
-    return snapshot.docs.map((doc) => ({
+    return snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>) => ({
       requestID: doc.id,
       ...doc.data(),
     } as Request));

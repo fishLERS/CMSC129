@@ -64,7 +64,7 @@ export class EquipmentRepository {
     }
     const snapshot = await query.get();
     
-    return snapshot.docs.map((doc) => ({
+    return snapshot.docs.map((doc: FirebaseFirestore.QueryDocumentSnapshot<FirebaseFirestore.DocumentData>) => ({
       equipmentID: doc.id,
       ...doc.data(),
     } as Equipment));
