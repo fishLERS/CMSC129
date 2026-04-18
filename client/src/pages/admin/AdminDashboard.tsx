@@ -1023,7 +1023,7 @@ const AdminDashboard: React.FC = () => {
                         <span className="badge badge-secondary badge-xs">Super Admin</span>
                       )}
                       <button
-                        className="btn btn-outline btn-xs gap-1 min-h-8 px-2"
+                        className="btn btn-xs gap-1 min-h-8 px-2 bg-[#4F46E5] border-[#4F46E5] text-white hover:bg-[#4338CA] hover:border-[#4338CA]"
                         onClick={() => { setViewRequest(req); setViewOpen(true); }}
                         aria-label="View request details"
                       >
