@@ -3,6 +3,10 @@ import { Equipment, EquipmentUpdateInput, PurgedEquipment } from "../models/equi
 
 const EQUIPMENT_COLLECTION = "equipment";
 const PURGED_COLLECTION = "equipment_purged";
+type ListOptions = {
+  page: number;
+  limit: number;
+};
 
 /**
  * Equipment Repository.
@@ -51,9 +55,14 @@ export class EquipmentRepository {
    * Retrieve all equipment (including archived).
    * For filtered lists, see the service layer.
    */
-  static async getAll(): Promise<Equipment[]> {
+  static async getAll(options: ListOptions): Promise<Equipment[]> {
     const db = getFirestore();
-    const snapshot = await db.collection(EQUIPMENT_COLLECTION).get();
+    const offset = (options.page - 1) * options.limit;
+    let query: any = db.collection(EQUIPMENT_COLLECTION).limit(options.limit);
+    if (offset > 0) {
+      query = query.offset(offset);
+    }
+    const snapshot = await query.get();
     
     return snapshot.docs.map((doc) => ({
       equipmentID: doc.id,

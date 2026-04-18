@@ -9,6 +9,8 @@ import { RequestRepository } from "../repositories/requests.repo.js";
  * Purpose: Business logic layer for request operations.
  */
 export class RequestService {
+  private static readonly DEFAULT_LIST_LIMIT = 100;
+  private static readonly MAX_LIST_LIMIT = 200;
   private static readonly LIST_CACHE_TTL_MS = 10_000;
   private static readonly listCache = new Map<string, { expiresAt: number; data: Request[] }>();
 
@@ -31,6 +33,16 @@ export class RequestService {
 
   private static invalidateListCache(): void {
     this.listCache.clear();
+  }
+
+  private static normalizeListOptions(options?: { page?: number; limit?: number }) {
+    const rawPage = Number(options?.page || 1);
+    const rawLimit = Number(options?.limit || this.DEFAULT_LIST_LIMIT);
+    const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(Math.floor(rawLimit), this.MAX_LIST_LIMIT)
+      : this.DEFAULT_LIST_LIMIT;
+    return { page, limit };
   }
 
   /**
@@ -80,12 +92,16 @@ export class RequestService {
   /**
    * Get all requests (paginated/filtered).
    */
-  static async getAllRequests(status?: string): Promise<Request[]> {
-    const cacheKey = `all:${status || "__all__"}`;
+  static async getAllRequests(
+    status?: string,
+    options?: { page?: number; limit?: number }
+  ): Promise<Request[]> {
+    const normalized = this.normalizeListOptions(options);
+    const cacheKey = `all:${status || "__all__"}:p${normalized.page}:l${normalized.limit}`;
     const cached = this.getCachedList(cacheKey);
     if (cached) return cached;
 
-    const data = await RequestRepository.getAll(status);
+    const data = await RequestRepository.getAll(status, normalized);
     this.setCachedList(cacheKey, data);
     return data;
   }
@@ -93,12 +109,13 @@ export class RequestService {
   /**
    * Get pending requests (awaiting approval).
    */
-  static async getPendingRequests(): Promise<Request[]> {
-    const cacheKey = "pending";
+  static async getPendingRequests(options?: { page?: number; limit?: number }): Promise<Request[]> {
+    const normalized = this.normalizeListOptions(options);
+    const cacheKey = `pending:p${normalized.page}:l${normalized.limit}`;
     const cached = this.getCachedList(cacheKey);
     if (cached) return cached;
 
-    const data = await RequestRepository.getPending();
+    const data = await RequestRepository.getPending(normalized);
     this.setCachedList(cacheKey, data);
     return data;
   }
@@ -106,12 +123,16 @@ export class RequestService {
   /**
    * Get requests by user.
    */
-  static async getRequestsByUser(userID: string): Promise<Request[]> {
-    const cacheKey = `user:${userID}`;
+  static async getRequestsByUser(
+    userID: string,
+    options?: { page?: number; limit?: number }
+  ): Promise<Request[]> {
+    const normalized = this.normalizeListOptions(options);
+    const cacheKey = `user:${userID}:p${normalized.page}:l${normalized.limit}`;
     const cached = this.getCachedList(cacheKey);
     if (cached) return cached;
 
-    const data = await RequestRepository.getByUserId(userID);
+    const data = await RequestRepository.getByUserId(userID, normalized);
     this.setCachedList(cacheKey, data);
     return data;
   }

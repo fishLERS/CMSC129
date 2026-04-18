@@ -11,6 +11,8 @@ import { CategoryRepository } from "../repositories/category.repo.js";
  * Example: If you later need approval workflows, audit trails, or cascading deletes, implement them here.
  */
 export class EquipmentService {
+  private static readonly DEFAULT_LIST_LIMIT = 100;
+  private static readonly MAX_LIST_LIMIT = 200;
   private static readonly LIST_CACHE_TTL_MS = 10_000;
   private static readonly listCache = new Map<string, { expiresAt: number; data: EquipmentResponse[] }>();
 
@@ -33,6 +35,16 @@ export class EquipmentService {
 
   private static invalidateListCache(): void {
     this.listCache.clear();
+  }
+
+  private static normalizeListOptions(options?: { page?: number; limit?: number }) {
+    const rawPage = Number(options?.page || 1);
+    const rawLimit = Number(options?.limit || this.DEFAULT_LIST_LIMIT);
+    const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(Math.floor(rawLimit), this.MAX_LIST_LIMIT)
+      : this.DEFAULT_LIST_LIMIT;
+    return { page, limit };
   }
 
   /**
@@ -60,12 +72,13 @@ export class EquipmentService {
    * Get all active (non-deleted) equipment.
    * Filters out soft-deleted items.
    */
-  static async getActiveEquipment(): Promise<EquipmentResponse[]> {
-    const cacheKey = "active";
+  static async getActiveEquipment(options?: { page?: number; limit?: number }): Promise<EquipmentResponse[]> {
+    const normalized = this.normalizeListOptions(options);
+    const cacheKey = `active:p${normalized.page}:l${normalized.limit}`;
     const cached = this.getCachedList(cacheKey);
     if (cached) return cached;
 
-    const all = await EquipmentRepository.getAll();
+    const all = await EquipmentRepository.getAll(normalized);
     const data = all
       .filter((e) => !e.isDeleted)
       .map((e) => ({
@@ -80,12 +93,13 @@ export class EquipmentService {
    * Get all equipment including archived.
    * For admin dashboards that need full visibility.
    */
-  static async getAllEquipment(): Promise<EquipmentResponse[]> {
-    const cacheKey = "all";
+  static async getAllEquipment(options?: { page?: number; limit?: number }): Promise<EquipmentResponse[]> {
+    const normalized = this.normalizeListOptions(options);
+    const cacheKey = `all:p${normalized.page}:l${normalized.limit}`;
     const cached = this.getCachedList(cacheKey);
     if (cached) return cached;
 
-    const all = await EquipmentRepository.getAll();
+    const all = await EquipmentRepository.getAll(normalized);
     const data = all.map((e) => ({
       ...e,
       equipmentID: e.equipmentID!,

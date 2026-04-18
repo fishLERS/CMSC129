@@ -22,14 +22,28 @@ interface ApiResponse<T> {
   message?: string;
 }
 
+interface ListOptions {
+  page?: number;
+  limit?: number;
+}
+
 /**
  * List all equipment.
  * @param includeArchived - If true, includes soft-deleted items. Default: false.
  */
-export async function listEquipment(includeArchived: boolean = false): Promise<Equipment[]> {
+export async function listEquipment(
+  includeArchived: boolean = false,
+  options?: ListOptions
+): Promise<Equipment[]> {
   const url = new URL(`${API_BASE}/api/equipment`);
   if (includeArchived) {
     url.searchParams.append("includeArchived", "true");
+  }
+  if (options?.page) {
+    url.searchParams.append("page", String(options.page));
+  }
+  if (options?.limit) {
+    url.searchParams.append("limit", String(options.limit));
   }
 
   const response = await fetch(url.toString(), {

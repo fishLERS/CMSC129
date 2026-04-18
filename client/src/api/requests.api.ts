@@ -42,6 +42,19 @@ export interface Request {
   updatedAt?: string;
 }
 
+interface ListOptions {
+  page?: number;
+  limit?: number;
+}
+
+function withListParams(basePath: string, options?: ListOptions): string {
+  const params = new URLSearchParams();
+  if (options?.page) params.set("page", String(options.page));
+  if (options?.limit) params.set("limit", String(options.limit));
+  const query = params.toString();
+  return query ? `${basePath}?${query}` : basePath;
+}
+
 /**
  * Create a new request.
  * POST /api/requests
@@ -56,8 +69,13 @@ export async function createRequest(request: Omit<Request, "requestID" | "create
  * Get all requests (optionally filtered).
  * GET /api/requests?status=pending|approved|ongoing|returned|completed
  */
-export async function listRequests(status?: string): Promise<Request[]> {
-  const endpoint = status ? `/api/requests?status=${status}` : "/api/requests";
+export async function listRequests(status?: string, options?: ListOptions): Promise<Request[]> {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (options?.page) params.set("page", String(options.page));
+  if (options?.limit) params.set("limit", String(options.limit));
+  const query = params.toString();
+  const endpoint = query ? `/api/requests?${query}` : "/api/requests";
   const data = await apiGet<Request[]>(endpoint);
   return data;
 }
@@ -66,8 +84,8 @@ export async function listRequests(status?: string): Promise<Request[]> {
  * Get pending requests (awaiting approval).
  * GET /api/requests/pending
  */
-export async function getPendingRequests(): Promise<Request[]> {
-  const data = await apiGet<Request[]>("/api/requests/pending");
+export async function getPendingRequests(options?: ListOptions): Promise<Request[]> {
+  const data = await apiGet<Request[]>(withListParams("/api/requests/pending", options));
   return data;
 }
 
@@ -75,8 +93,8 @@ export async function getPendingRequests(): Promise<Request[]> {
  * Get all requests from a specific user.
  * GET /api/requests/user/:uid
  */
-export async function getRequestsByUser(uid: string): Promise<Request[]> {
-  const data = await apiGet<Request[]>(`/api/requests/user/${uid}`);
+export async function getRequestsByUser(uid: string, options?: ListOptions): Promise<Request[]> {
+  const data = await apiGet<Request[]>(withListParams(`/api/requests/user/${uid}`, options));
   return data;
 }
 

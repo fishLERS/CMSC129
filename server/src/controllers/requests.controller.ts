@@ -8,6 +8,15 @@ import { RequestService } from "../services/requests.service.js";
  * Purpose: HTTP layer for request endpoints.
  */
 export class RequestController {
+  private static parsePagination(req: Request): { page?: number; limit?: number } {
+    const pageRaw = Number(req.query.page);
+    const limitRaw = Number(req.query.limit);
+
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : undefined;
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.floor(limitRaw) : undefined;
+    return { page, limit };
+  }
+
   /**
    * POST /api/requests
    * Create a new request.
@@ -30,7 +39,8 @@ export class RequestController {
   static async listRequests(req: Request, res: Response): Promise<void> {
     try {
       const { status } = req.query;
-      const requests = await RequestService.getAllRequests(status as string | undefined);
+      const pagination = this.parsePagination(req);
+      const requests = await RequestService.getAllRequests(status as string | undefined, pagination);
       res.status(200).json({ success: true, data: requests });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
@@ -43,7 +53,8 @@ export class RequestController {
    */
   static async getPending(req: Request, res: Response): Promise<void> {
     try {
-      const requests = await RequestService.getPendingRequests();
+      const pagination = this.parsePagination(req);
+      const requests = await RequestService.getPendingRequests(pagination);
       res.status(200).json({ success: true, data: requests });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
@@ -57,7 +68,8 @@ export class RequestController {
   static async getByUser(req: Request, res: Response): Promise<void> {
     try {
       const { uid } = req.params;
-      const requests = await RequestService.getRequestsByUser(uid);
+      const pagination = this.parsePagination(req);
+      const requests = await RequestService.getRequestsByUser(uid, pagination);
       res.status(200).json({ success: true, data: requests });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });

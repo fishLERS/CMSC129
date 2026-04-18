@@ -2,6 +2,10 @@ import { getFirestore } from "../config/firebase.js";
 import { Request, RequestCreateInput, RequestUpdateInput, RequestApprovalPayload } from "../models/request.js";
 
 const REQUESTS_COLLECTION = "requests";
+type ListOptions = {
+  page: number;
+  limit: number;
+};
 
 /**
  * Request Repository.
@@ -45,12 +49,18 @@ export class RequestRepository {
   /**
    * Get all requests (optionally filtered by status).
    */
-  static async getAll(status?: string): Promise<Request[]> {
+  static async getAll(status: string | undefined, options: ListOptions): Promise<Request[]> {
     const db = getFirestore();
     let query: any = db.collection(REQUESTS_COLLECTION);
 
     if (status) {
       query = query.where("status", "==", status);
+    }
+
+    const offset = (options.page - 1) * options.limit;
+    query = query.limit(options.limit);
+    if (offset > 0) {
+      query = query.offset(offset);
     }
 
     const snapshot = await query.get();
@@ -64,13 +74,18 @@ export class RequestRepository {
   /**
    * Get all requests by a specific user.
    */
-  static async getByUserId(userID: string): Promise<Request[]> {
+  static async getByUserId(userID: string, options: ListOptions): Promise<Request[]> {
     const db = getFirestore();
-    const snapshot = await db
+    const offset = (options.page - 1) * options.limit;
+    let query: any = db
       .collection(REQUESTS_COLLECTION)
       .where("userID", "==", userID)
       .orderBy("createdAt", "desc")
-      .get();
+      .limit(options.limit);
+    if (offset > 0) {
+      query = query.offset(offset);
+    }
+    const snapshot = await query.get();
 
     return snapshot.docs.map((doc) => ({
       requestID: doc.id,
@@ -81,13 +96,18 @@ export class RequestRepository {
   /**
    * Get pending requests (awaiting approval).
    */
-  static async getPending(): Promise<Request[]> {
+  static async getPending(options: ListOptions): Promise<Request[]> {
     const db = getFirestore();
-    const snapshot = await db
+    const offset = (options.page - 1) * options.limit;
+    let query: any = db
       .collection(REQUESTS_COLLECTION)
       .where("status", "==", "pending")
       .orderBy("createdAt", "asc")
-      .get();
+      .limit(options.limit);
+    if (offset > 0) {
+      query = query.offset(offset);
+    }
+    const snapshot = await query.get();
 
     return snapshot.docs.map((doc) => ({
       requestID: doc.id,

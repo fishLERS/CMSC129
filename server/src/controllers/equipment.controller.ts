@@ -10,6 +10,15 @@ import { EquipmentService } from "../services/equipment.service.js";
  * All error handling should result in appropriate HTTP status codes.
  */
 export class EquipmentController {
+  private static parsePagination(req: Request): { page?: number; limit?: number } {
+    const pageRaw = Number(req.query.page);
+    const limitRaw = Number(req.query.limit);
+
+    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : undefined;
+    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.floor(limitRaw) : undefined;
+    return { page, limit };
+  }
+
   /**
    * POST /api/equipment
    * Create new equipment.
@@ -32,9 +41,10 @@ export class EquipmentController {
   static async listEquipment(req: Request, res: Response): Promise<void> {
     try {
       const includeArchived = req.query.includeArchived === "true";
+      const pagination = this.parsePagination(req);
       const equipment = includeArchived
-        ? await EquipmentService.getAllEquipment()
-        : await EquipmentService.getActiveEquipment();
+        ? await EquipmentService.getAllEquipment(pagination)
+        : await EquipmentService.getActiveEquipment(pagination);
       
       res.status(200).json({ success: true, data: equipment });
     } catch (error: any) {
