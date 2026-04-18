@@ -371,18 +371,12 @@ export default function HomeStudent() {
           </div>
         )}
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Student Dashboard</h1>
-          <p className="text-base-content/70">Welcome, {user?.displayName ?? user?.email?.split('@')[0] ?? 'Student'}! Today is {formatDate(new Date())}</p>
-        </div>
-                
-        <button className="btn btn-primary btn-sm ml-auto" onClick={() => nav("/requestpage")}>
-          + Request Equipment
-        </button>
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-2xl font-bold leading-tight">Student Dashboard</h1>
 
-        {/* Notification dropdown */}
-        <div className="relative">
+          {/* Notification dropdown */}
+          <div className="relative shrink-0">
           <button className="btn btn-ghost btn-circle" onClick={toggleNotif}>
             <div className="indicator">
               <Bell className="w-5 h-5" />
@@ -445,6 +439,13 @@ export default function HomeStudent() {
               </div>
             </>
           )}
+          </div>
+        </div>
+        <p className="text-base-content/70">Welcome, {user?.displayName ?? user?.email?.split('@')[0] ?? 'Student'}! Today is {formatDate(new Date())}</p>
+        <div className="flex justify-end">
+          <button className="btn btn-primary btn-sm min-h-11" onClick={() => nav("/requestpage")}>
+            + Request Equipment
+          </button>
         </div>
       </div>
 
