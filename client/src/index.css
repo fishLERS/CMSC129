@@ -3,6 +3,16 @@
 	themes: night --default, light;
 }
 
+/* Theme ripple transition */
+@keyframes themeRevealWave {
+	from {
+		clip-path: circle(0px at var(--theme-wave-x, 90vw) var(--theme-wave-y, 24px));
+	}
+	to {
+		clip-path: circle(var(--theme-wave-radius, 140vmax) at var(--theme-wave-x, 90vw) var(--theme-wave-y, 24px));
+	}
+}
+
 @layer base {
 	html, body, #root {
 		height: 100%;
@@ -19,6 +29,41 @@
 	/* utility container used across pages */
 	.app-container {
 		@apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+	}
+}
+
+/* View Transition API: circular reveal from toggle origin */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+html.theme-ripple-transition::view-transition-new(root) {
+	animation: themeRevealWave 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Fallback for browsers without View Transition API */
+html.theme-fallback-transition,
+html.theme-fallback-transition * {
+	transition:
+		background-color 260ms ease,
+		color 260ms ease,
+		border-color 260ms ease,
+		fill 260ms ease,
+		stroke 260ms ease,
+		box-shadow 260ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html.theme-fallback-transition,
+	html.theme-fallback-transition * {
+		transition: none !important;
+	}
+
+	html.theme-ripple-transition::view-transition-new(root),
+	html.theme-ripple-transition::view-transition-old(root) {
+		animation: none !important;
 	}
 }
 
