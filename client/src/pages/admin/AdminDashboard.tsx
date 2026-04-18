@@ -876,41 +876,41 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
-        <div className="stat">
-          <div className="stat-title">Total Requests</div>
-          <div className="stat-value">{requests.length}</div>
-          <div className="stat-desc">All time</div>
+      <div className="stats stats-horizontal shadow bg-base-200 w-full overflow-hidden">
+        <div className="stat min-w-0 px-3 sm:px-4">
+          <div className="stat-title text-xs truncate">Total Requests</div>
+          <div className="stat-value text-4xl">{requests.length}</div>
+          <div className="stat-desc text-xs truncate">All time</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Pending</div>
-          <div className="stat-value text-warning">{pendingCount}</div>
-          <div className="stat-desc">Awaiting approval</div>
+        <div className="stat min-w-0 px-3 sm:px-4">
+          <div className="stat-title text-xs truncate">Pending</div>
+          <div className="stat-value text-4xl text-warning">{pendingCount}</div>
+          <div className="stat-desc text-xs truncate">Awaiting approval</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Approved</div>
-          <div className="stat-value text-success">{approvedCount}</div>
-          <div className="stat-desc">Ready for use</div>
+        <div className="stat min-w-0 px-3 sm:px-4">
+          <div className="stat-title text-xs truncate">Approved</div>
+          <div className="stat-value text-4xl text-success">{approvedCount}</div>
+          <div className="stat-desc text-xs truncate">Ready for use</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Returned</div>
-          <div className="stat-value text-info">{returnedCount}</div>
-          <div className="stat-desc">Needs inspection</div>
+        <div className="stat min-w-0 px-3 sm:px-4">
+          <div className="stat-title text-xs truncate">Returned</div>
+          <div className="stat-value text-4xl text-info">{returnedCount}</div>
+          <div className="stat-desc text-xs truncate">Needs inspection</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Cleared</div>
-          <div className="stat-value text-secondary">{clearedCount}</div>
-          <div className="stat-desc">Reviewed returns</div>
+        <div className="stat min-w-0 px-3 sm:px-4">
+          <div className="stat-title text-xs truncate">Cleared</div>
+          <div className="stat-value text-4xl text-secondary">{clearedCount}</div>
+          <div className="stat-desc text-xs truncate">Reviewed returns</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Declined</div>
-          <div className="stat-value text-error">{declinedCount}</div>
-          <div className="stat-desc">Requests declined</div>
+        <div className="stat min-w-0 px-3 sm:px-4">
+          <div className="stat-title text-xs truncate">Declined</div>
+          <div className="stat-value text-4xl text-error">{declinedCount}</div>
+          <div className="stat-desc text-xs truncate">Requests declined</div>
         </div>
-        <div className="stat">
-          <div className="stat-title">Cancelled</div>
-          <div className="stat-value text-info">{cancelledCount}</div>
-          <div className="stat-desc">Requests cancelled</div>
+        <div className="stat min-w-0 px-3 sm:px-4">
+          <div className="stat-title text-xs truncate">Cancelled</div>
+          <div className="stat-value text-4xl text-info">{cancelledCount}</div>
+          <div className="stat-desc text-xs truncate">Requests cancelled</div>
         </div>
       </div>
 
@@ -932,7 +932,7 @@ const AdminDashboard: React.FC = () => {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="table min-w-[720px]">
+            <table className="table w-full table-fixed">
               <thead>
                 <tr>
                   <th>Requester</th>
@@ -1066,7 +1066,7 @@ const AdminDashboard: React.FC = () => {
                 {requiresReturnAssessment ? (
                   <>
                     <div className="overflow-x-auto">
-                      <table className="table w-full text-sm min-w-[720px]">
+                      <table className="table w-full text-sm table-fixed">
                         <thead>
                           <tr>
                             <th>Item</th>
@@ -1183,7 +1183,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     )}
                     <div className="overflow-x-auto">
-                      <table className="table w-full text-sm min-w-[720px]">
+                      <table className="table w-full text-sm table-fixed">
                         <thead>
                           <tr>
                             <th>Item</th>
