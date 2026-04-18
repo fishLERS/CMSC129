@@ -41,7 +41,7 @@ export class EquipmentController {
   static async listEquipment(req: Request, res: Response): Promise<void> {
     try {
       const includeArchived = req.query.includeArchived === "true";
-      const pagination = this.parsePagination(req);
+      const pagination = EquipmentController.parsePagination(req);
       const equipment = includeArchived
         ? await EquipmentService.getAllEquipment(pagination)
         : await EquipmentService.getActiveEquipment(pagination);

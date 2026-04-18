@@ -39,7 +39,7 @@ export class RequestController {
   static async listRequests(req: Request, res: Response): Promise<void> {
     try {
       const { status } = req.query;
-      const pagination = this.parsePagination(req);
+      const pagination = RequestController.parsePagination(req);
       const requests = await RequestService.getAllRequests(status as string | undefined, pagination);
       res.status(200).json({ success: true, data: requests });
     } catch (error: any) {
@@ -53,7 +53,7 @@ export class RequestController {
    */
   static async getPending(req: Request, res: Response): Promise<void> {
     try {
-      const pagination = this.parsePagination(req);
+      const pagination = RequestController.parsePagination(req);
       const requests = await RequestService.getPendingRequests(pagination);
       res.status(200).json({ success: true, data: requests });
     } catch (error: any) {
@@ -68,7 +68,7 @@ export class RequestController {
   static async getByUser(req: Request, res: Response): Promise<void> {
     try {
       const { uid } = req.params;
-      const pagination = this.parsePagination(req);
+      const pagination = RequestController.parsePagination(req);
       const requests = await RequestService.getRequestsByUser(uid, pagination);
       res.status(200).json({ success: true, data: requests });
     } catch (error: any) {
