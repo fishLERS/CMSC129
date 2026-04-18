@@ -107,10 +107,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           let userData = await getVerifiedUser(token);
           let hasAdminClaim = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
           let hasSuperAdminClaim = !!idTokenResult.claims.superAdmin;
-          let roleClaimMismatch =
-            (userData.role === "admin" && !hasAdminClaim) ||
-            (userData.role === "student" && hasAdminClaim);
-          let superClaimMismatch = !!userData.isSuperAdmin !== hasSuperAdminClaim;
+          // Only treat as refresh-required mismatch when claims are missing for stored privileges.
+          // If claims are ahead of profile data (e.g. promoted but profile not synced yet), do not
+          // force a warning loop because claims are the runtime source of truth.
+          let roleClaimMismatch = userData.role === "admin" && !hasAdminClaim;
+          let superClaimMismatch = !!userData.isSuperAdmin && !hasSuperAdminClaim;
 
           if (roleClaimMismatch || superClaimMismatch) {
             // Claims may be stale after permission updates; force refresh once.
@@ -120,10 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             userData = await getVerifiedUser(token, true);
             hasAdminClaim = !!idTokenResult.claims.admin || !!idTokenResult.claims.superAdmin;
             hasSuperAdminClaim = !!idTokenResult.claims.superAdmin;
-            roleClaimMismatch =
-              (userData.role === "admin" && !hasAdminClaim) ||
-              (userData.role === "student" && hasAdminClaim);
-            superClaimMismatch = !!userData.isSuperAdmin !== hasSuperAdminClaim;
+            roleClaimMismatch = userData.role === "admin" && !hasAdminClaim;
+            superClaimMismatch = !!userData.isSuperAdmin && !hasSuperAdminClaim;
           }
 
           const resolvedUser: User = {
