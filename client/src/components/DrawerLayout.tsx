@@ -121,7 +121,7 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
       </div>
 
       {/* Sidebar drawer - fixed */}
-      <div className="drawer-side max-lg:top-14 max-lg:h-[calc(100dvh-3.5rem)] lg:h-screen z-40 overflow-hidden fixed lg:sticky lg:top-0">
+      <div className="drawer-side max-lg:top-14 max-lg:h-[calc(100dvh-3.5rem)] lg:h-screen z-40 max-lg:overflow-hidden lg:overflow-visible fixed lg:sticky lg:top-0">
         <label htmlFor="student-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
         <div className="flex h-full min-h-0 w-72 max-w-[85vw] flex-col bg-base-100 border-r border-base-300 shadow-lg is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-visible">
           {/* Menu items */}
