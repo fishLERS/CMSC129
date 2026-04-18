@@ -121,11 +121,11 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
       </div>
 
       {/* Sidebar drawer - fixed */}
-      <div className="drawer-side max-lg:top-14 lg:h-screen z-40 overflow-visible fixed lg:sticky lg:top-0">
+      <div className="drawer-side max-lg:top-14 max-lg:h-[calc(100dvh-3.5rem)] lg:h-screen z-40 overflow-hidden fixed lg:sticky lg:top-0">
         <label htmlFor="student-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
-        <div className="flex h-full w-72 max-w-[85vw] flex-col bg-base-100 border-r border-base-300 shadow-lg is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-visible">
+        <div className="flex h-full min-h-0 w-72 max-w-[85vw] flex-col bg-base-100 border-r border-base-300 shadow-lg is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-visible">
           {/* Menu items */}
-          <ul className="menu w-full flex-1 gap-1 p-2 overflow-visible is-drawer-close:items-center">
+          <ul className="menu w-full flex-1 min-h-0 gap-1 p-2 overflow-y-auto lg:overflow-y-visible overflow-x-visible is-drawer-close:items-center">
             {menuItems.map((item, index) => (
               <li key={index} className="is-drawer-close:w-auto">
                 <button
@@ -141,7 +141,7 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
           </ul>
 
           {/* Logout button */}
-          <div className="p-2 is-drawer-close:flex is-drawer-close:justify-center">
+          <div className="shrink-0 p-2 is-drawer-close:flex is-drawer-close:justify-center">
             <button
               // onClick={handleLogout}
               onClick={() => setShowLogoutConfirm(true)}
@@ -156,7 +156,7 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
           {/* User profile section */}
           <button
             onClick={() => navigate("/profile")}
-            className="border-t border-base-300 flex items-center gap-3 p-3 hover:bg-base-300 transition-colors cursor-pointer is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
+            className="shrink-0 border-t border-base-300 flex items-center gap-3 p-3 hover:bg-base-300 transition-colors cursor-pointer is-drawer-close:justify-center is-drawer-close:tooltip is-drawer-close:tooltip-right"
             data-tip={user?.displayName ?? user?.email?.split("@")[0] ?? "Profile"}
           >
             <div className="avatar">
