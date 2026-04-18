@@ -37,7 +37,7 @@ export interface RequestItem {
  *
  * Key changes:
  * - No real-time Firestore listeners
- * - Uses polling instead (fetch every 5 seconds)
+ * - Fetches on mount, visibility return, and after mutations
  * - All operations go through requestsApi.* functions
  * - Error handling for network failures
  */
@@ -51,7 +51,7 @@ export function useRequests(userID?: string) {
 
   /**
    * Fetch requests from API.
-   * Called on mount and periodically.
+   * Called on mount, tab visibility return, and after mutations.
    */
   const fetchRequests = async (force = false) => {
     const cacheKey = userID || "__all__";
@@ -99,54 +99,25 @@ export function useRequests(userID?: string) {
   };
 
   /**
-   * Setup polling to refetch requests every 5 seconds.
-   * This simulates real-time behavior of Firestore listeners.
+   * Refetch on mount and when tab becomes visible again.
    */
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    const MIN_POLL_MS = 4500;
-    const MAX_POLL_MS = 6500;
-
-    const getJitteredDelay = () =>
-      Math.floor(Math.random() * (MAX_POLL_MS - MIN_POLL_MS + 1)) + MIN_POLL_MS;
-
-    const scheduleNextPoll = () => {
-      timeoutId = setTimeout(() => {
-        if (!isMounted) return;
-
-        if (document.visibilityState === "visible") {
-          fetchRequests();
-        }
-
-        if (isMounted) {
-          scheduleNextPoll();
-        }
-      }, getJitteredDelay());
-    };
 
     // Fetch immediately on mount
     fetchRequests();
 
     const handleVisibilityChange = () => {
       if (isMounted && document.visibilityState === "visible") {
-        fetchRequests();
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-        scheduleNextPoll();
+        fetchRequests(true);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    scheduleNextPoll();
 
     return () => {
       isMounted = false;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
     };
   }, [userID]);
 
@@ -260,7 +231,7 @@ export function useRequests(userID?: string) {
     try {
       await requestsApi.deleteRequest(requestID);
       // Refetch to remove from list
-      await fetchRequests();
+      await fetchRequests(true);
     } catch (err: any) {
       console.error("Failed to delete request:", err);
       setError(err.message);

@@ -7,7 +7,7 @@ import * as equipmentApi from "../../api/equipment.api";
  *
  * Key changes:
  * - No more Firestore listeners (listenerEquipment)
- * - Uses polling instead (fetches every 5 seconds)
+ * - Fetches on mount, visibility return, and after mutations
  * - All operations go through equipmentApi.* functions
  * - Error handling for network failures
  */
@@ -24,7 +24,7 @@ export function logicEquipment() {
 
   /**
    * Fetch equipment from API.
-   * Called on mount and periodically.
+   * Called on mount, visibility return, and after mutations.
    * * Added isBackground parameter to avoid flickering loaders during polling.
    */
   const fetchEquipment = useCallback(async (isBackground = false, force = false) => {
@@ -68,56 +68,25 @@ export function logicEquipment() {
   }, []);
 
   /**
-   * Setup polling to refetch equipment every 5 seconds.
-   * This simulates the real-time behavior of Firestore listeners.
-   *
-   * TODO: Replace with WebSocket or Server-Sent Events later for true real-time.
+   * Refetch on mount and when tab becomes visible again.
    */
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    const MIN_POLL_MS = 4500;
-    const MAX_POLL_MS = 6500;
-
-    const getJitteredDelay = () =>
-      Math.floor(Math.random() * (MAX_POLL_MS - MIN_POLL_MS + 1)) + MIN_POLL_MS;
-
-    const scheduleNextPoll = () => {
-      timeoutId = setTimeout(() => {
-        if (!isMounted) return;
-
-        if (document.visibilityState === "visible") {
-          fetchEquipment(true);
-        }
-
-        if (isMounted) {
-          scheduleNextPoll();
-        }
-      }, getJitteredDelay());
-    };
 
     // Fetch immediately on mount
     fetchEquipment();
 
     const handleVisibilityChange = () => {
       if (isMounted && document.visibilityState === "visible") {
-        fetchEquipment(true);
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-        scheduleNextPoll();
+        fetchEquipment(true, true);
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    scheduleNextPoll();
 
     return () => {
       isMounted = false;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
     };
   }, [fetchEquipment]);
 
