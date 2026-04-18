@@ -87,6 +87,7 @@ const AdminDashboard: React.FC = () => {
   const [scrollY, setScrollY] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const mobileListRef = React.useRef<HTMLDivElement>(null);
+  const [isMobileListExpanded, setIsMobileListExpanded] = useState(false);
 
   const closeRequestModal = useCallback(() => {
     if (isFinalizingReturn) return;
@@ -503,19 +504,40 @@ const AdminDashboard: React.FC = () => {
 
   // Handle scroll position for scroll-to-top button (mobile only)
   useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      setScrollY(target.scrollTop || window.scrollY);
     };
+    
+    // Listen to both window scroll and the main container scroll
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.addEventListener("scroll", handleScroll, { passive: true });
+    }
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    
+    return () => {
+      if (mainElement) {
+        mainElement.removeEventListener("scroll", handleScroll);
+      }
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   // Scroll to top with smooth animation
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    } else {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
   };
 
   // Handle load more with smooth scroll
@@ -852,6 +874,7 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     setMobileVisibleCount(MOBILE_CARD_BATCH);
+    setIsMobileListExpanded(false);
   }, [tab]);
 
   const mobileVisible = visible.slice(0, mobileVisibleCount);
@@ -859,7 +882,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <>
       <LoadingOverlay show={loading || isEquipmentLoading} message="Loading requests..." />
-      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 pb-0 sm:pb-0">
         {alertMessage && (
           <div className="alert alert-error">
             <span>{alertMessage}</span>
@@ -1038,87 +1061,90 @@ const AdminDashboard: React.FC = () => {
             {visible.length === 0 ? (
               <div className="text-center py-8 text-base-content/60">No requests found</div>
             ) : (
-              mobileVisible.map((req) => (
-                <div
-                  key={req.id}
-                  id={`request-row-${req.id}`}
-                  className={`rounded-box border border-base-300 bg-base-100 p-3 space-y-2 cursor-pointer transition-colors hover:bg-base-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                    highlightRequestId === req.id ? "ring-2 ring-primary/40 bg-primary/5" : ""
-                  }`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => { setViewRequest(req); setViewOpen(true); }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setViewRequest(req);
-                      setViewOpen(true);
-                    }
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p
-                        className="text-[15px] font-semibold leading-tight truncate text-base-content"
-                        title={req.createdByName || req.createdBy || req.id}
-                      >
-                        {req.createdByName || req.createdBy || req.id}
-                      </p>
-                      <p className="mt-0.5 text-sm font-medium leading-tight text-base-content/80 truncate" title={req.purpose}>
-                        {req.purpose || "No purpose"}
-                      </p>
+              <>
+                {(isMobileListExpanded ? visible : visible.slice(0, MOBILE_CARD_BATCH)).map((req) => (
+                  <div
+                    key={req.id}
+                    id={`request-row-${req.id}`}
+                    className={`rounded-box border border-base-300 bg-base-100 p-3 space-y-2 cursor-pointer transition-colors hover:bg-base-200/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                      highlightRequestId === req.id ? "ring-2 ring-primary/40 bg-primary/5" : ""
+                    }`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => { setViewRequest(req); setViewOpen(true); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setViewRequest(req);
+                        setViewOpen(true);
+                      }
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p
+                          className="text-[15px] font-semibold leading-tight truncate text-base-content"
+                          title={req.createdByName || req.createdBy || req.id}
+                        >
+                          {req.createdByName || req.createdBy || req.id}
+                        </p>
+                        <p className="mt-0.5 text-sm font-medium leading-tight text-base-content/80 truncate" title={req.purpose}>
+                          {req.purpose || "No purpose"}
+                        </p>
+                      </div>
+                      <span className={`badge badge-sm ${getRequestStatusBadgeClass(req.status)}`}>
+                        {req.status || "Pending"}
+                      </span>
                     </div>
-                    <span className={`badge badge-sm ${getRequestStatusBadgeClass(req.status)}`}>
-                      {req.status || "Pending"}
-                    </span>
-                  </div>
 
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold leading-tight text-base-content/75 truncate">{formatUsageDate(req.startDate)}</p>
-                      <p className="text-[11px] leading-tight text-base-content/60 truncate">to {formatUsageDate(req.endDate)}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {req.overriddenAt && (
-                        <span className="badge badge-secondary badge-xs">Super Admin</span>
-                      )}
-                      <button
-                        className="btn btn-xs gap-1 min-h-8 px-2 bg-[#4F46E5] border-[#4F46E5] text-white hover:bg-[#4338CA] hover:border-[#4338CA]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setViewRequest(req);
-                          setViewOpen(true);
-                        }}
-                        aria-label="View request details"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        View
-                      </button>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold leading-tight text-base-content/75 truncate">{formatUsageDate(req.startDate)}</p>
+                        <p className="text-[11px] leading-tight text-base-content/60 truncate">to {formatUsageDate(req.endDate)}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        {req.overriddenAt && (
+                          <span className="badge badge-secondary badge-xs">Super Admin</span>
+                        )}
+                        <button
+                          className="btn btn-xs gap-1 min-h-8 px-2 bg-[#4F46E5] border-[#4F46E5] text-white hover:bg-[#4338CA] hover:border-[#4338CA]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewRequest(req);
+                            setViewOpen(true);
+                          }}
+                          aria-label="View request details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          View
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-            {mobileVisibleCount < visible.length && (
-              <button
-                type="button"
-                className="btn btn-primary btn-lg w-full gap-2 h-14 text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
-                onClick={handleLoadMore}
-                disabled={isLoadingMore}
-                aria-label={isLoadingMore ? "Loading more requests" : "Load more requests"}
-              >
-                {isLoadingMore ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Loading...
-                  </>
-                ) : (
-                  <>
+                ))}
+                {!isMobileListExpanded && visible.length > MOBILE_CARD_BATCH && (
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-lg w-full gap-2 h-14 text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
+                    onClick={() => setIsMobileListExpanded(true)}
+                    aria-label="Load more requests"
+                  >
                     <ChevronDown className="w-5 h-5" />
                     Load More Requests
-                  </>
+                  </button>
                 )}
-              </button>
+                {isMobileListExpanded && (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm w-full"
+                    onClick={() => setIsMobileListExpanded(false)}
+                    aria-label="Close expanded list"
+                  >
+                    <X className="w-4 h-4" />
+                    Show Less
+                  </button>
+                )}
+              </>
             )}
           </div>
 
@@ -1723,18 +1749,19 @@ const AdminDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Scroll to Top Button (Mobile Only) */}
-      {scrollY > 300 && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-24 sm:bottom-6 right-6 z-40 btn btn-primary btn-circle shadow-lg hover:shadow-xl transition-all duration-200 p-0 w-14 h-14 flex items-center justify-center"
-          aria-label="Scroll to top"
-          title="Scroll to top"
-        >
-          <ArrowUp className="w-6 h-6" />
-        </button>
-      )}
     </div>
+    
+    {/* Scroll to Top Button (Mobile Only) - Outside main container for proper positioning */}
+    {scrollY > 300 && (
+      <button
+        onClick={scrollToTop}
+        className="fixed bottom-24 sm:bottom-6 right-6 z-50 btn btn-primary btn-circle shadow-lg hover:shadow-xl transition-all duration-200 p-0 w-14 h-14 flex items-center justify-center animate-fade-in"
+        aria-label="Scroll to top"
+        title="Scroll to top"
+      >
+        <ArrowUp className="w-6 h-6" />
+      </button>
+    )}
     </>
   );
 };
