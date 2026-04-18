@@ -214,7 +214,7 @@ const SuperAdminActivityLog: React.FC = () => {
     !!search.trim() || typeFilter !== "all" || !!fromDate || !!toDate || sortOrder !== "desc";
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       <LoadingOverlay show={loading} message="Loading super admin activity..." />
 
       <div>
@@ -352,7 +352,7 @@ const SuperAdminActivityLog: React.FC = () => {
         <div className="card bg-base-100 border border-base-300 shadow">
           <div className="card-body p-0">
             <div className="overflow-x-auto">
-              <table className="table w-full">
+              <table className="table w-full min-w-[720px]">
                 <thead>
                   <tr>
                     <th>Type</th>

@@ -78,7 +78,7 @@ export default function EquipmentTable({
           </select>
         </div>
       </div>
-      <table className="table w-full">
+      <table className="table w-full min-w-[720px]">
         <thead>
           <tr>
             <th>Name</th>

@@ -342,7 +342,7 @@ const AdminRequestHistory: React.FC = () => {
     search.trim().length > 0 || statusFilter !== "all" || yearFilter !== "all" || quickFilter !== "all";
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       <LoadingOverlay
         show={loading || isEquipmentLoading}
         message="Loading full request history..."
@@ -532,7 +532,7 @@ const AdminRequestHistory: React.FC = () => {
               <div className="card bg-base-100 border border-base-300 shadow">
                 <div className="card-body p-0">
                   <div className="overflow-x-auto">
-                    <table className="table w-full">
+                    <table className="table w-full min-w-[720px]">
                       <thead>
                         <tr>
                           <th>Request</th>
@@ -747,7 +747,7 @@ const AdminRequestHistory: React.FC = () => {
                 </p>
                 {selectedRequest.items && selectedRequest.items.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="table">
+                    <table className="table min-w-[720px]">
                       <thead>
                         <tr>
                           <th>Item</th>

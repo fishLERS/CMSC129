@@ -214,7 +214,7 @@ export default function AdminUsers() {
   const pendingCount = users.filter((u) => u.role !== 'admin' && u.requestedAdmin).length
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {alertMessage && (
         <div className={`alert ${alertType === 'error' ? 'alert-error' : alertType === 'success' ? 'alert-success' : 'alert-info'}`}>
           <span>{alertMessage}</span>
@@ -275,7 +275,7 @@ export default function AdminUsers() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="table table-zebra w-full">
+              <table className="table table-zebra w-full min-w-[720px]">
                 <thead>
                   <tr>
                     <th>User</th>

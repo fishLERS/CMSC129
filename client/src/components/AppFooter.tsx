@@ -22,7 +22,7 @@ export default function AppFooter() {
         </svg>
       </div>
       <div className="bg-primary/90 backdrop-blur text-primary-content py-3 px-4">
-        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] sm:text-xs text-center">
           <div className="flex items-center gap-2">
             <Fish className="w-4 h-4" />
             <span className="font-semibold">FishLERS</span>
@@ -30,7 +30,7 @@ export default function AppFooter() {
           <span className="text-primary-content/30 hidden sm:inline">|</span>
           <span className="text-primary-content/70">UPV CFOS IA-MSH</span>
           <span className="text-primary-content/30 hidden sm:inline">|</span>
-          <span className="text-primary-content/50">&copy; {currentYear} Laboratory Equipment Reservation System</span>
+          <span className="text-primary-content/50 break-words">&copy; {currentYear} Laboratory Equipment Reservation System</span>
         </div>
       </div>
     </footer>

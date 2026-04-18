@@ -134,7 +134,7 @@ export default function ProfileStudent() {
   )
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {profileAlert && (
         <div className={`alert ${profileAlert.type === 'error' ? 'alert-error' : 'alert-success'}`}>
           <span>{profileAlert.message}</span>

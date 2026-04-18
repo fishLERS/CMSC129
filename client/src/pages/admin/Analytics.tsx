@@ -246,7 +246,7 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-3 sm:p-4 lg:p-6">
         <div className="flex flex-col items-center justify-center gap-4 h-72">
           <span className="loading loading-spinner loading-lg text-primary" />
           <p className="text-base-content/70 text-sm">Loading analytics data...</p>
@@ -256,7 +256,7 @@ export default function Analytics() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Analytics Dashboard</h1>
         <p className="text-base-content/70">Track requests, equipment, and user activity at a glance.</p>

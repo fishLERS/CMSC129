@@ -781,7 +781,7 @@ const AdminDashboard: React.FC = () => {
   return (
     <>
       <LoadingOverlay show={loading || isEquipmentLoading} message="Loading requests..." />
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
         {alertMessage && (
           <div className="alert alert-error">
             <span>{alertMessage}</span>
@@ -932,7 +932,7 @@ const AdminDashboard: React.FC = () => {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="table">
+            <table className="table min-w-[720px]">
               <thead>
                 <tr>
                   <th>Requester</th>
@@ -1066,7 +1066,7 @@ const AdminDashboard: React.FC = () => {
                 {requiresReturnAssessment ? (
                   <>
                     <div className="overflow-x-auto">
-                      <table className="table w-full text-sm">
+                      <table className="table w-full text-sm min-w-[720px]">
                         <thead>
                           <tr>
                             <th>Item</th>
@@ -1183,7 +1183,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     )}
                     <div className="overflow-x-auto">
-                      <table className="table w-full text-sm">
+                      <table className="table w-full text-sm min-w-[720px]">
                         <thead>
                           <tr>
                             <th>Item</th>

@@ -57,7 +57,7 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
   const drawerOpen = isLargeScreen || isOpen;
 
   return (
-    <div className="drawer lg:drawer-open h-screen">
+    <div className="drawer lg:drawer-open h-screen overflow-x-hidden">
       <input 
         id="student-drawer" 
         type="checkbox" 
@@ -67,9 +67,9 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
       />
       
       {/* Main content area */}
-      <div className="drawer-content flex flex-col h-screen">
+      <div className="drawer-content flex flex-col h-screen min-w-0">
         {/* Navbar - sticky */}
-        <nav className="navbar bg-primary text-primary-content shadow-md w-full h-14 min-h-14 sticky top-0 z-30">
+        <nav className="navbar bg-primary text-primary-content shadow-md w-full h-14 min-h-14 sticky top-0 z-30 px-2 sm:px-3">
           <label 
             htmlFor="student-drawer" 
             aria-label="toggle sidebar" 
@@ -77,16 +77,16 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
           >
             {drawerOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
           </label>
-          <div className="flex-1 px-4">
+          <div className="flex-1 min-w-0 px-1 sm:px-2">
             <button
               type="button"
               onClick={() => navigate("/student")}
-              className="btn btn-ghost normal-case px-3 py-1 text-left text-primary-content hover:bg-primary-content/10 focus-visible:outline-none focus-visible:ring-0"
+              className="btn btn-ghost normal-case px-2 sm:px-3 py-1 text-left text-primary-content hover:bg-primary-content/10 focus-visible:outline-none focus-visible:ring-0 min-h-11"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <div className="flex flex-col leading-tight">
-                  <span className="text-lg font-bold">FishLERS</span>
-                  <span className="text-[10px] tracking-wide opacity-80">UPV CFOS IA-MSH</span>
+                  <span className="text-base sm:text-lg font-bold">FishLERS</span>
+                  <span className="hidden sm:block text-[10px] tracking-wide opacity-80">UPV CFOS IA-MSH</span>
                 </div>
                 <span className="p-1 rounded-full bg-primary-content/20">
                   <Fish className="w-5 h-5 text-primary-content" />
@@ -94,8 +94,8 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
               </div>
             </button>
           </div>
-          <div className="navbar-end gap-2">
-            <span className="badge badge-outline badge-sm text-primary-content border-primary-content/40">
+          <div className="navbar-end gap-1 sm:gap-2">
+            <span className="hidden sm:inline-flex badge badge-outline badge-sm text-primary-content border-primary-content/40">
               {claimRoleLabel}
             </span>
             <ThemeToggle className="text-primary-content" />
@@ -103,7 +103,7 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
         </nav>
         
         {/* Page content - scrollable */}
-        <main className="flex-1 p-4 bg-base-200 overflow-y-auto">
+        <main className="flex-1 p-3 sm:p-4 bg-base-200 overflow-y-auto overflow-x-hidden">
           {permissionNotice && (
             <div className="alert alert-warning mb-4">
               <span>{permissionNotice}</span>
@@ -123,7 +123,7 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
       {/* Sidebar drawer - fixed */}
       <div className="drawer-side max-lg:top-14 lg:h-screen z-40 overflow-visible fixed lg:sticky lg:top-0">
         <label htmlFor="student-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
-        <div className="flex h-full flex-col bg-base-100 border-r border-base-300 shadow-lg is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-visible">
+        <div className="flex h-full w-72 max-w-[85vw] flex-col bg-base-100 border-r border-base-300 shadow-lg is-drawer-close:w-16 is-drawer-open:w-64 transition-all duration-200 overflow-visible">
           {/* Menu items */}
           <ul className="menu w-full flex-1 gap-1 p-2 overflow-visible is-drawer-close:items-center">
             {menuItems.map((item, index) => (
@@ -190,7 +190,7 @@ const DrawerLayout: React.FC<DrawerLayoutProps> = ({ children }) => {
       {/* Logout confirmation modal */}
       {showLogoutConfirm && (
         <dialog className="modal modal-open">
-          <div className="modal-box">
+          <div className="modal-box w-[calc(100%-1.5rem)] max-w-md p-4 sm:p-6">
             <h3 className="font-bold text-lg flex items-center gap-2">
               <LogOut size={18} />
               Confirm Logout

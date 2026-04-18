@@ -283,7 +283,7 @@ export const RequestForm: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-4 lg:p-6">
       {/* Inject CSS to remove number arrows */}
       <style>{removeStepper}</style>
 
@@ -292,7 +292,7 @@ export const RequestForm: React.FC = () => {
       {errorMessage && (
         <div className="alert alert-error mb-4 shadow flex items-center justify-between">
           <span>{errorMessage}</span>
-          <button className="btn btn-sm" onClick={() => setErrorMessage(null)}>
+          <button className="btn btn-sm min-h-11" onClick={() => setErrorMessage(null)}>
             Close
           </button>
         </div>
@@ -300,7 +300,7 @@ export const RequestForm: React.FC = () => {
       {successMessage && (
         <div className="alert alert-success mb-4 shadow flex items-center justify-between">
           <span>{successMessage}</span>
-          <button className="btn btn-sm" onClick={() => setSuccessMessage(null)}>
+          <button className="btn btn-sm min-h-11" onClick={() => setSuccessMessage(null)}>
             Close
           </button>
         </div>
@@ -330,7 +330,7 @@ export const RequestForm: React.FC = () => {
                     <span className="label-text text-xs uppercase tracking-wide text-base-content/60">
                       Search
                     </span>
-                    <label className="input input-sm input-bordered flex items-center gap-2">
+                    <label className="input input-sm input-bordered min-h-11 flex items-center gap-2">
                       <Search className="w-4 h-4 text-base-content/60" />
                       <input
                         type="text"
@@ -346,7 +346,7 @@ export const RequestForm: React.FC = () => {
                       Sort
                     </span>
                     <select
-                      className="select select-bordered select-sm"
+                      className="select select-bordered select-sm min-h-11"
                       value={sortOrder}
                       onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
                     >
@@ -359,7 +359,7 @@ export const RequestForm: React.FC = () => {
                       Category
                     </span>
                     <select
-                      className="select select-bordered select-sm"
+                      className="select select-bordered select-sm min-h-11"
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value as 'all' | string)}
                     >
@@ -374,7 +374,7 @@ export const RequestForm: React.FC = () => {
                   <div className="flex items-end justify-end">
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline w-full lg:w-auto"
+                      className="btn btn-sm min-h-11 btn-outline w-full lg:w-auto"
                       onClick={resetFilters}
                     >
                       Reset filters
@@ -434,7 +434,7 @@ export const RequestForm: React.FC = () => {
                         <div className="join" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
-                            className="btn btn-sm join-item"
+                            className="btn btn-sm min-h-11 join-item"
                             onClick={(e) => {
                               e.stopPropagation();
                               setRequestedItems((prev) => ({
@@ -458,11 +458,11 @@ export const RequestForm: React.FC = () => {
                                 [item.equipmentID!]: Math.max(0, Math.min(Number(e.target.value), item.available)),
                               }))
                             }
-                            className="input input-sm input-bordered join-item w-14 text-center"
+                            className="input input-sm input-bordered min-h-11 join-item w-14 text-center"
                           />
                           <button
                             type="button"
-                            className="btn btn-sm join-item"
+                            className="btn btn-sm min-h-11 join-item"
                             onClick={(e) => {
                               e.stopPropagation();
                               setRequestedItems((prev) => ({
@@ -482,7 +482,7 @@ export const RequestForm: React.FC = () => {
               </div>
 
               {/* Total Selected Stats */}
-              <div className="stats bg-base-300 shadow mt-4">
+              <div className="stats stats-vertical sm:stats-horizontal bg-base-300 shadow mt-4">
                 <div className="stat py-2 px-4">
                   <div className="stat-title text-xs">Items Selected</div>
                   <div className="stat-value text-lg">{selectedItems.length}</div>
@@ -554,7 +554,7 @@ export const RequestForm: React.FC = () => {
                         <div className="flex gap-2 mt-3 pt-3 border-t border-base-300">
                           <button
                             type="button"
-                            className="btn btn-xs btn-ghost flex-1"
+                            className="btn btn-xs min-h-11 btn-ghost flex-1"
                             onClick={() => {
                               setFormData(prev => ({ ...prev, startDate: '', endDate: '' }));
                               setCalendarKey(prev => prev + 1);
@@ -564,7 +564,7 @@ export const RequestForm: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            className="btn btn-xs btn-primary flex-1"
+                            className="btn btn-xs min-h-11 btn-primary flex-1"
                             onClick={() => {
                               const today = getTodayDate();
                               setFormData(prev => ({ ...prev, startDate: today, endDate: today }));
@@ -580,7 +580,7 @@ export const RequestForm: React.FC = () => {
                 </div>
 
                 {/* Time Range */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="form-control">
                     <label className="label py-1">
                       <span className="label-text font-medium flex items-center gap-2">
@@ -591,7 +591,7 @@ export const RequestForm: React.FC = () => {
                     <input
                       type="time"
                       name="start"
-                      className="input input-sm input-bordered w-full"
+                      className="input input-sm input-bordered min-h-11 w-full"
                       onChange={handleInput}
                       min={isStartDateToday() ? getCurrentTime() : undefined}
                       value={formData.start}
@@ -608,7 +608,7 @@ export const RequestForm: React.FC = () => {
                     <input
                       type="time"
                       name="end"
-                      className="input input-sm input-bordered w-full"
+                      className="input input-sm input-bordered min-h-11 w-full"
                       onChange={handleInput}
                       min={formData.startDate === formData.endDate && isStartDateToday() ? getCurrentTime() : undefined}
                       value={formData.end}
@@ -628,7 +628,7 @@ export const RequestForm: React.FC = () => {
                   <input
                     type="text"
                     name="adviser"
-                    className="input input-sm input-bordered w-full"
+                    className="input input-sm input-bordered min-h-11 w-full"
                     placeholder="Enter name"
                     onChange={handleInput}
                     value={formData.adviser}
@@ -647,7 +647,7 @@ export const RequestForm: React.FC = () => {
                   <input
                     type="text"
                     name="purpose"
-                    className="input input-sm input-bordered w-full"
+                    className="input input-sm input-bordered min-h-11 w-full"
                     placeholder="Enter purpose of usage"
                     onChange={handleInput}
                     value={formData.purpose}
@@ -716,7 +716,7 @@ export const RequestForm: React.FC = () => {
           <div className="modal-box w-full max-w-2xl p-6">
             <button
               type="button"
-              className="btn btn-sm btn-circle btn-ghost absolute right-4 top-4"
+              className="btn btn-sm min-h-11 btn-circle btn-ghost absolute right-4 top-4"
               onClick={(e) => {
                 e.stopPropagation();
                 closePreview();
@@ -755,7 +755,7 @@ export const RequestForm: React.FC = () => {
                       {previewDetails.category?.trim() || "Uncategorized"}
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-2">
                       <div>
                         <span className="badge badge-ghost badge-sm">

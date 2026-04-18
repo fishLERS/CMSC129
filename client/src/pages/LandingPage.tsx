@@ -54,7 +54,7 @@ export default function LandingPage() {
       </div>
 
       {/* Navbar */}
-  <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10 px-4">
+  <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10 px-3 sm:px-4">
         <div className="navbar-start">
           <Link to="/" className="btn btn-ghost text-xl gap-2 h-auto py-2">
             <Fish className="w-6 h-6 text-primary" />
@@ -64,10 +64,10 @@ export default function LandingPage() {
             </div>
           </Link>
         </div>
-        <div className="navbar-end gap-2">
+        <div className="navbar-end gap-1 sm:gap-2 flex-nowrap">
           <ThemeToggle />
-          <Link to="/login" className="btn btn-ghost btn-sm sm:btn-md">Log In</Link>
-          <Link to="/signup" className="btn btn-primary btn-sm sm:btn-md">Sign Up</Link>
+          <Link to="/login" className="btn btn-ghost btn-sm min-h-11 sm:btn-md">Log In</Link>
+          <Link to="/signup" className="btn btn-primary btn-sm min-h-11 sm:btn-md">Sign Up</Link>
         </div>
       </nav>
 
@@ -107,7 +107,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-12 px-6 relative z-10">
+      <section className="py-10 sm:py-12 px-4 sm:px-6 relative z-10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold mb-3">Why Choose FishLERS?</h2>
@@ -199,7 +199,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 px-6 relative z-10">
+      <section className="py-10 sm:py-12 px-4 sm:px-6 relative z-10">
         <div className="max-w-2xl mx-auto">
           <div className="card bg-primary/80 backdrop-blur-sm text-primary-content shadow-lg border border-primary/30">
             <div className="card-body text-center py-8">

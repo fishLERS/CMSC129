@@ -62,7 +62,7 @@ export default function DataMigration() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Data Migration Tool</h1>
         <p className="text-base-content/70">Migrate existing Firestore data to your account</p>

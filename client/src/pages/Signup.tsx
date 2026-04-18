@@ -104,7 +104,7 @@ export default function Signup() {
           </div>
         </div>
       )}
-      <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10 px-4">
+      <nav className="navbar bg-base-100/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-primary/10 px-3 sm:px-4">
         <div className="navbar-start">
           <Link to="/" className="btn btn-ghost text-xl gap-2 h-auto py-2">
             <Fish className="w-6 h-6 text-primary" />
@@ -171,10 +171,10 @@ export default function Signup() {
         </div>
       </div>
 
-      <div className="absolute top-20 left-6 z-40">
+      <div className="absolute top-16 sm:top-20 left-2 sm:left-6 z-40">
         <button 
           type="button"
-          className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-base-content"
+          className="btn btn-ghost btn-sm min-h-11 gap-2 text-base-content/70 hover:text-base-content"
           onClick={() => nav('/')}
         >
           <ArrowLeft className="w-4 h-4" />
@@ -182,9 +182,9 @@ export default function Signup() {
         </button>
       </div>
 
-      <main className="flex-1 flex items-center justify-center px-4 pt-24 pb-10 relative z-20">
+      <main className="flex-1 flex items-center justify-center px-3 sm:px-4 pt-24 pb-8 sm:pb-10 relative z-20">
       <form onSubmit={onSubmit} className="w-full max-w-sm">
-  <fieldset className="fieldset bg-base-100/90 backdrop-blur-sm border-primary/20 rounded-box border p-6 shadow-xl shadow-primary/10">
+  <fieldset className="fieldset bg-base-100/90 backdrop-blur-sm border-primary/20 rounded-box border p-5 sm:p-6 shadow-xl shadow-primary/10">
           <legend className="fieldset-legend text-xl font-semibold px-2 flex items-center gap-2">
             FishLERS Sign Up {requestedRole === 'admin' ? '(Admin)' : '(Student)'}
           </legend>
@@ -194,7 +194,7 @@ export default function Signup() {
           {/* Full Name field */}
           <label className="fieldset-label">Full Name</label>
           <input
-            className="input w-full"
+            className="input w-full min-h-11"
             placeholder="Full Name"
             value={name}
             onChange={e => setName(e.target.value)}
@@ -206,7 +206,7 @@ export default function Signup() {
             <>
               <label className="fieldset-label mt-3">Student Number</label>
               <input
-                className="input w-full"
+                className="input w-full min-h-11"
                 placeholder="e.g., 2021-12345"
                 value={studentNumber}
                 onChange={e => setStudentNumber(e.target.value)}
@@ -220,7 +220,7 @@ export default function Signup() {
             <>
               <label className="fieldset-label mt-3">Staff ID</label>
               <input
-                className="input w-full"
+                className="input w-full min-h-11"
                 placeholder="e.g., STAFF-001"
                 value={staffId}
                 onChange={e => setStaffId(e.target.value)}
@@ -232,7 +232,7 @@ export default function Signup() {
           {/* Email field */}
           <label className="fieldset-label mt-3">Email</label>
           <input
-            className="input w-full"
+            className="input w-full min-h-11"
             placeholder="Email"
             type="email"
             value={email}
@@ -244,7 +244,7 @@ export default function Signup() {
           <label className="fieldset-label mt-3">Password</label>
           <div className="relative">
             <input
-              className="input w-full pr-10"
+              className="input w-full pr-10 min-h-11"
               placeholder="Password"
               type={showPassword ? 'text' : 'password'}
               value={pass}
@@ -276,7 +276,7 @@ export default function Signup() {
           <label className="fieldset-label mt-3">Confirm Password</label>
           <div className="relative">
             <input
-              className="input w-full pr-10"
+              className="input w-full pr-10 min-h-11"
               placeholder="Confirm Password"
               type={showPassword2 ? 'text' : 'password'}
               value={pass2}
@@ -305,7 +305,7 @@ export default function Signup() {
           </div>
 
           {/* Submit button */}
-          <button className="btn btn-primary w-full mt-6">Create Account</button>
+          <button className="btn btn-primary w-full mt-6 min-h-11">Create Account</button>
 
           {/* Footer link */}
           <p className="text-sm mt-4 text-center">

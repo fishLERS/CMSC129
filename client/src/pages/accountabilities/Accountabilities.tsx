@@ -86,7 +86,7 @@ export default function Accountabilities(){
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {alertMessage && (
         <div className="alert alert-error">
           <span>{alertMessage}</span>
@@ -156,7 +156,7 @@ export default function Accountabilities(){
                   </div>
                   {/* Table */}
                   <div className="overflow-x-auto">
-                    <table className="table">
+                    <table className="table min-w-[720px]">
                       <thead>
                         <tr>
                           <th>Date Due</th>

@@ -127,7 +127,7 @@ function Cell({ allowed }: { allowed: boolean }) {
 
 const PermissionsMatrix: React.FC = () => {
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <ShieldCheck className="w-6 h-6" />
@@ -141,7 +141,7 @@ const PermissionsMatrix: React.FC = () => {
       <div className="card bg-base-200 shadow-xl">
         <div className="card-body p-0">
           <div className="overflow-x-auto">
-            <table className="table w-full">
+            <table className="table w-full min-w-[720px]">
               <thead>
                 <tr>
                   <th>Capability</th>

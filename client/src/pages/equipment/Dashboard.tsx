@@ -124,7 +124,7 @@ export default function Dashboard() {
     <>
       <LoadingOverlay show={isLoading} message="Synchronizing inventory..." />
 
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>

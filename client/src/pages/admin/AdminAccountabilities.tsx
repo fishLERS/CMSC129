@@ -253,7 +253,7 @@ const AdminAccountabilities: React.FC = () => {
   }, [modalEditable, persistItemResolutions])
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -331,7 +331,7 @@ const AdminAccountabilities: React.FC = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="table">
+            <table className="table min-w-[720px]">
               <thead>
                 <tr>
                   <th>Date Due</th>
