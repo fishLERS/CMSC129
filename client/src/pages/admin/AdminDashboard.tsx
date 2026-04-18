@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, query, orderBy, limit, onSnapshot, updateDoc, doc, getDoc, serverTimestamp, addDoc } from "firebase/firestore";
-import { Bell, Eye, X } from "lucide-react";
+import { Bell, Eye, X, ChevronDown, ArrowUp } from "lucide-react";
 import { logicEquipment } from "../equipment/logicEquipment";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import MobileStatsPager from "../../components/MobileStatsPager";
@@ -84,6 +84,9 @@ const AdminDashboard: React.FC = () => {
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
   const highlightTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const userNameCacheRef = React.useRef<Record<string, string>>({});
+  const [scrollY, setScrollY] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const mobileListRef = React.useRef<HTMLDivElement>(null);
 
   const closeRequestModal = useCallback(() => {
     if (isFinalizingReturn) return;
@@ -497,6 +500,46 @@ const AdminDashboard: React.FC = () => {
       if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
     };
   }, []);
+
+  // Handle scroll position for scroll-to-top button (mobile only)
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Scroll to top with smooth animation
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  // Handle load more with smooth scroll
+  const handleLoadMore = () => {
+    setIsLoadingMore(true);
+    // Simulate a small delay for UX
+    setTimeout(() => {
+      setMobileVisibleCount((prev) => prev + MOBILE_CARD_BATCH);
+      setIsLoadingMore(false);
+      // Scroll to the newly loaded items
+      if (mobileListRef.current) {
+        const prevVisibleCount = mobileVisibleCount;
+        requestAnimationFrame(() => {
+          const cards = mobileListRef.current?.querySelectorAll('[role="button"]');
+          if (cards && cards[prevVisibleCount]) {
+            (cards[prevVisibleCount] as HTMLElement).scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        });
+      }
+    }, 300);
+  };
 
   const handleAssessmentChange = (
     key: string,
@@ -991,7 +1034,7 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Table / Mobile List */}
-          <div className="sm:hidden p-3 space-y-3">
+          <div className="sm:hidden p-3 space-y-3" ref={mobileListRef}>
             {visible.length === 0 ? (
               <div className="text-center py-8 text-base-content/60">No requests found</div>
             ) : (
@@ -1059,10 +1102,22 @@ const AdminDashboard: React.FC = () => {
             {mobileVisibleCount < visible.length && (
               <button
                 type="button"
-                className="btn btn-outline btn-sm w-full"
-                onClick={() => setMobileVisibleCount((prev) => prev + MOBILE_CARD_BATCH)}
+                className="btn btn-primary btn-lg w-full gap-2 h-14 text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                aria-label={isLoadingMore ? "Loading more requests" : "Load more requests"}
               >
-                Show more
+                {isLoadingMore ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-5 h-5" />
+                    Load More Requests
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -1666,6 +1721,18 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Scroll to Top Button (Mobile Only) */}
+      {scrollY > 300 && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-24 sm:bottom-6 right-6 z-40 btn btn-primary btn-circle shadow-lg hover:shadow-xl transition-all duration-200 p-0 w-14 h-14 flex items-center justify-center"
+          aria-label="Scroll to top"
+          title="Scroll to top"
+        >
+          <ArrowUp className="w-6 h-6" />
+        </button>
       )}
     </div>
     </>
