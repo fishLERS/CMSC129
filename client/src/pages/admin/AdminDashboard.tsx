@@ -972,7 +972,14 @@ const AdminDashboard: React.FC = () => {
                       id={`request-row-${req.id}`}
                       className={`hover ${highlightRequestId === req.id ? 'bg-primary/10 ring-2 ring-primary/40' : ''}`}
                     >
-                      <td>{req.createdByName || req.createdBy || req.id}</td>
+                      <td className="max-w-0">
+                        <div
+                          className="max-w-[14rem] truncate"
+                          title={req.createdByName || req.createdBy || req.id}
+                        >
+                          {req.createdByName || req.createdBy || req.id}
+                        </div>
+                      </td>
                       <td className="max-w-xs truncate">{req.purpose}</td>
                       <td>
                         <div className="min-w-0 leading-tight">
