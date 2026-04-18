@@ -18,6 +18,7 @@ export function logicEquipment() {
 
   // Ref to track the latest request to prevent race conditions
   const lastFetchId = useRef(0);
+  const isFetchingRef = useRef(false);
 
   /**
    * Fetch equipment from API.
@@ -25,6 +26,11 @@ export function logicEquipment() {
    * * Added isBackground parameter to avoid flickering loaders during polling.
    */
   const fetchEquipment = useCallback(async (isBackground = false) => {
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    isFetchingRef.current = true;
     const fetchId = ++lastFetchId.current;
     if (!isBackground) setIsLoading(true);
 
@@ -42,6 +48,7 @@ export function logicEquipment() {
         setError(err.message);
       }
     } finally {
+      isFetchingRef.current = false;
       if (fetchId === lastFetchId.current) {
         setIsLoading(false);
       }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as requestsApi from "../api/requests.api";
 
 /**
@@ -45,12 +45,18 @@ export function useRequests(userID?: string) {
   const [requests, setRequests] = useState<Request[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
 
   /**
    * Fetch requests from API.
    * Called on mount and periodically.
    */
   const fetchRequests = async () => {
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    isFetchingRef.current = true;
     try {
       let items: Request[];
 
@@ -68,6 +74,7 @@ export function useRequests(userID?: string) {
       console.error("Failed to fetch requests:", err);
       setError(err.message);
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
     }
   };
