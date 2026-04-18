@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { AppConfig } from "./config/env.js";
 import { errorHandler } from "./middleware/auth.js";
+import { requestMetricsMiddleware, startRequestMetricsReporter } from "./middleware/requestMetrics.js";
 import equipmentRoutes from "./routes/equipment.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import requestRoutes from "./routes/requests.routes.js";
@@ -55,6 +56,8 @@ export function createApp(config: AppConfig): express.Application {
   // ============ MIDDLEWARE ============
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  startRequestMetricsReporter();
+  app.use(requestMetricsMiddleware);
 
   // ============ ROUTES ============
   app.get("/health", (_req, res) => {
