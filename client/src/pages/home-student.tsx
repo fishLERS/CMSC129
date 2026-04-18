@@ -453,22 +453,22 @@ export default function HomeStudent() {
         <div className="stat">
           <div className="stat-title">Total Requests</div>
           <div className="stat-value">{trackingRequests.length}</div>
-          <div className="stat-desc">All time</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Pending</div>
           <div className="stat-value text-warning">{trackingRequests.filter(r => (r.status).toLowerCase() === 'pending').length}</div>
-          <div className="stat-desc">Pending approval</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Approved</div>
           <div className="stat-value text-success">{trackingRequests.filter(r => r.status?.toLowerCase() === 'approved').length}</div>
-          <div className="stat-desc">Ready for use</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Completed</div>
           <div className="stat-value text-info">{trackingRequests.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length}</div>
-          <div className="stat-desc">Items returned</div>
+          
         </div>
         <div className="stat cursor-pointer hover:bg-base-300 hover:scale-100 active:scale-95 transition-all duration-200 overflow-hidden" onClick={() => nav('/accountabilities')}>
           <div className="stat-title">Accountabilities</div>
@@ -480,7 +480,7 @@ export default function HomeStudent() {
               }).length
             }
           </div>
-        <div className="stat-desc">Unresolved issues</div>
+        
       </div>
       </div>
 

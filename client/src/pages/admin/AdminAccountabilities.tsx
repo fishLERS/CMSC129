@@ -276,7 +276,7 @@ const AdminAccountabilities: React.FC = () => {
           </div>
           <div className="stat-title">Total</div>
           <div className="stat-value">{rows.length}</div>
-          <div className="stat-desc">All accountabilities</div>
+          
         </div>
         <div className="stat">
           <div className="stat-figure text-warning">
@@ -284,7 +284,7 @@ const AdminAccountabilities: React.FC = () => {
           </div>
           <div className="stat-title">Pending</div>
           <div className="stat-value text-warning">{pendingCount}</div>
-          <div className="stat-desc">Needs attention</div>
+          
         </div>
         <div className="stat">
           <div className="stat-figure text-success">
@@ -292,7 +292,7 @@ const AdminAccountabilities: React.FC = () => {
           </div>
           <div className="stat-title">Resolved</div>
           <div className="stat-value text-success">{resolvedCount}</div>
-          <div className="stat-desc">Completed</div>
+          
         </div>
         <div className="stat">
           <div className="stat-figure text-error">
@@ -300,7 +300,7 @@ const AdminAccountabilities: React.FC = () => {
           </div>
           <div className="stat-title">Overdue</div>
           <div className="stat-value text-error">{overdueCount}</div>
-          <div className="stat-desc">Past due</div>
+          
         </div>
       </div>
 

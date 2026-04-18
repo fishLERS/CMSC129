@@ -364,27 +364,27 @@ const AdminRequestHistory: React.FC = () => {
         <div className="stat">
           <div className="stat-title">Total Requests</div>
           <div className="stat-value">{stats.total}</div>
-          <div className="stat-desc">All records</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Pending / Ongoing</div>
           <div className="stat-value text-warning">{stats.pending}</div>
-          <div className="stat-desc">Awaiting decisions</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Approved</div>
           <div className="stat-value text-success">{stats.approved}</div>
-          <div className="stat-desc">Cleared for release</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Declined</div>
           <div className="stat-value text-error">{stats.declined}</div>
-          <div className="stat-desc">Requires follow-up</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Cancelled</div>
           <div className="stat-value text-info">{stats.cancelled}</div>
-          <div className="stat-desc">Withdrawn by students</div>
+          
         </div>
       </div>
 

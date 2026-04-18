@@ -269,7 +269,7 @@ export default function Analytics() {
           </div>
           <div className="stat-title">Total Requests</div>
           <div className="stat-value">{totalRequests}</div>
-          <div className="stat-desc text-base-content/70">{pendingRequests} pending</div>
+          
         </div>
         <div className="stat">
           <div className="stat-figure text-secondary">
@@ -277,7 +277,7 @@ export default function Analytics() {
           </div>
           <div className="stat-title">Equipment Records</div>
           <div className="stat-value">{totalEquipment}</div>
-          <div className="stat-desc text-base-content/70">{totalInventoryItems} total items</div>
+          
         </div>
         <div className="stat">
           <div className="stat-figure text-accent">
@@ -285,9 +285,7 @@ export default function Analytics() {
           </div>
           <div className="stat-title">Total Users</div>
           <div className="stat-value">{totalUsers}</div>
-          <div className="stat-desc text-base-content/70">
-            {adminUsers} admins • {studentUsers} students
-          </div>
+          
         </div>
         <div className="stat">
           <div className="stat-figure text-success">
@@ -295,9 +293,7 @@ export default function Analytics() {
           </div>
           <div className="stat-title">Approval Rate</div>
           <div className="stat-value">{approvalRate}%</div>
-          <div className="stat-desc text-base-content/70">
-            {approvedRequests} approved of {completedRequests}
-          </div>
+          
         </div>
       </div>
 
@@ -406,22 +402,22 @@ export default function Analytics() {
             <div className="stat bg-base-100 rounded-box">
               <div className="stat-title">Admins</div>
               <div className="stat-value text-secondary">{adminUsers}</div>
-              <div className="stat-desc">Active admins</div>
+              
             </div>
             <div className="stat bg-base-100 rounded-box">
               <div className="stat-title">Students</div>
               <div className="stat-value text-primary">{studentUsers}</div>
-              <div className="stat-desc">Registered users</div>
+              
             </div>
             <div className="stat bg-base-100 rounded-box">
               <div className="stat-title">Pending Admin</div>
               <div className="stat-value text-warning">{pendingAdminRequests}</div>
-              <div className="stat-desc">Awaiting approval</div>
+              
             </div>
             <div className="stat bg-base-100 rounded-box">
               <div className="stat-title">Total Users</div>
               <div className="stat-value">{totalUsers}</div>
-              <div className="stat-desc">All roles</div>
+              
             </div>
           </div>
         </div>
@@ -437,26 +433,24 @@ export default function Analytics() {
             <div className="stat bg-base-100 rounded-box">
               <div className="stat-title">Avg Items / Request</div>
               <div className="stat-value text-primary">{avgItemsPerRequest.toFixed(1)}</div>
-              <div className="stat-desc">{totalItemsRequested} items requested overall</div>
+              
             </div>
             <div className="stat bg-base-100 rounded-box">
               <div className="stat-title">Disposable Mix</div>
               <div className="stat-value text-secondary">{disposablePercentage}%</div>
-              <div className="stat-desc">{disposableItems} of {totalEquipment} items</div>
+              
             </div>
             <div className="stat bg-base-100 rounded-box">
               <div className="stat-title">Top Requester</div>
               <div className="stat-value text-accent">
                 {topRequesterEntry ? resolveRequesterName(topRequesterEntry[0]) : 'N/A'}
               </div>
-              <div className="stat-desc">
-                {topRequesterEntry ? `${topRequesterEntry[1]} requests logged` : 'Not enough data'}
-              </div>
+              
             </div>
             <div className="stat bg-base-100 rounded-box">
               <div className="stat-title">Category Diversity</div>
               <div className="stat-value text-info">{categoryDiversityScore}%</div>
-              <div className="stat-desc">Entropy-normalized coverage</div>
+              
             </div>
           </div>
         </div>

@@ -173,7 +173,7 @@ export default function TrackingPage(){
           </div>
           <div className="stat-title">Total Requests</div>
           <div className="stat-value">{rows.length}</div>
-          <div className="stat-desc">All time</div>
+          
         </div>
         <div className="stat">
           <div className="stat-figure text-warning">
@@ -181,7 +181,7 @@ export default function TrackingPage(){
           </div>
           <div className="stat-title">Pending</div>
           <div className="stat-value text-warning">{pendingCount}</div>
-          <div className="stat-desc">Pending approval</div>
+          
         </div>
         <div className="stat">
           <div className="stat-figure text-success">
@@ -189,7 +189,7 @@ export default function TrackingPage(){
           </div>
           <div className="stat-title">Approved</div>
           <div className="stat-value text-success">{approvedCount}</div>
-          <div className="stat-desc">Ready for use</div>
+          
         </div>
         <div className="stat">
           <div className="stat-figure text-error">
@@ -197,7 +197,7 @@ export default function TrackingPage(){
           </div>
           <div className="stat-title">Declined</div>
           <div className="stat-value text-error">{declinedCount}</div>
-          <div className="stat-desc">See remarks</div>
+          
         </div>
       </div>
 

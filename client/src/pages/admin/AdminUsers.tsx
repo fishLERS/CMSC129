@@ -230,22 +230,22 @@ export default function AdminUsers() {
         <div className="stat">
           <div className="stat-title">Total Accounts</div>
           <div className="stat-value">{users.length}</div>
-          <div className="stat-desc">Admins & requests</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Current Admins</div>
           <div className="stat-value text-secondary">{adminCount}</div>
-          <div className="stat-desc">Elevated users</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Super Admins</div>
           <div className="stat-value text-accent">{superAdminCount}</div>
-          <div className="stat-desc">Override access</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Pending Requests</div>
           <div className="stat-value text-warning">{pendingCount}</div>
-          <div className="stat-desc">Awaiting approval</div>
+          
         </div>
       </div>
 

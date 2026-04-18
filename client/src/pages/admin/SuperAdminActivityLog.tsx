@@ -231,17 +231,17 @@ const SuperAdminActivityLog: React.FC = () => {
         <div className="stat">
           <div className="stat-title">Total Events</div>
           <div className="stat-value">{stats.total}</div>
-          <div className="stat-desc">All logged activity</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Overrides</div>
           <div className="stat-value text-secondary">{stats.overrides}</div>
-          <div className="stat-desc">Request decisions changed</div>
+          
         </div>
         <div className="stat">
           <div className="stat-title">Privilege Updates</div>
           <div className="stat-value text-accent">{stats.privileges}</div>
-          <div className="stat-desc">Role/super-admin state</div>
+          
         </div>
       </div>
 

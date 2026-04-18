@@ -143,28 +143,28 @@ export default function Dashboard() {
             <div className="stat-figure text-primary"><Boxes className="w-8 h-8" /></div>
             <div className="stat-title">Unique Items</div>
             <div className="stat-value">{equipmentList.length}</div>
-            <div className="stat-desc">Tracking {categories.length} categories</div>
+            
           </div>
 
           <div className="stat">
             <div className="stat-figure text-secondary"><Package className="w-8 h-8" /></div>
             <div className="stat-title">Total Quantity</div>
             <div className="stat-value">{stats.totalQuantity}</div>
-            <div className="stat-desc">Physical items on-hand</div>
+            
           </div>
 
           <div className="stat">
             <div className="stat-figure text-success"><Recycle className="w-8 h-8" /></div>
             <div className="stat-title">Disposable</div>
             <div className="stat-value">{stats.disposableCount}</div>
-            <div className="stat-desc">Consumable supplies</div>
+            
           </div>
 
           <div className="stat">
             <div className="stat-figure text-warning"><AlertTriangle className="w-8 h-8" /></div>
             <div className="stat-title">Low Stock</div>
             <div className="stat-value">{stats.lowStockCount}</div>
-            <div className="stat-desc">Below threshold ({LOW_STOCK_THRESHOLD})</div>
+            
           </div>
         </div>
 
