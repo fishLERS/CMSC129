@@ -896,37 +896,30 @@ const AdminDashboard: React.FC = () => {
         <div className="stat min-w-0 px-3 sm:px-4">
           <div className="stat-title text-xs truncate">Total Requests</div>
           <div className="stat-value text-4xl">{requests.length}</div>
-          <div className="stat-desc text-xs truncate">All time</div>
         </div>
         <div className="stat min-w-0 px-3 sm:px-4">
           <div className="stat-title text-xs truncate">Pending</div>
           <div className="stat-value text-4xl text-warning">{pendingCount}</div>
-          <div className="stat-desc text-xs truncate">Awaiting approval</div>
         </div>
         <div className="stat min-w-0 px-3 sm:px-4">
           <div className="stat-title text-xs truncate">Approved</div>
           <div className="stat-value text-4xl text-success">{approvedCount}</div>
-          <div className="stat-desc text-xs truncate">Ready for use</div>
         </div>
         <div className="stat min-w-0 px-3 sm:px-4">
           <div className="stat-title text-xs truncate">Returned</div>
           <div className="stat-value text-4xl text-info">{returnedCount}</div>
-          <div className="stat-desc text-xs truncate">Needs inspection</div>
         </div>
         <div className="stat min-w-0 px-3 sm:px-4">
           <div className="stat-title text-xs truncate">Cleared</div>
           <div className="stat-value text-4xl text-secondary">{clearedCount}</div>
-          <div className="stat-desc text-xs truncate">Reviewed returns</div>
         </div>
         <div className="stat min-w-0 px-3 sm:px-4">
           <div className="stat-title text-xs truncate">Declined</div>
           <div className="stat-value text-4xl text-error">{declinedCount}</div>
-          <div className="stat-desc text-xs truncate">Requests declined</div>
         </div>
         <div className="stat min-w-0 px-3 sm:px-4">
           <div className="stat-title text-xs truncate">Cancelled</div>
           <div className="stat-value text-4xl text-info">{cancelledCount}</div>
-          <div className="stat-desc text-xs truncate">Requests cancelled</div>
         </div>
       </div>
 
