@@ -1007,13 +1007,9 @@ const AdminDashboard: React.FC = () => {
                         {req.purpose || "No purpose"}
                       </p>
                     </div>
-                    <button
-                      className="btn btn-ghost btn-sm btn-circle shrink-0"
-                      onClick={() => { setViewRequest(req); setViewOpen(true); }}
-                      aria-label="View request details"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
+                    <span className={`badge badge-sm ${getRequestStatusBadgeClass(req.status)}`}>
+                      {req.status || "Pending"}
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
@@ -1023,12 +1019,17 @@ const AdminDashboard: React.FC = () => {
                       <p className="text-xs text-base-content/70 truncate">to {formatUsageDate(req.endDate)}</p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className={`badge ${getRequestStatusBadgeClass(req.status)}`}>
-                        {req.status || "Pending"}
-                      </span>
                       {req.overriddenAt && (
                         <span className="badge badge-secondary badge-xs">Super Admin</span>
                       )}
+                      <button
+                        className="btn btn-outline btn-xs gap-1 min-h-8 px-2"
+                        onClick={() => { setViewRequest(req); setViewOpen(true); }}
+                        aria-label="View request details"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        View
+                      </button>
                     </div>
                   </div>
                 </div>
