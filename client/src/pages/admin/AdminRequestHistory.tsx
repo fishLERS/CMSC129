@@ -16,6 +16,7 @@ import {
   Package,
 } from "lucide-react";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import MobileStatsPager from "../../components/MobileStatsPager";
 import { db } from "../../firebase";
 import { logicEquipment } from "../equipment/logicEquipment";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
@@ -360,7 +361,17 @@ const AdminRequestHistory: React.FC = () => {
         </div>
       </div>
 
-      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+      <MobileStatsPager
+        breakpoint="lg"
+        items={[
+          { label: "Total", value: stats.total },
+          { label: "Pending/Ongoing", value: stats.pending, colorClass: "text-warning" },
+          { label: "Approved", value: stats.approved, colorClass: "text-success" },
+          { label: "Declined", value: stats.declined, colorClass: "text-error" },
+          { label: "Cancelled", value: stats.cancelled, colorClass: "text-info" },
+        ]}
+      />
+      <div className="hidden lg:flex stats stats-horizontal shadow bg-base-200 w-full">
         <div className="stat">
           <div className="stat-title">Total Requests</div>
           <div className="stat-value">{stats.total}</div>

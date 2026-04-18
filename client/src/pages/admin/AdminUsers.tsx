@@ -5,6 +5,7 @@ import { formatRoleLabel } from '../../utils/roleLabel'
 import { setSuperAdmin, setUserRole } from '../../api/auth.api'
 import { useTelemetry } from '../../hooks/useTelemetry'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import MobileStatsPager from '../../components/MobileStatsPager'
 
 interface UserData {
   uid: string
@@ -226,7 +227,16 @@ export default function AdminUsers() {
         <p className="text-base-content/70">Review admin accounts and pending requests using daisyUI cards.</p>
       </div>
 
-      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+      <MobileStatsPager
+        breakpoint="lg"
+        items={[
+          { label: "Total Accounts", value: users.length },
+          { label: "Current Admins", value: adminCount, colorClass: "text-secondary" },
+          { label: "Super Admins", value: superAdminCount, colorClass: "text-accent" },
+          { label: "Pending Requests", value: pendingCount, colorClass: "text-warning" },
+        ]}
+      />
+      <div className="hidden lg:flex stats stats-horizontal shadow bg-base-200 w-full">
         <div className="stat">
           <div className="stat-title">Total Accounts</div>
           <div className="stat-value">{users.length}</div>

@@ -9,6 +9,7 @@ import { isOngoing } from "../utils/requestTime"
 import { collection, query, orderBy, limit, onSnapshot, where, doc as docRef, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Bell, X, Eye, XCircle, RotateCcw, Copy, MapPin, Clock } from 'lucide-react';
 import LoadingOverlay from '../components/LoadingOverlay';
+import MobileStatsPager from '../components/MobileStatsPager';
 import { useRequests } from '../hooks/useRequests'
 
 function formatDate(d: Date) {
@@ -450,7 +451,17 @@ export default function HomeStudent() {
       </div>
 
       {/* Stats Cards */}
-      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+      <MobileStatsPager
+        breakpoint="lg"
+        items={[
+          { label: "Total", value: trackingRequests.length },
+          { label: "Pending", value: trackingRequests.filter(r => (r.status).toLowerCase() === 'pending').length, colorClass: "text-warning" },
+          { label: "Approved", value: trackingRequests.filter(r => r.status?.toLowerCase() === 'approved').length, colorClass: "text-success" },
+          { label: "Completed", value: trackingRequests.filter(r => ['completed', 'returned'].includes((r.status || '').toLowerCase())).length, colorClass: "text-info" },
+          { label: "Accountabilities", value: accountabilities.filter(a => { const s = (a.status || '').toLowerCase(); return s !== 'resolved' && s !== 'completed'; }).length, colorClass: "text-error" },
+        ]}
+      />
+      <div className="hidden lg:flex stats stats-horizontal shadow bg-base-200 w-full">
         <div className="stat">
           <div className="stat-title">Total Requests</div>
           <div className="stat-value">{trackingRequests.length}</div>

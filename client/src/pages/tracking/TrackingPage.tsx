@@ -6,6 +6,7 @@ import { useRequests } from '../../hooks/useRequests'
 import { isOngoing } from "../../utils/requestTime"
 import { logicEquipment } from '../equipment/logicEquipment'
 import { MapPin, Clock, CheckCircle, XCircle, AlertCircle, FileText, X, Eye, Copy, RotateCcw } from 'lucide-react'
+import MobileStatsPager from '../../components/MobileStatsPager'
 
 export default function TrackingPage(){
   const { user } = useAuth()
@@ -166,7 +167,16 @@ export default function TrackingPage(){
       </div>
 
       {/* Stats */}
-      <div className="stats stats-vertical sm:stats-horizontal shadow bg-base-200 w-full">
+      <MobileStatsPager
+        breakpoint="sm"
+        items={[
+          { label: "Total", value: rows.length },
+          { label: "Pending", value: pendingCount, colorClass: "text-warning" },
+          { label: "Approved", value: approvedCount, colorClass: "text-success" },
+          { label: "Declined", value: declinedCount, colorClass: "text-error" },
+        ]}
+      />
+      <div className="hidden sm:flex stats stats-horizontal shadow bg-base-200 w-full">
         <div className="stat">
           <div className="stat-figure text-primary">
             <FileText className="w-8 h-8" />

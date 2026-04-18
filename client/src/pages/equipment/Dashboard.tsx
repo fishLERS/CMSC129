@@ -8,6 +8,7 @@ import { logicEquipment } from "./logicEquipment";
 import AddEquipmentDialog from "./AddEquipmentDialog";
 import EquipmentTable from "./EquipmentTable";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import MobileStatsPager from "../../components/MobileStatsPager";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 const LOW_STOCK_THRESHOLD = 5;
@@ -138,7 +139,16 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+        <MobileStatsPager
+          breakpoint="lg"
+          items={[
+            { label: "Unique Items", value: equipmentList.length },
+            { label: "Total Quantity", value: stats.totalQuantity, colorClass: "text-secondary" },
+            { label: "Disposable", value: stats.disposableCount, colorClass: "text-success" },
+            { label: "Low Stock", value: stats.lowStockCount, colorClass: "text-warning" },
+          ]}
+        />
+        <div className="hidden lg:flex stats stats-horizontal shadow bg-base-200 w-full">
           <div className="stat">
             <div className="stat-figure text-primary"><Boxes className="w-8 h-8" /></div>
             <div className="stat-title">Unique Items</div>

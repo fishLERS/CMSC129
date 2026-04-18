@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { db } from "../../firebase";
 import { collection, query, orderBy, limit, onSnapshot, updateDoc, doc, getDoc, serverTimestamp, addDoc } from "firebase/firestore";
-import { Bell, ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
+import { Bell, Eye, X } from "lucide-react";
 import { logicEquipment } from "../equipment/logicEquipment";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import MobileStatsPager from "../../components/MobileStatsPager";
 import { overrideApproveRequest, overrideRejectRequest } from "../../api/requests.api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -78,7 +79,6 @@ const AdminDashboard: React.FC = () => {
   const [notifAllOpen, setNotifAllOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationEntry[]>([]);
   const [recentNotifications, setRecentNotifications] = useState<NotificationEntry[]>([]);
-  const [mobileStatStart, setMobileStatStart] = useState(0);
   const [highlightRequestId, setHighlightRequestId] = useState<string | null>(null);
   const highlightTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const userNameCacheRef = React.useRef<Record<string, string>>({});
@@ -517,17 +517,6 @@ const AdminDashboard: React.FC = () => {
   const clearedCount = requests.filter(
     (r) => (r.status || "").toLowerCase() === "cleared"
   ).length;
-  const mobileStats = [
-    { label: "Total", value: requests.length, colorClass: "" },
-    { label: "Pending", value: pendingCount, colorClass: "text-warning" },
-    { label: "Approved", value: approvedCount, colorClass: "text-success" },
-    { label: "Returned", value: returnedCount, colorClass: "text-info" },
-    { label: "Cleared", value: clearedCount, colorClass: "text-secondary" },
-    { label: "Declined", value: declinedCount, colorClass: "text-error" },
-    { label: "Cancelled", value: cancelledCount, colorClass: "text-info" },
-  ];
-  const mobileStatWindow = mobileStats.slice(mobileStatStart, mobileStatStart + 2);
-  const maxMobileStatStart = Math.max(0, mobileStats.length - 2);
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
@@ -904,39 +893,18 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="sm:hidden space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-base-content/60">
-            {mobileStatStart + 1}-{Math.min(mobileStatStart + 2, mobileStats.length)} of {mobileStats.length}
-          </span>
-          <div className="join">
-            <button
-              className="btn btn-xs btn-outline join-item"
-              onClick={() => setMobileStatStart((prev) => Math.max(0, prev - 1))}
-              disabled={mobileStatStart === 0}
-              aria-label="Previous stats"
-            >
-              <ChevronLeft className="w-3 h-3" />
-            </button>
-            <button
-              className="btn btn-xs btn-outline join-item"
-              onClick={() => setMobileStatStart((prev) => Math.min(maxMobileStatStart, prev + 1))}
-              disabled={mobileStatStart >= maxMobileStatStart}
-              aria-label="Next stats"
-            >
-              <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-        <div key={mobileStatStart} className="grid grid-cols-2 gap-2">
-          {mobileStatWindow.map((stat) => (
-            <div key={stat.label} className="rounded-box bg-base-200 border border-base-300 p-2 min-h-[4.5rem]">
-              <p className="text-[10px] text-base-content/70 truncate">{stat.label}</p>
-              <p className={`text-2xl font-bold leading-tight ${stat.colorClass}`}>{stat.value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      <MobileStatsPager
+        breakpoint="sm"
+        items={[
+          { label: "Total", value: requests.length },
+          { label: "Pending", value: pendingCount, colorClass: "text-warning" },
+          { label: "Approved", value: approvedCount, colorClass: "text-success" },
+          { label: "Returned", value: returnedCount, colorClass: "text-info" },
+          { label: "Cleared", value: clearedCount, colorClass: "text-secondary" },
+          { label: "Declined", value: declinedCount, colorClass: "text-error" },
+          { label: "Cancelled", value: cancelledCount, colorClass: "text-info" },
+        ]}
+      />
 
       <div className="hidden sm:flex stats stats-horizontal shadow bg-base-200 w-full overflow-hidden">
         <div className="stat min-w-0 px-3 sm:px-4">

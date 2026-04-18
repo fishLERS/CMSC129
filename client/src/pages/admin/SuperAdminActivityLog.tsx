@@ -2,6 +2,7 @@ import React from "react";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { Activity, Calendar, Filter, ShieldCheck } from "lucide-react";
 import LoadingOverlay from "../../components/LoadingOverlay";
+import MobileStatsPager from "../../components/MobileStatsPager";
 import { db } from "../../firebase";
 import { formatRoleLabel } from "../../utils/roleLabel";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
@@ -227,7 +228,15 @@ const SuperAdminActivityLog: React.FC = () => {
         </p>
       </div>
 
-      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+      <MobileStatsPager
+        breakpoint="lg"
+        items={[
+          { label: "Total Events", value: stats.total },
+          { label: "Overrides", value: stats.overrides, colorClass: "text-secondary" },
+          { label: "Privilege Updates", value: stats.privileges, colorClass: "text-accent" },
+        ]}
+      />
+      <div className="hidden lg:flex stats stats-horizontal shadow bg-base-200 w-full">
         <div className="stat">
           <div className="stat-title">Total Events</div>
           <div className="stat-value">{stats.total}</div>

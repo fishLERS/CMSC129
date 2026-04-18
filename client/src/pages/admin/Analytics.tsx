@@ -2,6 +2,7 @@ import React from 'react'
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { TrendingUp, TrendingDown, Users, Package, ClipboardList, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import MobileStatsPager from '../../components/MobileStatsPager'
 
 interface RequestData {
   id: string
@@ -262,7 +263,16 @@ export default function Analytics() {
         <p className="text-base-content/70">Track requests, equipment, and user activity at a glance.</p>
       </div>
 
-      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+      <MobileStatsPager
+        breakpoint="lg"
+        items={[
+          { label: "Total Requests", value: totalRequests },
+          { label: "Equipment Records", value: totalEquipment, colorClass: "text-secondary" },
+          { label: "Total Users", value: totalUsers, colorClass: "text-accent" },
+          { label: "Approval Rate", value: `${approvalRate}%`, colorClass: "text-success" },
+        ]}
+      />
+      <div className="hidden lg:flex stats stats-horizontal shadow bg-base-200 w-full">
         <div className="stat">
           <div className="stat-figure text-primary">
             <ClipboardList className="w-8 h-8" />

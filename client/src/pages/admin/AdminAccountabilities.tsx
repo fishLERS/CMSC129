@@ -2,6 +2,7 @@ import React from 'react'
 import { db } from '../../firebase'
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { FileWarning, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react'
+import MobileStatsPager from '../../components/MobileStatsPager'
 
 type IssueCondition = 'damaged' | 'missing' | 'detail'
 
@@ -269,7 +270,16 @@ const AdminAccountabilities: React.FC = () => {
       </div>
 
       {/* Stats */}
-      <div className="stats stats-vertical lg:stats-horizontal shadow bg-base-200 w-full">
+      <MobileStatsPager
+        breakpoint="lg"
+        items={[
+          { label: "Total", value: rows.length },
+          { label: "Pending", value: pendingCount, colorClass: "text-warning" },
+          { label: "Resolved", value: resolvedCount, colorClass: "text-success" },
+          { label: "Overdue", value: overdueCount, colorClass: "text-error" },
+        ]}
+      />
+      <div className="hidden lg:flex stats stats-horizontal shadow bg-base-200 w-full">
         <div className="stat">
           <div className="stat-figure text-primary">
             <FileWarning className="w-8 h-8" />

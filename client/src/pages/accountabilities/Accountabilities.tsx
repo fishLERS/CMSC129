@@ -3,6 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 import { AlertCircle, CheckCircle, Clock, FileWarning } from 'lucide-react'
+import MobileStatsPager from '../../components/MobileStatsPager'
 
 export default function Accountabilities(){
   const { user } = useAuth()
@@ -103,7 +104,15 @@ export default function Accountabilities(){
       </div>
 
       {/* Stats */}
-      <div className="stats stats-vertical sm:stats-horizontal shadow bg-base-200 w-full">
+      <MobileStatsPager
+        breakpoint="sm"
+        items={[
+          { label: "Total", value: rows.length },
+          { label: "Pending", value: pendingCount, colorClass: "text-warning" },
+          { label: "Resolved", value: resolvedCount, colorClass: "text-success" },
+        ]}
+      />
+      <div className="hidden sm:flex stats stats-horizontal shadow bg-base-200 w-full">
         <div className="stat">
           <div className="stat-figure text-primary">
             <FileWarning className="w-8 h-8" />
