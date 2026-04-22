@@ -36,7 +36,7 @@ export default function CategoryDialog({ categories }: CategoryDialogProps) {
         <>
             {/* The Button to open the Modal */}
             <button
-                className="btn btn-outline btn-secondary gap-2"
+                className="btn btn-primary btn-sm gap-2"
                 onClick={() => (window as any).category_modal.showModal()}
             >
                 <Tag className="w-4 h-4" />
