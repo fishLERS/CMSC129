@@ -716,7 +716,23 @@ const AdminRequestHistory: React.FC = () => {
                   <p className="text-xs uppercase tracking-wide text-base-content/60">
                     Schedule
                   </p>
-                  <p>{formatScheduleDisplay(selectedRequest)}</p>
+                  <div className="space-y-1">
+                    <div className="font-semibold">
+                      {selectedRequest.startDate
+                        ? `${formatDateDisplay(selectedRequest.startDate)}${selectedRequest.start ? ` ${formatTimeDisplay(selectedRequest.start)}` : ""}`
+                        : "No schedule provided"}
+                    </div>
+                    {selectedRequest.endDate && selectedRequest.startDate !== selectedRequest.endDate && (
+                      <div className="text-sm text-base-content/70">
+                        to {formatDateDisplay(selectedRequest.endDate)}{selectedRequest.end ? ` ${formatTimeDisplay(selectedRequest.end)}` : ""}
+                      </div>
+                    )}
+                    {selectedRequest.endDate === selectedRequest.startDate && selectedRequest.end && selectedRequest.start !== selectedRequest.end && (
+                      <div className="text-sm text-base-content/70">
+                        to {formatTimeDisplay(selectedRequest.end)}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="bg-base-200 rounded-lg p-4 space-y-3">
                   <p className="text-xs uppercase tracking-wide text-base-content/60">
