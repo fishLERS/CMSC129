@@ -61,6 +61,39 @@ const getStatusBadgeClass = (status: string) => {
   return "badge-outline";
 };
 
+const formatDateDisplay = (dateStr: string | undefined) => {
+  if (!dateStr) return "";
+  try {
+    const date = new Date(dateStr + "T00:00:00");
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return dateStr;
+  }
+};
+
+const formatTimeDisplay = (timeStr: string | undefined) => {
+  if (!timeStr) return "";
+  try {
+    const [hours, minutes] = timeStr.split(":");
+    const hour = parseInt(hours, 10);
+    const minute = parseInt(minutes || "0", 10);
+    const period = hour >= 12 ? "PM" : "AM";
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minute.toString().padStart(2, "0")} ${period}`;
+  } catch {
+    return timeStr;
+  }
+};
+
+const formatUsageRange = (req: AdminRequestRecord) => {
+  const startDate = req.startDate ? formatDateDisplay(req.startDate) : "";
+  const endDate = req.endDate ? formatDateDisplay(req.endDate) : "";
+  
+  if (!startDate && !endDate) return "No schedule";
+  if (startDate === endDate || !endDate) return startDate;
+  return `${startDate} to ${endDate}`;
+};
+
 const formatRange = (req: AdminRequestRecord) => {
   const start = req.startDate ? `${req.startDate} ${req.start || ""}`.trim() : "";
   const end = req.endDate ? `${req.endDate} ${req.end || ""}`.trim() : "";
@@ -544,7 +577,7 @@ const AdminRequestHistory: React.FC = () => {
                         <tr>
                           <th>Request</th>
                           <th>Requester</th>
-                          <th>Schedule</th>
+                          <th>Date of Usage</th>
                           <th>Items</th>
                           <th>Status</th>
                         </tr>
@@ -579,9 +612,11 @@ const AdminRequestHistory: React.FC = () => {
                                 </div>
                               </td>
                               <td>
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Clock className="w-4 h-4" />
-                                  {formatRange(req)}
+                                <div className="text-sm space-y-0.5">
+                                  <div className="font-medium">{req.startDate ? formatDateDisplay(req.startDate) : "No schedule"}</div>
+                                  {req.endDate && (
+                                    <div className="text-xs text-base-content/60">to {formatDateDisplay(req.endDate)}</div>
+                                  )}
                                 </div>
                               </td>
                               <td>
