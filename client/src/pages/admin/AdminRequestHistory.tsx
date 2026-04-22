@@ -102,6 +102,27 @@ const formatRange = (req: AdminRequestRecord) => {
   return start || end;
 };
 
+const formatScheduleDisplay = (req: AdminRequestRecord) => {
+  if (!req.startDate) return "No schedule provided";
+  
+  const startDate = formatDateDisplay(req.startDate);
+  const startTime = req.start ? formatTimeDisplay(req.start) : "";
+  const endDate = req.endDate ? formatDateDisplay(req.endDate) : "";
+  const endTime = req.end ? formatTimeDisplay(req.end) : "";
+  
+  let result = startDate;
+  if (startTime) result += ` ${startTime}`;
+  
+  if (endDate && endDate !== startDate) {
+    result += ` to ${endDate}`;
+    if (endTime) result += ` ${endTime}`;
+  } else if (endTime && endTime !== startTime) {
+    result += ` to ${endTime}`;
+  }
+  
+  return result;
+};
+
 const formatDateTime = (value: any) => {
   if (!value) return "";
   try {
@@ -695,7 +716,7 @@ const AdminRequestHistory: React.FC = () => {
                   <p className="text-xs uppercase tracking-wide text-base-content/60">
                     Schedule
                   </p>
-                  <p>{formatRange(selectedRequest)}</p>
+                  <p>{formatScheduleDisplay(selectedRequest)}</p>
                 </div>
                 <div className="bg-base-200 rounded-lg p-4 space-y-3">
                   <p className="text-xs uppercase tracking-wide text-base-content/60">
