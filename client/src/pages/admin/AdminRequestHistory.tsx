@@ -401,7 +401,7 @@ const AdminRequestHistory: React.FC = () => {
 
       <div className="card bg-base-200 shadow-xl">
         <div className="card-body space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             <label className="form-control">
               <div className="label">
                 <span className="label-text flex items-center gap-2">
@@ -476,27 +476,21 @@ const AdminRequestHistory: React.FC = () => {
                 <option value="asc">Oldest first</option>
               </select>
             </label>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-base-content/70">Quick access:</span>
-            <button
-              className={`btn btn-sm ${quickFilter === "overridden" ? "btn-secondary" : "btn-outline"}`}
-              onClick={() =>
-                setQuickFilter((prev) => (prev === "overridden" ? "all" : "overridden"))
-              }
-            >
-              Only overridden requests
-            </button>
-            <button
-              className={`btn btn-sm ${quickFilter === "super-admin-actions" ? "btn-secondary" : "btn-outline"}`}
-              onClick={() =>
-                setQuickFilter((prev) =>
-                  prev === "super-admin-actions" ? "all" : "super-admin-actions"
-                )
-              }
-            >
-              Only super-admin actions
-            </button>
+
+            <label className="form-control">
+              <div className="label">
+                <span className="label-text">Quick Access</span>
+              </div>
+              <select
+                className="select select-bordered"
+                value={quickFilter}
+                onChange={(e) => setQuickFilter(e.target.value as "all" | "overridden" | "super-admin-actions")}
+              >
+                <option value="all">Show all requests</option>
+                <option value="overridden">Only overridden requests</option>
+                <option value="super-admin-actions">Only super-admin actions</option>
+              </select>
+            </label>
           </div>
 
           {activeFilters && (
