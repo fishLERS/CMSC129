@@ -479,7 +479,7 @@ const AdminRequestHistory: React.FC = () => {
 
             <label className="form-control">
               <div className="label">
-                <span className="label-text">Quick Access</span>
+                <span className="label-text">View</span>
               </div>
               <select
                 className="select select-bordered"
