@@ -45,7 +45,9 @@ export default function ProtectedRoute({ children, requireAdmin, requireSuperAdm
     });
   }, [loading, loc.pathname, unauthorizedAction, trackUnauthorizedRouteHit, user?.uid, user?.role, isSuperAdmin]);
 
-  if (loading) return <LoadingOverlay show message="Checking your session..." />;
+  // If loading or we have a token but user isn't loaded yet, show loading overlay
+  const hasAuthToken = localStorage.getItem("authToken");
+  if (loading || (hasAuthToken && !user)) return <LoadingOverlay show message="Checking your session..." />;
   
   if (!user) return <Navigate to="/login" replace state={{ from: loc }} />;
 
