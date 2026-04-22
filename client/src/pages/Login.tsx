@@ -17,6 +17,7 @@ export default function Login() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [roleType, setRoleType] = useState<"student" | "admin">("student");
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const nav = useNavigate();
 
   const currentYear = new Date().getFullYear();
@@ -74,6 +75,7 @@ export default function Login() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
+      setIsLoading(true);
       setErr(null);
       setSuccessMsg(null);
       const cred = await signInWithEmailAndPassword(auth, email, pass);
@@ -125,6 +127,7 @@ export default function Login() {
       } else {
         setErr(e.message ?? "Login failed");
       }
+      setIsLoading(false);
     }
   }
 
@@ -210,6 +213,7 @@ export default function Login() {
                 type="button"
                 className={`btn flex-1 ${roleType === "student" ? "btn-primary" : "btn-ghost"}`}
                 onClick={() => setRoleType("student")}
+                disabled={isLoading}
               >
                 Student
               </button>
@@ -217,6 +221,7 @@ export default function Login() {
                 type="button"
                 className={`btn flex-1 ${roleType === "admin" ? "btn-primary" : "btn-ghost"}`}
                 onClick={() => setRoleType("admin")}
+                disabled={isLoading}
               >
                 Admin
               </button>
@@ -229,6 +234,7 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
               required
             />
 
@@ -240,6 +246,7 @@ export default function Login() {
                 type={showPassword ? "text" : "password"}
                 value={pass}
                 onChange={(e) => setPass(e.target.value)}
+                disabled={isLoading}
                 required
               />
               <button
@@ -264,7 +271,12 @@ export default function Login() {
               </button>
             </div>
 
-            <button className="btn btn-primary w-full mt-6 min-h-11">Sign In</button>
+            <button className="btn btn-primary w-full mt-6 min-h-11" disabled={isLoading}>
+              {isLoading ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : null}
+              {isLoading ? "Signing in..." : "Sign In"}
+            </button>
 
             <div className="flex justify-between items-center mt-4 text-sm">
               {roleType === "student" ? (
