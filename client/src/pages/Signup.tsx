@@ -18,6 +18,7 @@ export default function Signup() {
   const [showPassword2, setShowPassword2] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedRole = searchParams.get('role') === 'admin' ? 'admin' : 'student';
@@ -37,6 +38,7 @@ export default function Signup() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
+      setIsLoading(true);
       setErr(null);
 
       if (!name.trim()) throw new Error('Full name is required');
@@ -87,6 +89,7 @@ export default function Signup() {
       }
     } catch (e: any) {
       setErr(e.message ?? 'Signup failed');
+      setIsLoading(false);
     }
   }
 
@@ -198,6 +201,7 @@ export default function Signup() {
             placeholder="Full Name"
             value={name}
             onChange={e => setName(e.target.value)}
+            disabled={isLoading}
             required
           />
 
@@ -210,6 +214,7 @@ export default function Signup() {
                 placeholder="e.g., 2021-12345"
                 value={studentNumber}
                 onChange={e => setStudentNumber(e.target.value)}
+                disabled={isLoading}
                 required
               />
             </>
@@ -224,6 +229,7 @@ export default function Signup() {
                 placeholder="e.g., STAFF-001"
                 value={staffId}
                 onChange={e => setStaffId(e.target.value)}
+                disabled={isLoading}
                 required
               />
             </>
@@ -237,6 +243,7 @@ export default function Signup() {
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
+            disabled={isLoading}
             required
           />
 
@@ -249,6 +256,7 @@ export default function Signup() {
               type={showPassword ? 'text' : 'password'}
               value={pass}
               onChange={e => setPass(e.target.value)}
+              disabled={isLoading}
               required
             />
             <button
@@ -281,6 +289,7 @@ export default function Signup() {
               type={showPassword2 ? 'text' : 'password'}
               value={pass2}
               onChange={e => setPass2(e.target.value)}
+              disabled={isLoading}
               required
             />
             <button
@@ -305,7 +314,12 @@ export default function Signup() {
           </div>
 
           {/* Submit button */}
-          <button className="btn btn-primary w-full mt-6 min-h-11">Create Account</button>
+          <button className="btn btn-primary w-full mt-6 min-h-11" disabled={isLoading}>
+            {isLoading ? (
+              <span className="loading loading-spinner loading-sm"></span>
+            ) : null}
+            {isLoading ? "Creating account..." : "Create Account"}
+          </button>
 
           {/* Footer link */}
           <p className="text-sm mt-4 text-center">
