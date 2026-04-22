@@ -6,6 +6,7 @@ import { setSuperAdmin, setUserRole } from '../../api/auth.api'
 import { useTelemetry } from '../../hooks/useTelemetry'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import MobileStatsPager from '../../components/MobileStatsPager'
+import { formatDate as formatDateUtil } from '../../utils/formatters'
 
 interface UserData {
   uid: string
@@ -192,13 +193,23 @@ export default function AdminUsers() {
   function formatDate(ts: any) {
     try {
       if (!ts) return ''
-      if (typeof ts.toDate === 'function') return ts.toDate().toLocaleDateString()
-      if (typeof ts === 'string' || typeof ts === 'number') return new Date(ts).toLocaleDateString()
-      if (ts instanceof Date) return ts.toLocaleDateString()
+      let dateStr: string
+      if (typeof ts.toDate === 'function') {
+        // Firestore Timestamp
+        dateStr = ts.toDate().toISOString().split('T')[0]
+      } else if (typeof ts === 'string') {
+        dateStr = ts
+      } else if (typeof ts === 'number') {
+        dateStr = new Date(ts).toISOString().split('T')[0]
+      } else if (ts instanceof Date) {
+        dateStr = ts.toISOString().split('T')[0]
+      } else {
+        return ''
+      }
+      return formatDateUtil(dateStr)
     } catch {
       return ''
     }
-    return ''
   }
 
   const filteredUsers = users.filter((user) => {

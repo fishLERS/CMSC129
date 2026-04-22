@@ -18,6 +18,7 @@ import {
 import LoadingOverlay from "../../components/LoadingOverlay";
 import MobileStatsPager from "../../components/MobileStatsPager";
 import { db } from "../../firebase";
+import { formatDate, formatTime } from "../../utils/formatters";
 import { logicEquipment } from "../equipment/logicEquipment";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
@@ -61,29 +62,9 @@ const getStatusBadgeClass = (status: string) => {
   return "badge-outline";
 };
 
-const formatDateDisplay = (dateStr: string | undefined) => {
-  if (!dateStr) return "";
-  try {
-    const date = new Date(dateStr + "T00:00:00");
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return dateStr;
-  }
-};
-
-const formatTimeDisplay = (timeStr: string | undefined) => {
-  if (!timeStr) return "";
-  try {
-    const [hours, minutes] = timeStr.split(":");
-    const hour = parseInt(hours, 10);
-    const minute = parseInt(minutes || "0", 10);
-    const period = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minute.toString().padStart(2, "0")} ${period}`;
-  } catch {
-    return timeStr;
-  }
-};
+// Aliases for the imported formatters to maintain existing code
+const formatDateDisplay = (dateStr: string | undefined) => formatDate(dateStr);
+const formatTimeDisplay = (timeStr: string | undefined) => formatTime(timeStr);
 
 const formatUsageRange = (req: AdminRequestRecord) => {
   const startDate = req.startDate ? formatDateDisplay(req.startDate) : "";

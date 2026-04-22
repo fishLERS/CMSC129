@@ -2,8 +2,9 @@ import React from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { db } from '../../firebase'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
-import { AlertCircle, CheckCircle, Clock, FileWarning } from 'lucide-react'
+import { AlertCircle, CheckCircle, Clock, FileWarning, Calendar } from 'lucide-react'
 import MobileStatsPager from '../../components/MobileStatsPager'
+import { formatDate, truncate } from '../../utils/formatters'
 
 export default function Accountabilities(){
   const { user } = useAuth()
@@ -186,7 +187,10 @@ export default function Accountabilities(){
                           filtered.map((r) => (
                             <tr key={r.id} className="hover">
                               <td>
-                                <div className="font-medium">{r.due || 'No date set'}</div>
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-base-content/50 flex-shrink-0" />
+                                  <span className="font-semibold">{r.due ? formatDate(r.due) : 'No date set'}</span>
+                                </div>
                               </td>
                               <td>
                                 <div className="font-medium">{r.studentName || 'Student'}</div>
@@ -196,7 +200,7 @@ export default function Accountabilities(){
                               </td>
                               <td>
                                 <div className="max-w-md">
-                                  <p className="text-sm">{formatDetails(r.details) || 'No details provided'}</p>
+                                  <p className="text-sm">{truncate(formatDetails(r.details) || 'No details provided', 50)}</p>
                                 </div>
                               </td>
                               <td>{getStatusBadge(r.status)}</td>
@@ -215,36 +219,39 @@ export default function Accountabilities(){
               {/* Details Modal */}
               {showModal && (
                 <dialog className="modal modal-open">
-                  <div className="modal-box max-w-lg">
+                  <div className="modal-box max-w-2xl">
                     <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onClick={() => setShowModal(null)}>
-                      <AlertCircle className="w-4 h-4" />
+                      ✕
                     </button>
-                    <h3 className="font-bold text-lg mb-4">Accountability Details</h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="form-control">
-                        <label className="label"><span className="label-text text-xs">Due Date</span></label>
-                        <div className="bg-base-300 p-2 rounded text-sm">{showModal.due || 'No date set'}</div>
-                      </div>
-                      <div className="form-control">
-                        <label className="label"><span className="label-text text-xs">Student</span></label>
-                        <div className="bg-base-300 p-2 rounded text-sm">
-                          <div className="font-medium">{showModal.studentName || 'Student'}</div>
-                          <div className="text-xs font-mono text-base-content/70">{showModal.studentNumber || 'No student number'}</div>
+                    <div className="space-y-5">
+                      <div>
+                        <h3 className="text-xs uppercase tracking-wide text-base-content/60 font-semibold">Due Date</h3>
+                        <div className="text-xl font-semibold flex items-center gap-2 mt-2">
+                          <Calendar className="w-5 h-5 text-primary" />
+                          {showModal.due ? formatDate(showModal.due) : 'No date set'}
                         </div>
                       </div>
-                      <div className="form-control">
-                        <label className="label"><span className="label-text text-xs">Details</span></label>
-                        <div className="bg-base-300 p-2 rounded text-sm whitespace-pre-wrap">
+                      <div className="divider my-2" />
+                      <div>
+                        <h3 className="text-xs uppercase tracking-wide text-base-content/60 font-semibold mb-2">Student</h3>
+                        <div className="bg-base-200 rounded-lg p-4">
+                          <div className="font-semibold text-base">{showModal.studentName || 'Student'}</div>
+                          <div className="text-sm text-base-content/70 font-mono mt-1">{showModal.studentNumber || 'No student number'}</div>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-xs uppercase tracking-wide text-base-content/60 font-semibold mb-2">Details</h3>
+                        <div className="bg-base-200 rounded-lg p-4 text-sm leading-relaxed">
                           {formatDetails(showModal.details) || 'No details provided'}
                         </div>
                       </div>
-                      <div className="form-control">
-                        <label className="label"><span className="label-text text-xs">Status</span></label>
-                        <div className="bg-base-300 p-2 rounded text-sm">{getStatusBadge(showModal.status)}</div>
+                      <div className="flex items-center gap-2 bg-base-300 rounded-lg p-3">
+                        <span className="text-xs uppercase tracking-wide text-base-content/60 font-semibold">Status:</span>
+                        {getStatusBadge(showModal.status)}
                       </div>
                     </div>
-                    <div className="modal-action">
-                      <button className="btn" onClick={() => setShowModal(null)}>Close</button>
+                    <div className="modal-action mt-6">
+                      <button className="btn btn-primary" onClick={() => setShowModal(null)}>Close</button>
                     </div>
                   </div>
                   <form method="dialog" className="modal-backdrop">
