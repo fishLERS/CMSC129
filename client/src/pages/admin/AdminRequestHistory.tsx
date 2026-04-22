@@ -493,32 +493,30 @@ const AdminRequestHistory: React.FC = () => {
             </label>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-            <div className="flex gap-2">
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => {
-                  // Filters apply automatically, this just provides visual feedback
-                }}
-              >
-                Apply Filters
-              </button>
-              <button
-                className="btn btn-outline btn-sm"
-                onClick={() => {
-                  setSearch("");
-                  setStatusFilter("all");
-                  setYearFilter("all");
-                  setQuickFilter("all");
-                  setSortOrder("desc");
-                }}
-              >
-                Reset
-              </button>
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex gap-2 items-center">
+              {activeFilters ? (
+                <>
+                  <span className="badge badge-lg badge-primary gap-1">
+                    <span className="font-semibold">{filtered.length}</span> result{filtered.length !== 1 ? 's' : ''}
+                  </span>
+                  <button
+                    className="btn btn-ghost btn-sm gap-1"
+                    onClick={() => {
+                      setSearch("");
+                      setStatusFilter("all");
+                      setYearFilter("all");
+                      setQuickFilter("all");
+                      setSortOrder("desc");
+                    }}
+                  >
+                    ✕ Reset
+                  </button>
+                </>
+              ) : (
+                <span className="text-sm text-base-content/60">No filters applied</span>
+              )}
             </div>
-            {activeFilters && (
-              <span className="badge badge-lg badge-outline">Filters active</span>
-            )}
           </div>
         </div>
       </div>
