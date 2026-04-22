@@ -493,17 +493,18 @@ const AdminRequestHistory: React.FC = () => {
             </label>
           </div>
 
-          {activeFilters && (
-            <div className="flex flex-wrap gap-2">
-              <span className="badge badge-outline">Filters active</span>
-              {quickFilter === "overridden" && (
-                <span className="badge badge-secondary">Only overridden requests</span>
-              )}
-              {quickFilter === "super-admin-actions" && (
-                <span className="badge badge-secondary">Only super-admin actions</span>
-              )}
+          <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+            <div className="flex gap-2">
               <button
-                className="btn btn-ghost btn-sm"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  // Filters apply automatically, this just provides visual feedback
+                }}
+              >
+                Apply Filters
+              </button>
+              <button
+                className="btn btn-outline btn-sm"
                 onClick={() => {
                   setSearch("");
                   setStatusFilter("all");
@@ -512,10 +513,13 @@ const AdminRequestHistory: React.FC = () => {
                   setSortOrder("desc");
                 }}
               >
-                Reset filters
+                Reset
               </button>
             </div>
-          )}
+            {activeFilters && (
+              <span className="badge badge-lg badge-outline">Filters active</span>
+            )}
+          </div>
         </div>
       </div>
 
